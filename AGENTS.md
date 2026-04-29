@@ -31,21 +31,21 @@ Treat this repository as the **project brief and bootstrap point**, not as a fin
 
 Use the files in this order when making decisions:
 
-1. [`PROPOSAL.md`](/workspaces/clawdesk/PROPOSAL.md): primary project scope, goals, and prototype narrative
-2. [`ARCHITECTURE.md`](/workspaces/clawdesk/ARCHITECTURE.md): current prototype architecture and scope boundaries
-3. [`AGENTS.md`](/workspaces/clawdesk/AGENTS.md): contributor guidance and working agreements
-4. [`LEARNING.md`](/workspaces/clawdesk/LEARNING.md): OpenClaw environment notes and setup lessons
-5. [`notes.md`](/workspaces/clawdesk/notes.md): short local operational reminders
+1. [`PROPOSAL.md`](/workspaces/deskclaw/PROPOSAL.md): primary project scope, goals, and prototype narrative
+2. [`ARCHITECTURE.md`](/workspaces/deskclaw/ARCHITECTURE.md): current prototype architecture and scope boundaries
+3. [`AGENTS.md`](/workspaces/deskclaw/AGENTS.md): contributor guidance and working agreements
+4. [`LEARNING.md`](/workspaces/deskclaw/LEARNING.md): OpenClaw environment notes and setup lessons
+5. [`notes.md`](/workspaces/deskclaw/notes.md): short local operational reminders
 
 ## New Chat Bootstrap
 
 For a fresh chat in this repository, start by reading:
 
-1. [`AGENTS.md`](/workspaces/clawdesk/AGENTS.md)
-2. [`PROPOSAL.md`](/workspaces/clawdesk/PROPOSAL.md)
-3. [`ARCHITECTURE.md`](/workspaces/clawdesk/ARCHITECTURE.md)
+1. [`AGENTS.md`](/workspaces/deskclaw/AGENTS.md)
+2. [`PROPOSAL.md`](/workspaces/deskclaw/PROPOSAL.md)
+3. [`ARCHITECTURE.md`](/workspaces/deskclaw/ARCHITECTURE.md)
 
-Read [`LEARNING.md`](/workspaces/clawdesk/LEARNING.md) and [`notes.md`](/workspaces/clawdesk/notes.md) when the task touches environment setup, OpenClaw operations, devcontainer behavior, or local tooling problems.
+Read [`LEARNING.md`](/workspaces/deskclaw/LEARNING.md) and [`notes.md`](/workspaces/deskclaw/notes.md) when the task touches environment setup, OpenClaw operations, devcontainer behavior, or local tooling problems.
 
 ## Intended Product
 
@@ -108,17 +108,17 @@ This layout is **planned**, not present yet. If the team later prefers SQLite in
 
 Important files and folders currently in the repo:
 
-- [`README.md`](/workspaces/clawdesk/README.md): public project introduction and teammate development setup
-- [`.devcontainer/devcontainer.json`](/workspaces/clawdesk/.devcontainer/devcontainer.json): local development container definition
-- [`ARCHITECTURE.md`](/workspaces/clawdesk/ARCHITECTURE.md): short architecture snapshot
-- [`PROPOSAL.md`](/workspaces/clawdesk/PROPOSAL.md): proposal narrative with objectives and methodology
-- [`LEARNING.md`](/workspaces/clawdesk/LEARNING.md): OpenClaw operational notes and lessons learned
-- [`notes.md`](/workspaces/clawdesk/notes.md): short command reminders for local OpenClaw usage
-- [`.gitignore`](/workspaces/clawdesk/.gitignore): ignores local secret files such as `.env`
+- [`README.md`](/workspaces/deskclaw/README.md): public project introduction and teammate development setup
+- [`.devcontainer/devcontainer.json`](/workspaces/deskclaw/.devcontainer/devcontainer.json): local development container definition
+- [`ARCHITECTURE.md`](/workspaces/deskclaw/ARCHITECTURE.md): short architecture snapshot
+- [`PROPOSAL.md`](/workspaces/deskclaw/PROPOSAL.md): proposal narrative with objectives and methodology
+- [`LEARNING.md`](/workspaces/deskclaw/LEARNING.md): OpenClaw operational notes and lessons learned
+- [`notes.md`](/workspaces/deskclaw/notes.md): short command reminders for local OpenClaw usage
+- [`.gitignore`](/workspaces/deskclaw/.gitignore): ignores local secret files such as `.env`
 
 ## Development Environment
 
-The current dev environment is defined in [`.devcontainer/devcontainer.json`](/workspaces/clawdesk/.devcontainer/devcontainer.json):
+The current dev environment is defined in [`.devcontainer/devcontainer.json`](/workspaces/deskclaw/.devcontainer/devcontainer.json):
 
 - Display name: `DeskClaw Dev`
 - Base image: Microsoft Node.js and TypeScript devcontainer (`4-24-bookworm`)
@@ -147,8 +147,8 @@ The current dev environment is defined in [`.devcontainer/devcontainer.json`](/w
 ## Working Agreements For Contributors
 
 - Be explicit about what is **implemented** versus what is only **planned**
-- Treat [`PROPOSAL.md`](/workspaces/clawdesk/PROPOSAL.md) and [`ARCHITECTURE.md`](/workspaces/clawdesk/ARCHITECTURE.md) as the current scope lock unless the team decides to revise the project direction
-- In a new chat, read [`AGENTS.md`](/workspaces/clawdesk/AGENTS.md), [`PROPOSAL.md`](/workspaces/clawdesk/PROPOSAL.md), and [`ARCHITECTURE.md`](/workspaces/clawdesk/ARCHITECTURE.md) before making scope assumptions
+- Treat [`PROPOSAL.md`](/workspaces/deskclaw/PROPOSAL.md) and [`ARCHITECTURE.md`](/workspaces/deskclaw/ARCHITECTURE.md) as the current scope lock unless the team decides to revise the project direction
+- In a new chat, read [`AGENTS.md`](/workspaces/deskclaw/AGENTS.md), [`PROPOSAL.md`](/workspaces/deskclaw/PROPOSAL.md), and [`ARCHITECTURE.md`](/workspaces/deskclaw/ARCHITECTURE.md) before making scope assumptions
 - On every new user prompt or task, re-check whether any kept context file needs an update before finishing the work
 - Use the project-level Context7 MCP server when current library, framework, setup, configuration, or API documentation would reduce guesswork; resolve the relevant library or tool docs through Context7 instead of relying only on memory.
 - Preserve the project's local-first and privacy-first assumptions unless the user approves a change in direction
@@ -197,4 +197,4 @@ If development starts from this repo, the likely order is:
 
 ## Summary
 
-The repo currently represents **DeskClaw as a well-defined concept with an early implementation plan**, not a built product. The clearest development path is to treat [`PROPOSAL.md`](/workspaces/clawdesk/PROPOSAL.md) and [`ARCHITECTURE.md`](/workspaces/clawdesk/ARCHITECTURE.md) as the scope anchor, then create the first real project assets around a local OpenClaw prototype for support, basic product assistance, and safe human handoff.
+The repo currently represents **DeskClaw as a well-defined concept with an early implementation plan**, not a built product. The clearest development path is to treat [`PROPOSAL.md`](/workspaces/deskclaw/PROPOSAL.md) and [`ARCHITECTURE.md`](/workspaces/deskclaw/ARCHITECTURE.md) as the scope anchor, then create the first real project assets around a local OpenClaw prototype for support, basic product assistance, and safe human handoff.

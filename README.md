@@ -92,6 +92,12 @@ openclaw reset
 
 When onboarding inside Docker, skip daemon/service installation.
 
+## Team Collaboration Workflow
+
+Use `PROPOSAL.md`, `ARCHITECTURE.md`, and `AGENTS.md` as the shared context before starting new work. Keep implementation changes small enough to review, and update the relevant root markdown file in the same change when scope, setup, prompts, or file layout changes.
+
+Local-only state should stay local: `.env`, `.codex/`, and OpenClaw runtime data under `/home/node/.openclaw` should not be committed. Shared prompt files such as the future `deskclaw-workspace/SOUL.md` and `deskclaw-workspace/AGENTS.md` should be committed once the prototype workspace exists, because they define how the demo agent behaves.
+
 ## Planned Prototype Layout
 
 The first implementation pass is expected to create a small OpenClaw workspace similar to:
