@@ -22,6 +22,12 @@
 *   **Context7 MCP:** Project-level Codex MCP config lives locally in ignored `.codex/config.toml`. Keep any `CONTEXT7_API_KEY` value in local `.env` or local Codex config only.
 *   **The Zombie Process:** If the gateway refuses to stop and blocks port `18789`, kill it manually: `pkill -9 -f openclaw`.
 *   **Local Models (Ollama):** Install Ollama natively on Windows, not in Docker. Connect OpenClaw to it using `http://host.docker.internal:11434`.
+*   **Dashboard Token in Devcontainers:** The dashboard may open in the host browser without the tokenized bootstrap URL because the container has no GUI/clipboard. If the page loads but asks for a gateway token, reveal it locally with:
+    ```bash
+    node -p "JSON.parse(require('fs').readFileSync('/home/node/.openclaw/openclaw.json','utf8')).gateway.auth.token"
+    ```
+    Paste the result into **Gateway Token** and do not share or commit it.
+*   **Dashboard Browser Storage:** Prefer `http://localhost:18789/` consistently. `localhost` and `127.0.0.1` have separate browser storage, and stale dashboard auth can show `device token mismatch`; clear site data for both origins or use a private window.
 
 ## 4. Questions to Ask Later
 *How do I write a custom Skill from scratch?*
