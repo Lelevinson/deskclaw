@@ -1,18 +1,18 @@
 # Skills Lab
 
-`skills-lab/` is a temporary sandbox for testing one OpenClaw skill idea at a time before building the real DeskClaw workspace.
+`skills-lab/` contains test plans and scripted scenarios for checking one OpenClaw skill idea at a time before building the full DeskClaw workspace.
 
-It is **not** the final application workspace. Do not put production integrations, customer data, social-channel setup, dashboards, or long-term OpenClaw runtime state here.
+It is **not** the skill source of truth and not the final application workspace. Do not put production integrations, customer data, social-channel setup, dashboards, or long-term OpenClaw runtime state here.
 
 ## Current experiment
 
 The first experiment is `policy-oracle`.
 
-Goal: check whether OpenClaw can load a local `policy-oracle` skill and answer customer policy questions using only that skill's bundled policy references.
+Goal: check whether OpenClaw can load the repo-managed `policy-oracle` skill and answer customer policy questions using only that skill's bundled policy references.
 
 The agent should:
 
-- Read the local policy content in `skills/policy-oracle/references/`.
+- Read the local policy content in `/workspaces/deskclaw/skills/policy-oracle/references/`.
 - Answer only with facts found in those documents.
 - Avoid inventing policy details.
 - Say the information is not available when the policy does not mention it.
@@ -24,36 +24,34 @@ The agent should:
 skills-lab/
   README.md
   test-plan.md
-  skills/
-    policy-oracle/
-      SKILL.md
-      references/
-        faq.md
-        product-care.md
-        returns.md
-        shipping.md
   scenarios/
     policy-oracle-tests.md
 ```
 
-`skills/policy-oracle/` is the OpenClaw-ready skill structure. This lab no
-longer keeps a separate manual prompt file because the next useful test is
-automatic skill and reference-file access.
+The OpenClaw-ready skill structure lives outside this lab:
+
+```text
+../skills/policy-oracle/
+  SKILL.md
+  references/
+    faq.md
+    product-care.md
+    returns.md
+    shipping.md
+```
 
 ## How to test as an OpenClaw skill
 
-OpenClaw discovers workspace skills from:
-
-```text
-/home/node/.openclaw/workspace/skills/<skill-name>/SKILL.md
-```
-
-To test automatic skill loading, copy the lab skill into that workspace from a
-devcontainer terminal:
+Configure OpenClaw once so it scans the repo-managed skills folder:
 
 ```bash
-mkdir -p /home/node/.openclaw/workspace/skills/policy-oracle/references
-cp -R /workspaces/deskclaw/skills-lab/skills/policy-oracle/. /home/node/.openclaw/workspace/skills/policy-oracle/
+openclaw config set skills.load.extraDirs '["/workspaces/deskclaw/skills"]' --strict-json
+```
+
+If an older copied skill exists with the same name, remove it so the repo-managed skill is the version under test:
+
+```bash
+rm -rf /home/node/.openclaw/workspace/skills/policy-oracle
 ```
 
 Then check whether OpenClaw sees the skill:
@@ -95,15 +93,13 @@ This lab lives in the git repo at:
 /workspaces/deskclaw/skills-lab/
 ```
 
-OpenClaw's own agent workspace is usually:
+The canonical skill lives in:
 
 ```text
-/home/node/.openclaw/workspace/
+/workspaces/deskclaw/skills/policy-oracle/
 ```
 
-That means the OpenClaw TUI does not use `skills-lab/` directly. The skill must
-be copied or mirrored into `/home/node/.openclaw/workspace/skills/` before the
-automatic-access test.
+OpenClaw does not use `skills-lab/` directly. It loads the skill from the configured repo skill root.
 
 ## Current model note
 

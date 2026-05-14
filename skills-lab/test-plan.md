@@ -29,11 +29,18 @@ The agent should:
 
 ## Automatic skill-loading test steps
 
-1. Copy `skills-lab/skills/policy-oracle/` into `/home/node/.openclaw/workspace/skills/policy-oracle/`.
-2. Run `openclaw skills list` and confirm `policy-oracle` appears.
-3. Start a new OpenClaw session with `/new`, or restart the gateway and TUI.
-4. Ask the questions from `scenarios/policy-oracle-tests.md`.
-5. Pass the test only if the agent answers from the bundled files in `references/` without needing policy text pasted into the chat.
+1. Configure OpenClaw to scan repo-managed skills:
+   ```bash
+   openclaw config set skills.load.extraDirs '["/workspaces/deskclaw/skills"]' --strict-json
+   ```
+2. Remove any older copied workspace skill with the same name:
+   ```bash
+   rm -rf /home/node/.openclaw/workspace/skills/policy-oracle
+   ```
+3. Run `openclaw skills list` and confirm `policy-oracle` appears.
+4. Start a new OpenClaw session with `/new`, or restart the gateway and TUI.
+5. Ask the questions from `scenarios/policy-oracle-tests.md`.
+6. Pass the test only if the agent answers from the bundled files in `references/` without needing policy text pasted into the chat.
 
 ## Model note
 

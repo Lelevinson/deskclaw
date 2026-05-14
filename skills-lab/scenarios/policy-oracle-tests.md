@@ -1,6 +1,6 @@
 # policy-oracle Test Scenarios
 
-Use these questions in OpenClaw TUI after copying `skills-lab/skills/policy-oracle/` into OpenClaw's workspace skills folder and starting a fresh session.
+Use these questions in OpenClaw TUI after configuring OpenClaw to scan `/workspaces/deskclaw/skills`, confirming `policy-oracle` appears in `openclaw skills list`, and starting a fresh session.
 
 ## Shipping
 
