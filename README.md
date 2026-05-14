@@ -13,7 +13,9 @@ This repository is currently the planning and bootstrap workspace for the protot
 
 The repo is documentation-first right now. It has the project proposal, architecture notes, contributor guidance, OpenClaw setup notes, and a devcontainer configuration.
 
-The actual DeskClaw prototype workspace, skills, knowledge files, catalog fixtures, and scripted chat scenarios are planned but not fully implemented yet.
+The actual DeskClaw prototype workspace, production skills, catalog fixtures, and full scripted chat scenarios are planned but not fully implemented yet.
+
+A temporary `skills-lab/` sandbox exists for testing individual skill behavior before the full `deskclaw-workspace/` is created. Its first experiment is the `policy-oracle` customer-policy skill test.
 
 ## Development Setup
 
@@ -86,6 +88,7 @@ Inside the devcontainer:
 openclaw onboard
 openclaw gateway
 openclaw tui
+openclaw skills list
 openclaw sessions list
 openclaw reset
 ```
@@ -97,6 +100,28 @@ When onboarding inside Docker, skip daemon/service installation.
 Use `PROPOSAL.md`, `ARCHITECTURE.md`, and `AGENTS.md` as the shared context before starting new work. Keep implementation changes small enough to review, and update the relevant root markdown file in the same change when scope, setup, prompts, or file layout changes.
 
 Local-only state should stay local: `.env`, `.codex/`, and OpenClaw runtime data under `/home/node/.openclaw` should not be committed. Shared prompt files such as the future `deskclaw-workspace/SOUL.md` and `deskclaw-workspace/AGENTS.md` should be committed once the prototype workspace exists, because they define how the demo agent behaves.
+
+## Skills Lab
+
+The current pre-workspace experiment lives in:
+
+```text
+skills-lab/
+  README.md
+  test-plan.md
+  skills/
+    policy-oracle/
+      SKILL.md
+      references/
+        faq.md
+        product-care.md
+        returns.md
+        shipping.md
+  scenarios/
+    policy-oracle-tests.md
+```
+
+This folder is for isolated skill testing only. It is not the final DeskClaw/OpenClaw workspace.
 
 ## Planned Prototype Layout
 
@@ -111,6 +136,7 @@ deskclaw-workspace/
     shipping.md
     returns.md
     faq.md
+    product-care.md
   catalog/
     products.json
   scenarios/
@@ -118,9 +144,17 @@ deskclaw-workspace/
     sales-chat.md
     frustration-chat.md
   skills/
-    sentiment_router.js
-    policy_oracle.js
-    search_products.js
+    policy-oracle/
+      SKILL.md
+      references/
+        faq.md
+        product-care.md
+        returns.md
+        shipping.md
+    search-products/
+      SKILL.md
+    sentiment-router/
+      SKILL.md
 ```
 
 ## Scope

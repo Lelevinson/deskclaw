@@ -1,0 +1,41 @@
+---
+name: policy-oracle
+description: Answer DeskClaw customer policy questions about shipping, returns, exchanges, refunds, warranty, product care, and FAQs using only bundled local policy references.
+---
+
+# policy-oracle
+
+Use this skill when a customer asks about DeskClaw customer policies, including shipping, returns, exchanges, refunds, warranty, product care, order changes, or FAQs.
+
+## Source of truth
+
+Before answering a customer-policy question, read the relevant bundled reference file:
+
+```text
+{baseDir}/references/shipping.md
+{baseDir}/references/returns.md
+{baseDir}/references/faq.md
+{baseDir}/references/product-care.md
+```
+
+If the customer's question could involve more than one policy area, read every relevant reference file before answering.
+
+Use only these reference files. Do not use outside knowledge or guesses.
+
+## Answering rules
+
+When the answer is in the policy references:
+
+- Answer briefly and clearly.
+- Use the exact policy meaning.
+- Do not add unsupported details.
+
+When the answer is not in the policy references:
+
+- Say the available policy does not mention that information.
+- Suggest confirming with a human teammate.
+- Do not invent an answer.
+
+## Do not invent
+
+Do not invent carrier names, tracking rules, cut-off times, weekend delivery, holiday delivery, country lists, same-day delivery, coupon codes, accepted payment methods, medical claims, repair promises, product compatibility, or any other policy detail not written in the reference files.

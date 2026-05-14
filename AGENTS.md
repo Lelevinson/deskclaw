@@ -15,13 +15,14 @@ What exists now:
 - OpenClaw learning notes and local operational reminders
 - A devcontainer configuration for a Node.js-based local development environment
 - A local `.env` file used by the devcontainer, with `.env.example` as the committed template
+- A temporary `skills-lab/` sandbox for isolated OpenClaw skill experiments
 
 What does not exist yet:
 
 - `package.json`, `src/`, `app/`, or any checked-in application code
 - A committed `deskclaw-workspace/` or equivalent OpenClaw workspace
-- Knowledge-base markdown files like `shipping.md` and `returns.md`
-- Implemented skills such as `sentiment_router.js` or `policy_oracle.js`
+- Final DeskClaw knowledge-base markdown files like `shipping.md` and `returns.md`
+- Final implemented skills such as `sentiment-router` or `search-products`
 - Product catalog fixtures, SQLite databases, or channel integrations
 - CI, linting, tests, or deployment automation
 
@@ -90,6 +91,7 @@ deskclaw-workspace/
     shipping.md
     returns.md
     faq.md
+    product-care.md
   catalog/
     products.json
   scenarios/
@@ -97,12 +99,26 @@ deskclaw-workspace/
     sales-chat.md
     frustration-chat.md
   skills/
-    sentiment_router.js
-    policy_oracle.js
-    search_products.js
+    policy-oracle/
+      SKILL.md
+      references/
+        faq.md
+        product-care.md
+        returns.md
+        shipping.md
+    search-products/
+      SKILL.md
+    sentiment-router/
+      SKILL.md
 ```
 
 This layout is **planned**, not present yet. If the team later prefers SQLite instead of JSON for catalog data, that can change without changing the main project direction.
+
+The current `skills-lab/` folder is a temporary pre-workspace experiment. Its
+first working OpenClaw-style skill is `skills-lab/skills/policy-oracle/`, which
+must be copied into `/home/node/.openclaw/workspace/skills/policy-oracle/` for
+automatic TUI testing. It now includes bundled references for shipping, returns,
+FAQ, and product care.
 
 ## Repository Map
 
@@ -155,7 +171,7 @@ The current dev environment is defined in [`.devcontainer/devcontainer.json`](/w
 - Use the current root markdown files as the build baseline and keep them synchronized with implementation changes
 - Keep docs synchronized with implementation changes; this repo currently depends heavily on documentation accuracy
 - If any kept context file becomes outdated, inconsistent, contradicted by implementation, or missing an important project decision, update that markdown file during that same task instead of leaving it stale for later
-- Prefer small, inspectable local files for the first MVP: markdown knowledge, simple JavaScript skills, straightforward config
+- Prefer small, inspectable local files for the first MVP: markdown knowledge, OpenClaw AgentSkills, straightforward config
 - If new code is added, also add the missing project scaffolding around it: package manager manifest, scripts, and basic verification steps
 - Do not commit secrets, generated auth files, or personal OpenClaw workspace state
 - Prefer simulated or local test flows before attempting real channel integrations
@@ -189,11 +205,12 @@ If future work wants to add any of the deferred ideas, update the proposal-facin
 If development starts from this repo, the likely order is:
 
 1. Create `deskclaw-workspace/` and the initial OpenClaw config files from the MVP plan
-2. Add the first local knowledge documents and a small starter product catalog
-3. Implement `sentiment_router`, `policy_oracle`, and a minimal product search skill
-4. Verify OpenClaw can talk to Ollama through the forwarded gateway setup
-5. Add scripted conversation fixtures for support, sales, and escalation testing
-6. Only after that, consider extensions beyond the currently presented proposal scope
+2. Finish validating `skills-lab/skills/policy-oracle/` with automatic skill/reference-file access
+3. Add the first final local knowledge documents and a small starter product catalog
+4. Implement `sentiment-router`, `policy-oracle`, and a minimal product search skill in the final workspace
+5. Verify OpenClaw can talk to Ollama through the forwarded gateway setup
+6. Add scripted conversation fixtures for support, sales, and escalation testing
+7. Only after that, consider extensions beyond the currently presented proposal scope
 
 ## Summary
 

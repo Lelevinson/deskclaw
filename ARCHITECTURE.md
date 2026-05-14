@@ -3,7 +3,7 @@
 ## 1. The Stack
 
 *   **Infrastructure:** Docker Dev Container (Windows WSL2 / local devcontainer workflow)
-*   **AI Engine:** Local Ollama model `gemma4:e4b` via `http://host.docker.internal:11434`
+*   **AI Engine:** Target local Ollama model `gemma4:e4b` via `http://host.docker.internal:11434`; `openai-codex/gpt-5.5` may be used temporarily for skill behavior debugging when the local model fails to follow the skill prompt.
 *   **Gateway:** OpenClaw on `ws://127.0.0.1:18789`
 *   **Prototype Interface:** Simulated chat flow or lightweight local chat UI for demos and testing
 
@@ -16,15 +16,15 @@
 
 ## 3. Planned Local Data Sources
 
-*   **Knowledge Base:** Markdown files such as `shipping.md`, `returns.md`, and `faq.md`
+*   **Knowledge Base:** Markdown files such as `shipping.md`, `returns.md`, `faq.md`, and `product-care.md`
 *   **Product Data:** Small structured catalog in JSON or SQLite
 *   **Demo Inputs:** Scripted customer conversations for support, sales, and escalation scenarios
 
 ## 4. Planned Skills
 
-*   `policy_oracle`
-*   `search_products`
-*   `sentiment_router`
+*   `policy-oracle` (OpenClaw skill name)
+*   `search-products`
+*   `sentiment-router`
 *   `escalate_to_human`
 
 ## 5. Deferred Extensions

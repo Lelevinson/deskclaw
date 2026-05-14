@@ -10,6 +10,21 @@ do `pkill -9 -f openclaw`
 ### open openclaw workspace dir in vscode
 do `code /home/node/.openclaw/workspace`
 
+### openclaw custom skill location
+use `/home/node/.openclaw/workspace/skills/<skill-name>/SKILL.md`
+
+skill names should use lowercase letters, numbers, and hyphens, like `policy-oracle`
+
+copy the current lab skill with:
+
+```bash
+mkdir -p /home/node/.openclaw/workspace/skills/policy-oracle/references
+cp -R /workspaces/deskclaw/skills-lab/skills/policy-oracle/. /home/node/.openclaw/workspace/skills/policy-oracle/
+```
+
+### check loaded openclaw skills
+do `openclaw skills list`
+
 ### reset openclaw (full)
 do `openclaw reset` then `rm -rf /home/node/.openclaw/* /home/node/.openclaw/.[!.]*`
 
