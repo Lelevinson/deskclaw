@@ -2,20 +2,21 @@
 
 ## Purpose
 
-This repository is the planning and setup workspace for **DeskClaw**, a local-first conversational commerce agent for small D2C brands. The current project direction is now captured directly in the kept root context files, so development should rely on those files instead of any separate presentation script.
+This repository is the planning and setup workspace for **DeskClaw**, a local-first conversational commerce agent for small D2C brands. The current project direction is now captured directly in the kept context files, so development should rely on those files instead of any separate presentation script.
 
-At the time this file was created, the repo is **documentation-first**. It does **not** yet contain the actual DeskClaw application, OpenClaw workspace, skills, product catalog, or automated test suite. Most of the current value lives in the kept root context files and environment notes.
+At the time this file was created, the repo was **documentation-first**. It now contains the first repo-managed OpenClaw skill under `skills/policy-oracle/`, but it does **not** yet contain the actual DeskClaw application, full OpenClaw workspace, product catalog, or automated test suite. Most of the current value lives in the kept context files, environment notes, and early skill/test assets.
 
 ## Current State Of The Repo
 
 What exists now:
 
-- Project vision and proposal docs
+- Project vision and architecture docs
 - A current architecture blueprint and contributor guide
 - OpenClaw learning notes and local operational reminders
 - A devcontainer configuration for a Node.js-based local development environment
 - A local `.env` file used by the devcontainer, with `.env.example` as the committed template
-- A temporary `skills-lab/` sandbox for isolated OpenClaw skill experiments
+- A repo-managed `skills/` folder for shared OpenClaw AgentSkills
+- A `skills-lab/` folder for isolated skill test plans and scenarios
 
 What does not exist yet:
 
@@ -32,21 +33,22 @@ Treat this repository as the **project brief and bootstrap point**, not as a fin
 
 Use the files in this order when making decisions:
 
-1. [`PROPOSAL.md`](/workspaces/deskclaw/PROPOSAL.md): primary project scope, goals, and prototype narrative
-2. [`ARCHITECTURE.md`](/workspaces/deskclaw/ARCHITECTURE.md): current prototype architecture and scope boundaries
+1. [`ARCHITECTURE.md`](/workspaces/deskclaw/ARCHITECTURE.md): active prototype architecture, scope, and implementation boundary
+2. [`README.md`](/workspaces/deskclaw/README.md): teammate setup and repository map
 3. [`AGENTS.md`](/workspaces/deskclaw/AGENTS.md): contributor guidance and working agreements
-4. [`LEARNING.md`](/workspaces/deskclaw/LEARNING.md): OpenClaw environment notes and setup lessons
-5. [`notes.md`](/workspaces/deskclaw/notes.md): short local operational reminders
+4. [`docs/openclaw/LEARNING.md`](/workspaces/deskclaw/docs/openclaw/LEARNING.md): OpenClaw environment notes and setup lessons
+5. [`docs/openclaw/notes.md`](/workspaces/deskclaw/docs/openclaw/notes.md): short local operational reminders
+6. [`docs/archive/PROPOSAL.md`](/workspaces/deskclaw/docs/archive/PROPOSAL.md): historical proposal/presentation snapshot only
 
 ## New Chat Bootstrap
 
 For a fresh chat in this repository, start by reading:
 
 1. [`AGENTS.md`](/workspaces/deskclaw/AGENTS.md)
-2. [`PROPOSAL.md`](/workspaces/deskclaw/PROPOSAL.md)
-3. [`ARCHITECTURE.md`](/workspaces/deskclaw/ARCHITECTURE.md)
+2. [`ARCHITECTURE.md`](/workspaces/deskclaw/ARCHITECTURE.md)
+3. [`README.md`](/workspaces/deskclaw/README.md)
 
-Read [`LEARNING.md`](/workspaces/deskclaw/LEARNING.md) and [`notes.md`](/workspaces/deskclaw/notes.md) when the task touches environment setup, OpenClaw operations, devcontainer behavior, or local tooling problems.
+Read [`docs/openclaw/LEARNING.md`](/workspaces/deskclaw/docs/openclaw/LEARNING.md) and [`docs/openclaw/notes.md`](/workspaces/deskclaw/docs/openclaw/notes.md) when the task touches environment setup, OpenClaw operations, devcontainer behavior, or local tooling problems.
 
 ## Intended Product
 
@@ -80,9 +82,27 @@ The implementation details should now be rebuilt directly from the current repo 
 
 ## Proposed Initial File Layout
 
-An initial implementation layout that matches the current proposal would likely look like:
+An initial implementation layout that matches the current architecture would likely look like:
 
 ```text
+skills/
+  policy-oracle/
+    SKILL.md
+    references/
+      faq.md
+      product-care.md
+      returns.md
+      shipping.md
+  search-products/
+    SKILL.md
+  sentiment-router/
+    SKILL.md
+
+skills-lab/
+  test-plan.md
+  scenarios/
+    policy-oracle-tests.md
+
 deskclaw-workspace/
   openclaw.config.json
   SOUL.md
@@ -98,27 +118,11 @@ deskclaw-workspace/
     support-chat.md
     sales-chat.md
     frustration-chat.md
-  skills/
-    policy-oracle/
-      SKILL.md
-      references/
-        faq.md
-        product-care.md
-        returns.md
-        shipping.md
-    search-products/
-      SKILL.md
-    sentiment-router/
-      SKILL.md
 ```
 
-This layout is **planned**, not present yet. If the team later prefers SQLite instead of JSON for catalog data, that can change without changing the main project direction.
+This layout is **partially present**: `skills/policy-oracle/` and the `skills-lab/` policy-oracle test materials exist, while the full `deskclaw-workspace/`, product catalog, and remaining skills are still planned.
 
-The current `skills-lab/` folder is a temporary pre-workspace experiment. Its
-first working OpenClaw-style skill is `skills-lab/skills/policy-oracle/`, which
-must be copied into `/home/node/.openclaw/workspace/skills/policy-oracle/` for
-automatic TUI testing. It now includes bundled references for shipping, returns,
-FAQ, and product care.
+The current `skills/policy-oracle/` folder is the first repo-managed OpenClaw-style skill. Configure OpenClaw once with `skills.load.extraDirs` so it scans `/workspaces/deskclaw/skills`. The `skills-lab/` folder now holds evaluation plans and scenarios, not the canonical skill source.
 
 ## Repository Map
 
@@ -127,10 +131,14 @@ Important files and folders currently in the repo:
 - [`README.md`](/workspaces/deskclaw/README.md): public project introduction and teammate development setup
 - [`.devcontainer/devcontainer.json`](/workspaces/deskclaw/.devcontainer/devcontainer.json): local development container definition
 - [`ARCHITECTURE.md`](/workspaces/deskclaw/ARCHITECTURE.md): short architecture snapshot
-- [`PROPOSAL.md`](/workspaces/deskclaw/PROPOSAL.md): proposal narrative with objectives and methodology
-- [`LEARNING.md`](/workspaces/deskclaw/LEARNING.md): OpenClaw operational notes and lessons learned
-- [`notes.md`](/workspaces/deskclaw/notes.md): short command reminders for local OpenClaw usage
+- [`docs/README.md`](/workspaces/deskclaw/docs/README.md): supporting documentation map
+- [`docs/archive/PROPOSAL.md`](/workspaces/deskclaw/docs/archive/PROPOSAL.md): archived proposal narrative with objectives and methodology
+- [`docs/openclaw/LEARNING.md`](/workspaces/deskclaw/docs/openclaw/LEARNING.md): OpenClaw operational notes and lessons learned
+- [`docs/openclaw/notes.md`](/workspaces/deskclaw/docs/openclaw/notes.md): short command reminders for local OpenClaw usage
 - [`.gitignore`](/workspaces/deskclaw/.gitignore): ignores local secret files such as `.env`
+- [`.gitattributes`](/workspaces/deskclaw/.gitattributes): keeps common text files on LF line endings across Windows/devcontainer workflows
+- [`skills/`](/workspaces/deskclaw/skills): repo-managed OpenClaw skills that teammates can review and share
+- [`skills-lab/`](/workspaces/deskclaw/skills-lab): skill test plans and scripted evaluation prompts
 
 ## Development Environment
 
@@ -163,15 +171,17 @@ The current dev environment is defined in [`.devcontainer/devcontainer.json`](/w
 ## Working Agreements For Contributors
 
 - Be explicit about what is **implemented** versus what is only **planned**
-- Treat [`PROPOSAL.md`](/workspaces/deskclaw/PROPOSAL.md) and [`ARCHITECTURE.md`](/workspaces/deskclaw/ARCHITECTURE.md) as the current scope lock unless the team decides to revise the project direction
-- In a new chat, read [`AGENTS.md`](/workspaces/deskclaw/AGENTS.md), [`PROPOSAL.md`](/workspaces/deskclaw/PROPOSAL.md), and [`ARCHITECTURE.md`](/workspaces/deskclaw/ARCHITECTURE.md) before making scope assumptions
+- Treat [`ARCHITECTURE.md`](/workspaces/deskclaw/ARCHITECTURE.md) as the current scope lock unless the team decides to revise the project direction
+- In a new chat, read [`AGENTS.md`](/workspaces/deskclaw/AGENTS.md), [`ARCHITECTURE.md`](/workspaces/deskclaw/ARCHITECTURE.md), and [`README.md`](/workspaces/deskclaw/README.md) before making scope assumptions
 - On every new user prompt or task, re-check whether any kept context file needs an update before finishing the work
 - Use the project-level Context7 MCP server when current library, framework, setup, configuration, or API documentation would reduce guesswork; resolve the relevant library or tool docs through Context7 instead of relying only on memory.
 - Preserve the project's local-first and privacy-first assumptions unless the user approves a change in direction
-- Use the current root markdown files as the build baseline and keep them synchronized with implementation changes
+- Use `ARCHITECTURE.md`, `README.md`, `AGENTS.md`, and the supporting docs under `docs/` as the build baseline and keep them synchronized with implementation changes
 - Keep docs synchronized with implementation changes; this repo currently depends heavily on documentation accuracy
 - If any kept context file becomes outdated, inconsistent, contradicted by implementation, or missing an important project decision, update that markdown file during that same task instead of leaving it stale for later
 - Prefer small, inspectable local files for the first MVP: markdown knowledge, OpenClaw AgentSkills, straightforward config
+- Keep shared skills in repo-level `skills/`; use local OpenClaw config `skills.load.extraDirs` to scan that folder instead of copying skill files into `/home/node/.openclaw/workspace/skills/`
+- Treat large all-file diffs with equal insertions/deletions as possible line-ending churn; check before committing
 - If new code is added, also add the missing project scaffolding around it: package manager manifest, scripts, and basic verification steps
 - Do not commit secrets, generated auth files, or personal OpenClaw workspace state
 - Prefer simulated or local test flows before attempting real channel integrations
@@ -190,7 +200,7 @@ Commit subjects should be concise, lowercase after the prefix, and written as `<
 
 ## Scope Guardrails
 
-To stay aligned with the current proposal presented to the teacher:
+To stay aligned with the current MVP scope:
 
 - Do **not** treat Gmail integration as part of the active project scope
 - Do **not** treat appointment-booking skills as part of the active project scope
@@ -198,20 +208,20 @@ To stay aligned with the current proposal presented to the teacher:
 - Do **not** assume deep-link onboarding, QR flows, promo-code generation, or a custom human dashboard are required in the first implementation pass
 - Do treat support answers, basic product assistance, local orchestration, and frustration-based human escalation as the core project
 
-If future work wants to add any of the deferred ideas, update the proposal-facing docs first or clearly mark the new work as an extension.
+If future work wants to add any of the deferred ideas, update `ARCHITECTURE.md` first or clearly mark the new work as an extension. Update the archived proposal only if the team needs a revised presentation artifact.
 
 ## Practical Next Steps
 
 If development starts from this repo, the likely order is:
 
 1. Create `deskclaw-workspace/` and the initial OpenClaw config files from the MVP plan
-2. Finish validating `skills-lab/skills/policy-oracle/` with automatic skill/reference-file access
+2. Finish validating `skills/policy-oracle/` with automatic skill/reference-file access through `skills.load.extraDirs`
 3. Add the first final local knowledge documents and a small starter product catalog
 4. Implement `sentiment-router`, `policy-oracle`, and a minimal product search skill in the final workspace
 5. Verify OpenClaw can talk to Ollama through the forwarded gateway setup
 6. Add scripted conversation fixtures for support, sales, and escalation testing
-7. Only after that, consider extensions beyond the currently presented proposal scope
+7. Only after that, consider extensions beyond the current MVP scope
 
 ## Summary
 
-The repo currently represents **DeskClaw as a well-defined concept with an early implementation plan**, not a built product. The clearest development path is to treat [`PROPOSAL.md`](/workspaces/deskclaw/PROPOSAL.md) and [`ARCHITECTURE.md`](/workspaces/deskclaw/ARCHITECTURE.md) as the scope anchor, then create the first real project assets around a local OpenClaw prototype for support, basic product assistance, and safe human handoff.
+The repo currently represents **DeskClaw as a well-defined concept with an early implementation plan**, not a built product. The clearest development path is to treat [`ARCHITECTURE.md`](/workspaces/deskclaw/ARCHITECTURE.md) as the scope anchor, then create the first real project assets around a local OpenClaw prototype for support, basic product assistance, and safe human handoff.

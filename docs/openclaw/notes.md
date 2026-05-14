@@ -10,20 +10,32 @@ do `pkill -9 -f openclaw`
 ### open openclaw workspace dir in vscode
 do `code /home/node/.openclaw/workspace`
 
-### openclaw custom skill location
-use `/home/node/.openclaw/workspace/skills/<skill-name>/SKILL.md`
+### openclaw repo skill location
+use `/workspaces/deskclaw/skills/<skill-name>/SKILL.md` as the shared source of truth
 
 skill names should use lowercase letters, numbers, and hyphens, like `policy-oracle`
 
-copy the current lab skill with:
+### configure openclaw to scan repo skills
+do this once per devcontainer/OpenClaw volume:
 
 ```bash
-mkdir -p /home/node/.openclaw/workspace/skills/policy-oracle/references
-cp -R /workspaces/deskclaw/skills-lab/skills/policy-oracle/. /home/node/.openclaw/workspace/skills/policy-oracle/
+openclaw config set skills.load.extraDirs '["/workspaces/deskclaw/skills"]' --strict-json
+```
+
+confirm with `openclaw config get skills.load.extraDirs --json`
+
+### remove old copied workspace skill
+if `/home/node/.openclaw/workspace/skills/<skill-name>` exists with the same name, it wins over repo skills; remove it when testing repo-managed skills:
+
+```bash
+rm -rf /home/node/.openclaw/workspace/skills/<skill-name>
 ```
 
 ### check loaded openclaw skills
 do `openclaw skills list`
+
+### refresh skill behavior
+start a fresh TUI session with `/new`; restart gateway/TUI if the skill list still looks stale
 
 ### check openclaw version
 do `openclaw --version`

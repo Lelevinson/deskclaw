@@ -5,8 +5,9 @@
 *   **The Channels:** The input/output methods (Web UI, TUI, WhatsApp, Telegram).
 *   **The Workspace:** The hidden brain (`/home/node/.openclaw/workspace`).
     *   `AGENTS.md` / `SOUL.md`: Define the system prompts and personality.
-*   **Skills (MCP):** Node.js tools that the AI can execute (e.g., `read_file`, `goplaces`).
-*   **Workspace Skills:** OpenClaw discovers custom skills from `/home/node/.openclaw/workspace/skills/<skill-name>/SKILL.md`. Skill names should use lowercase letters, numbers, and hyphens. The current lab skill source is `skills-lab/skills/policy-oracle/`, but it must be copied into the OpenClaw workspace skill layout before the TUI can load it automatically.
+*   **Skills:** AgentSkills-style instruction folders that teach the agent how to use project references and tools.
+*   **Repo Skills:** DeskClaw shared skills live in `/workspaces/deskclaw/skills/<skill-name>/SKILL.md`.
+*   **OpenClaw Skill Roots:** OpenClaw scans configured skill roots. For this repo, configure `/workspaces/deskclaw/skills` with `skills.load.extraDirs` instead of copying files into `/home/node/.openclaw/workspace/skills/`.
 
 ## 2. Crucial Commands
 *   `openclaw onboard`: Setup wizard (skip daemon installation in Docker!).
@@ -15,6 +16,8 @@
 *   `openclaw sessions list`: View all chat histories.
 *   `openclaw reset`: Factory reset the configuration.
 *   `openclaw skills list`: Check which skills OpenClaw currently sees.
+*   `openclaw config set skills.load.extraDirs '["/workspaces/deskclaw/skills"]' --strict-json`: One-time setup so OpenClaw scans repo-managed skills.
+*   `openclaw config get skills.load.extraDirs --json`: Confirm the repo skill root is configured.
 *   `openclaw --version`: Check the installed OpenClaw package version.
 *   `npm install -g openclaw@latest`: Manually update OpenClaw inside the current devcontainer.
 
@@ -28,6 +31,9 @@
 *   **Local Models (Ollama):** Install Ollama natively on Windows, not in Docker. Connect OpenClaw to it using `http://host.docker.internal:11434`.
 *   **OpenClaw Updates in Devcontainer:** Reopening or restarting the container does not reinstall OpenClaw. A manual `npm install -g openclaw@latest` updates the package inside the current container and should remain on normal reopen/restart. A future container rebuild reruns `postCreateCommand`, which installs whatever `openclaw@latest` resolves to at that time.
 *   **OpenClaw Config Persistence:** OpenClaw runtime state lives in the mounted `/home/node/.openclaw` Docker volume, not in the container package install. Updating the global OpenClaw npm package should not wipe gateway, model, token, or workspace settings, though a newer OpenClaw version may migrate or rewrite config format when it first runs.
+*   **Repo Skill Workflow:** Develop shared skills in `skills/`, then use `skills.load.extraDirs` to let OpenClaw scan that folder. Do not use `/home/node/.openclaw/workspace/skills/` as the project source of truth because it is local runtime state.
+*   **Skill Precedence:** If a skill with the same name exists in `/home/node/.openclaw/workspace/skills/`, that workspace copy wins over `skills.load.extraDirs`. Remove copied workspace skills when testing the repo-managed version.
+*   **Skill Reloading:** OpenClaw builds a skill snapshot per session. The watcher may hot-reload `SKILL.md` changes, but `/new` is the reliable way to test updated skill names, descriptions, and instructions.
 *   **Model Debugging:** `policy-oracle` has worked with `openai-codex/gpt-5.5`. If `ollama/gemma4:e4b` gives generic "no task found" answers, separate that as a model/prompt-following issue from OpenClaw skill file access.
 *   **Dashboard Token in Devcontainers:** The dashboard may open in the host browser without the tokenized bootstrap URL because the container has no GUI/clipboard. If the page loads but asks for a gateway token, reveal it locally with:
     ```bash

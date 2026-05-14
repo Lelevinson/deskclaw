@@ -1,5 +1,7 @@
 # DeskClaw: Full-Lifecycle Conversational Commerce Agent
 
+> Historical proposal snapshot. Use the root `ARCHITECTURE.md` as the current implementation source of truth.
+
 ## 1. Presentation Title
 **DeskClaw: Full-Lifecycle Conversational Commerce Agent for Local D2C Brands**
 *Members: [Your Name/Team]*
