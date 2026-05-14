@@ -25,6 +25,16 @@ cp -R /workspaces/deskclaw/skills-lab/skills/policy-oracle/. /home/node/.opencla
 ### check loaded openclaw skills
 do `openclaw skills list`
 
+### check openclaw version
+do `openclaw --version`
+
+### manually update openclaw in the current container
+do `npm install -g openclaw@latest`
+
+normal container reopen/restart keeps the manually updated package; a future container rebuild reruns `postCreateCommand` and installs whatever `openclaw@latest` is at rebuild time
+
+OpenClaw config and workspace state live in the persistent `/home/node/.openclaw` Docker volume, so a package update should not wipe model, gateway, token, or workspace settings; a newer OpenClaw may still migrate/rewrite config format on first run
+
 ### reset openclaw (full)
 do `openclaw reset` then `rm -rf /home/node/.openclaw/* /home/node/.openclaw/.[!.]*`
 

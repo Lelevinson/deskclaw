@@ -15,6 +15,8 @@
 *   `openclaw sessions list`: View all chat histories.
 *   `openclaw reset`: Factory reset the configuration.
 *   `openclaw skills list`: Check which skills OpenClaw currently sees.
+*   `openclaw --version`: Check the installed OpenClaw package version.
+*   `npm install -g openclaw@latest`: Manually update OpenClaw inside the current devcontainer.
 
 ## 3. Important Fixes (Docker on Windows)
 *   **The "Local Install" Deadlock:** Do not run `npm install openclaw` in the shared workspace. The Windows-to-Linux bridge chokes on file I/O.
@@ -24,6 +26,8 @@
 *   **Context7 MCP:** Project-level Codex MCP config lives locally in ignored `.codex/config.toml`. Keep any `CONTEXT7_API_KEY` value in local `.env` or local Codex config only.
 *   **The Zombie Process:** If the gateway refuses to stop and blocks port `18789`, kill it manually: `pkill -9 -f openclaw`.
 *   **Local Models (Ollama):** Install Ollama natively on Windows, not in Docker. Connect OpenClaw to it using `http://host.docker.internal:11434`.
+*   **OpenClaw Updates in Devcontainer:** Reopening or restarting the container does not reinstall OpenClaw. A manual `npm install -g openclaw@latest` updates the package inside the current container and should remain on normal reopen/restart. A future container rebuild reruns `postCreateCommand`, which installs whatever `openclaw@latest` resolves to at that time.
+*   **OpenClaw Config Persistence:** OpenClaw runtime state lives in the mounted `/home/node/.openclaw` Docker volume, not in the container package install. Updating the global OpenClaw npm package should not wipe gateway, model, token, or workspace settings, though a newer OpenClaw version may migrate or rewrite config format when it first runs.
 *   **Model Debugging:** `policy-oracle` has worked with `openai-codex/gpt-5.5`. If `ollama/gemma4:e4b` gives generic "no task found" answers, separate that as a model/prompt-following issue from OpenClaw skill file access.
 *   **Dashboard Token in Devcontainers:** The dashboard may open in the host browser without the tokenized bootstrap URL because the container has no GUI/clipboard. If the page loads but asks for a gateway token, reveal it locally with:
     ```bash

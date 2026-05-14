@@ -61,6 +61,14 @@ The devcontainer:
 
 OpenClaw is intentionally installed globally inside the container instead of inside the shared repository folder. This avoids slow or fragile file operations across Windows/macOS host mounts.
 
+Reopening or restarting the devcontainer keeps the already installed OpenClaw package version. Rebuilding the container reruns `postCreateCommand`, so it installs the latest OpenClaw available at rebuild time. To manually update OpenClaw inside the current container, run:
+
+```bash
+npm install -g openclaw@latest
+```
+
+OpenClaw config and workspace state live in the persistent `/home/node/.openclaw` volume, so a package update should not wipe gateway, model, token, or workspace settings. A newer OpenClaw version may still migrate or rewrite its config format when it first runs.
+
 ### Context7 MCP For Codex
 
 Use a local, project-scoped Codex MCP config at `.codex/config.toml` for Context7. The `.codex/` folder is intentionally ignored so local Codex state and API keys do not get committed.
@@ -89,6 +97,7 @@ openclaw onboard
 openclaw gateway
 openclaw tui
 openclaw skills list
+openclaw --version
 openclaw sessions list
 openclaw reset
 ```
