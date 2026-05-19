@@ -20,21 +20,23 @@ This is the active implementation source of truth. The original proposal now liv
 
 *   **Implemented:** repo-managed `policy-oracle` OpenClaw skill in `skills/policy-oracle/`
 *   **Implemented:** policy reference markdown for shipping, returns, FAQ, and product care under the skill's `references/`
-*   **Implemented:** policy-oracle test plan and scenarios in `skills-lab/`
+*   **Added for validation:** repo-managed `search-products` skill in `skills/search-products/` with a small JSON demo catalog
+*   **Added for validation:** repo-managed `sentiment-router` skill in `skills/sentiment-router/` with local escalation rules
+*   **Implemented:** policy, product-search, and sentiment-router scenarios in `skills-lab/`
 *   **Local setup:** OpenClaw scans `/workspaces/deskclaw/skills` through `skills.load.extraDirs`
-*   **Not yet implemented:** product catalog, product-search skill, sentiment-routing skill, final `deskclaw-workspace/`, and full scripted demo conversations
+*   **Not yet implemented:** final `deskclaw-workspace/`, production-style catalog location, and full scripted demo conversations
 
 ## 4. Planned Local Data Sources
 
 *   **Knowledge Base:** Markdown files such as `shipping.md`, `returns.md`, `faq.md`, and `product-care.md`; the first policy references currently live under `skills/policy-oracle/references/`
-*   **Product Data:** Small structured catalog in JSON or SQLite
+*   **Product Data:** Small structured catalog in JSON or SQLite; the first demo catalog currently lives under `skills/search-products/references/products.json`
 *   **Demo Inputs:** Scripted customer conversations for support, sales, and escalation scenarios
 
 ## 5. Skill Layout
 
-*   `policy-oracle`: first repo-managed OpenClaw skill, located at `skills/policy-oracle/`
-*   `search-products`: planned
-*   `sentiment-router`: planned
+*   `policy-oracle`: repo-managed OpenClaw skill, located at `skills/policy-oracle/`
+*   `search-products`: repo-managed OpenClaw skill, located at `skills/search-products/`
+*   `sentiment-router`: repo-managed OpenClaw skill, located at `skills/sentiment-router/`
 *   `escalate-to-human`: planned
 
 OpenClaw should scan the repo-level `skills/` folder through local config:
@@ -56,6 +58,6 @@ These are possible later additions, but not part of the current MVP scope:
 
 ## 7. Open Questions
 
-*Should the first product catalog use JSON or SQLite?*
+*Should the final workspace product catalog stay JSON or move to SQLite?*
 *What exact frustration signals should trigger escalation?*
 *What is the best minimal simulated chat interface for the prototype demo?*

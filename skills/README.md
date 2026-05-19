@@ -44,6 +44,12 @@ search-products
 sentiment-router
 ```
 
+## Current skills
+
+- `policy-oracle`: answers shipping, returns, FAQ, warranty, and product-care policy questions from bundled markdown references.
+- `search-products`: recommends products from a bundled demo JSON catalog.
+- `sentiment-router`: classifies customer messages as `continue`, `handoff_recommended`, or `urgent_handoff` using bundled escalation rules.
+
 ## Development loop
 
 1. Edit or add a skill under `skills/<skill-name>/`.

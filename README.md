@@ -12,20 +12,21 @@ The original proposal is archived at [`docs/archive/PROPOSAL.md`](docs/archive/P
 
 ## Current Status
 
-The repo is still early and documentation-heavy, but it now has the first repo-managed OpenClaw skill folder under `skills/`.
+The repo is still early and documentation-heavy, but it now has the first repo-managed OpenClaw skill folders under `skills/`.
 
 What exists now:
 
 - Proposal, architecture, contributor, and setup notes
 - Devcontainer configuration for local OpenClaw/Ollama development
 - Repo-managed `policy-oracle` skill in `skills/policy-oracle/`
-- `skills-lab/` scenario and test-plan material for policy-oracle evaluation
+- Repo-managed `search-products` skill in `skills/search-products/`
+- Repo-managed `sentiment-router` skill in `skills/sentiment-router/`
+- `skills-lab/` scenario and test-plan material for skill evaluation
 
 What is still planned:
 
 - Full DeskClaw/OpenClaw workspace files
-- Product catalog fixtures
-- Product-search and sentiment-routing skills
+- Final production-style product catalog location
 - Full scripted support, sales, and escalation demo conversations
 
 ## File Guide
@@ -163,6 +164,8 @@ skills-lab/
   test-plan.md
   scenarios/
     policy-oracle-tests.md
+    search-products-tests.md
+    sentiment-router-tests.md
 ```
 
 This folder is for isolated skill evaluation notes and scenarios only. Actual shared OpenClaw skills live in the repo-level `skills/` folder.
@@ -178,6 +181,14 @@ skills/
       product-care.md
       returns.md
       shipping.md
+  search-products/
+    SKILL.md
+    references/
+      products.json
+  sentiment-router/
+    SKILL.md
+    references/
+      escalation-rules.md
 ```
 
 ## Planned Prototype Layout
@@ -195,13 +206,19 @@ skills/
       shipping.md
   search-products/
     SKILL.md
+    references/
+      products.json
   sentiment-router/
     SKILL.md
+    references/
+      escalation-rules.md
 
 skills-lab/
   test-plan.md
   scenarios/
     policy-oracle-tests.md
+    search-products-tests.md
+    sentiment-router-tests.md
 
 deskclaw-workspace/
   openclaw.config.json

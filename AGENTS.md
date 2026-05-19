@@ -4,7 +4,7 @@
 
 This repository is the planning and setup workspace for **DeskClaw**, a local-first conversational commerce agent for small D2C brands. The current project direction is now captured directly in the kept context files, so development should rely on those files instead of any separate presentation script.
 
-At the time this file was created, the repo was **documentation-first**. It now contains the first repo-managed OpenClaw skill under `skills/policy-oracle/`, but it does **not** yet contain the actual DeskClaw application, full OpenClaw workspace, product catalog, or automated test suite. Most of the current value lives in the kept context files, environment notes, and early skill/test assets.
+At the time this file was created, the repo was **documentation-first**. It now contains the first repo-managed OpenClaw skills under `skills/`, but it does **not** yet contain the actual DeskClaw application, full OpenClaw workspace, production catalog location, or automated test suite. Most of the current value lives in the kept context files, environment notes, and early skill/test assets.
 
 ## Current State Of The Repo
 
@@ -17,14 +17,14 @@ What exists now:
 - A local `.env` file used by the devcontainer, with `.env.example` as the committed template
 - A repo-managed `skills/` folder for shared OpenClaw AgentSkills
 - A `skills-lab/` folder for isolated skill test plans and scenarios
+- Early local references for policy answers, product recommendations, and escalation routing
 
 What does not exist yet:
 
 - `package.json`, `src/`, `app/`, or any checked-in application code
 - A committed `deskclaw-workspace/` or equivalent OpenClaw workspace
-- Final DeskClaw knowledge-base markdown files like `shipping.md` and `returns.md`
-- Final implemented skills such as `sentiment-router` or `search-products`
-- Product catalog fixtures, SQLite databases, or channel integrations
+- Final DeskClaw workspace knowledge-base markdown files like `shipping.md` and `returns.md`
+- Final production-style product catalog location, SQLite databases, or channel integrations
 - CI, linting, tests, or deployment automation
 
 Treat this repository as the **project brief and bootstrap point**, not as a finished software system.
@@ -95,13 +95,19 @@ skills/
       shipping.md
   search-products/
     SKILL.md
+    references/
+      products.json
   sentiment-router/
     SKILL.md
+    references/
+      escalation-rules.md
 
 skills-lab/
   test-plan.md
   scenarios/
     policy-oracle-tests.md
+    search-products-tests.md
+    sentiment-router-tests.md
 
 deskclaw-workspace/
   openclaw.config.json
@@ -120,9 +126,9 @@ deskclaw-workspace/
     frustration-chat.md
 ```
 
-This layout is **partially present**: `skills/policy-oracle/` and the `skills-lab/` policy-oracle test materials exist, while the full `deskclaw-workspace/`, product catalog, and remaining skills are still planned.
+This layout is **partially present**: `skills/policy-oracle/`, `skills/search-products/`, `skills/sentiment-router/`, and the `skills-lab/` scenario materials exist, while the full `deskclaw-workspace/`, final catalog location, and full demo conversations are still planned.
 
-The current `skills/policy-oracle/` folder is the first repo-managed OpenClaw-style skill. Configure OpenClaw once with `skills.load.extraDirs` so it scans `/workspaces/deskclaw/skills`. The `skills-lab/` folder now holds evaluation plans and scenarios, not the canonical skill source.
+The current `skills/` folder holds the repo-managed OpenClaw-style skills. Configure OpenClaw once with `skills.load.extraDirs` so it scans `/workspaces/deskclaw/skills`. The `skills-lab/` folder now holds evaluation plans and scenarios, not the canonical skill source.
 
 ## Repository Map
 
@@ -215,11 +221,12 @@ If future work wants to add any of the deferred ideas, update `ARCHITECTURE.md` 
 If development starts from this repo, the likely order is:
 
 1. Create `deskclaw-workspace/` and the initial OpenClaw config files from the MVP plan
-2. Finish validating `skills/policy-oracle/` with automatic skill/reference-file access through `skills.load.extraDirs`
-3. Add the first final local knowledge documents and a small starter product catalog
-4. Implement `sentiment-router`, `policy-oracle`, and a minimal product search skill in the final workspace
+2. Finish validating `skills/policy-oracle/`, `skills/search-products/`, and `skills/sentiment-router/` through `skills.load.extraDirs`
+3. Decide whether the final workspace catalog should stay JSON or move to SQLite
+4. Create the first final local knowledge documents, product catalog location, and workspace prompts
 5. Verify OpenClaw can talk to Ollama through the forwarded gateway setup
 6. Add scripted conversation fixtures for support, sales, and escalation testing
+7. Only after that, consider extensions beyond the current MVP scope
 7. Only after that, consider extensions beyond the current MVP scope
 
 ## Summary
