@@ -1,7 +1,5 @@
 # Shipping Policy
 
-This file is the only shipping policy source for the `policy-oracle` skills-lab test.
-
 ## Shipping options
 
 - Standard shipping takes 3-5 business days.

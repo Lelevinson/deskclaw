@@ -1,63 +1,101 @@
-# DeskClaw - Current Architecture Blueprint
+# DeskClaw Architecture
 
-This is the active implementation source of truth. The original proposal now lives at `docs/archive/PROPOSAL.md` for historical/presentation context.
+Single source of truth for **what we're building, what we're not, what's done, and what's planned**. If a scope/stack/status question can be answered, the answer lives in this file or nowhere.
 
-## 1. The Stack
+For OpenClaw commands and setup, see [`docs/openclaw/setup.md`](docs/openclaw/setup.md).
+For contributor rules and where-to-update guidance, see [`AGENTS.md`](AGENTS.md).
 
-*   **Infrastructure:** Docker Dev Container (Windows WSL2 / local devcontainer workflow)
-*   **AI Engine:** Target demo model is local Ollama `gemma4:e4b` via `http://host.docker.internal:11434`; `openai-codex/gpt-5.5` may be used temporarily for skill behavior debugging when the local model fails to follow the skill prompt.
-*   **Gateway:** OpenClaw on `ws://127.0.0.1:18789`
-*   **Prototype Interface:** Simulated chat flow or lightweight local chat UI for demos and testing
+## 1. Product
 
-## 2. Current Prototype Scope
+DeskClaw is a local-first conversational commerce agent prototype for small D2C brands. The prototype must demonstrate:
 
-*   **Automated Support:** Answer shipping, returns, and FAQ questions from local business documents
-*   **Basic Product Assistance:** Search a small local product catalog and recommend suitable items
-*   **Human Handoff Safety:** Detect frustration or sensitive cases and escalate to a human
-*   **Evaluation:** Validate the prototype with scripted support, sales, and frustration conversations
+- **Automated support** — answer policy and FAQ questions from local business documents.
+- **Basic product assistance** — search a small local catalog and recommend suitable items.
+- **Human handoff safety** — detect frustration or sensitive cases and escalate.
+- **Scripted evaluation** — validate behavior with support, sales, and frustration scenarios.
 
-## 3. Current Implementation Snapshot
+## 2. Stack
 
-*   **Implemented:** repo-managed `policy-oracle` OpenClaw skill in `skills/policy-oracle/`
-*   **Implemented:** policy reference markdown for shipping, returns, FAQ, and product care under the skill's `references/`
-*   **Added for validation:** repo-managed `search-products` skill in `skills/search-products/` with a small JSON demo catalog
-*   **Added for validation:** repo-managed `sentiment-router` skill in `skills/sentiment-router/` with local escalation rules
-*   **Implemented:** policy, product-search, and sentiment-router scenarios in `skills-lab/`
-*   **Local setup:** OpenClaw scans `/workspaces/deskclaw/skills` through `skills.load.extraDirs`
-*   **Not yet implemented:** final `deskclaw-workspace/`, production-style catalog location, and full scripted demo conversations
+| Layer | Choice |
+|---|---|
+| Infrastructure | Docker devcontainer (Windows WSL2 / local) |
+| Gateway | OpenClaw on `ws://127.0.0.1:18789` |
+| Models | Local Ollama (e.g. `gemma3:4b`) **or** `gpt-5.5` via the OpenAI Codex provider — either is acceptable, see [setup.md §5](docs/openclaw/setup.md#5-models) |
+| Interface | Simulated chat / OpenClaw TUI for demos and testing |
 
-## 4. Planned Local Data Sources
+## 3. Status
 
-*   **Knowledge Base:** Markdown files such as `shipping.md`, `returns.md`, `faq.md`, and `product-care.md`; the first policy references currently live under `skills/policy-oracle/references/`
-*   **Product Data:** Small structured catalog in JSON or SQLite; the first demo catalog currently lives under `skills/search-products/references/products.json`
-*   **Demo Inputs:** Scripted customer conversations for support, sales, and escalation scenarios
+**Implemented**
 
-## 5. Skill Layout
+- Repo-managed OpenClaw skills under [`skills/`](skills/): `policy-oracle`, `search-products`, `sentiment-router`
+- Policy references for shipping, returns, FAQ, and product care under `skills/policy-oracle/references/`
+- Demo product catalog under `skills/search-products/references/products.json`
+- Escalation rules under `skills/sentiment-router/references/escalation-rules.md`
+- Scripted test scenarios under [`skills-lab/scenarios/`](skills-lab/scenarios/)
+- Devcontainer + Ollama wiring + Codex provider + repo-skill loading via `skills.load.extraDirs`
 
-*   `policy-oracle`: repo-managed OpenClaw skill, located at `skills/policy-oracle/`
-*   `search-products`: repo-managed OpenClaw skill, located at `skills/search-products/`
-*   `sentiment-router`: repo-managed OpenClaw skill, located at `skills/sentiment-router/`
-*   `escalate-to-human`: planned
+**Not implemented**
 
-OpenClaw should scan the repo-level `skills/` folder through local config:
+- `deskclaw-workspace/` (workspace prompts, final catalog location, conversation fixtures)
+- `package.json`, `src/`, or any application code
+- Automated evaluation harness (the scenario files currently require manual TUI testing)
+- CI, linting, deployment
 
-```bash
-openclaw config set skills.load.extraDirs '["/workspaces/deskclaw/skills"]' --strict-json
+## 4. Planned file layout
+
+```text
+skills/                       # canonical, repo-managed
+  policy-oracle/
+    SKILL.md
+    references/{faq,product-care,returns,shipping}.md
+  search-products/
+    SKILL.md
+    references/products.json
+  sentiment-router/
+    SKILL.md
+    references/escalation-rules.md
+
+skills-lab/                   # evaluation only, not a skill source
+  README.md                   # how to run + pass/fail criteria
+  scenarios/
+    {policy-oracle,search-products,sentiment-router}-tests.md
+
+deskclaw-workspace/           # planned
+  openclaw.config.json
+  SOUL.md
+  AGENTS.md
+  knowledge/{shipping,returns,faq,product-care}.md
+  catalog/products.json
+  scenarios/{support,sales,frustration}-chat.md
 ```
 
-This keeps skill files version-controlled while leaving OpenClaw runtime state in `/home/node/.openclaw`. A copied skill in `/home/node/.openclaw/workspace/skills/` with the same name takes precedence and should be removed when testing the repo-managed version.
+The layout under `skills/` and `skills-lab/` is current; everything under `deskclaw-workspace/` is planned.
 
-## 6. Deferred Extensions
+## 5. Deferred extensions (out of MVP scope)
 
-These are possible later additions, but not part of the current MVP scope:
+These are explicitly **not** part of the first prototype. Adding any of them requires updating this file first.
 
-*   Real WhatsApp or Instagram integration
-*   Deep-link or QR-based onboarding/setup flows
-*   Dynamic discount or promo-code negotiation
-*   Custom Node.js/React dashboard for human handoff
+- Real WhatsApp / Instagram / Gmail integrations
+- Deep-link or QR onboarding flows
+- Dynamic discount / promo-code negotiation
+- Custom Node.js/React dashboard for human handoff
+- Appointment-booking skills
 
-## 7. Open Questions
+## 6. Open questions
 
-*Should the final workspace product catalog stay JSON or move to SQLite?*
-*What exact frustration signals should trigger escalation?*
-*What is the best minimal simulated chat interface for the prototype demo?*
+These need a decision before the next implementation step. Each should land in a commit that resolves it.
+
+- [ ] Should the final workspace catalog stay JSON or move to SQLite?
+- [ ] What exact frustration signals should trigger `urgent_handoff` vs `handoff_recommended`?
+- [ ] What is the minimal simulated chat interface for the demo (TUI only? lightweight web UI?)?
+- [ ] Is the demo brand intentionally Taiwan skincare (NT$, skincare catalog), or should the catalog be made domain-neutral?
+
+## 7. Source-of-truth order
+
+If two files disagree:
+
+1. `ARCHITECTURE.md` (this file) wins for scope, stack, and status
+2. `docs/openclaw/setup.md` wins for OpenClaw commands and operational fixes
+3. The actual skill files under `skills/` win for skill behavior
+4. `AGENTS.md` wins for contributor rules
+5. `docs/archive/PROPOSAL.md` is historical only — never authoritative

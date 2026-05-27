@@ -1,7 +1,5 @@
 # Sentiment and Escalation Rules
 
-This file is the local routing source for the `sentiment-router` skill.
-
 ## Continue automation
 
 Use `continue` when the customer is calm and the issue can be handled by normal support or product guidance.

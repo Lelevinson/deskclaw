@@ -1,7 +1,5 @@
 # Returns, Exchanges, and Refunds Policy
 
-This file is a local policy source for the `policy-oracle` skills-lab test.
-
 ## Return window
 
 - Customers may request a return within 7 days after the order is delivered.

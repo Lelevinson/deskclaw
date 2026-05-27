@@ -11,10 +11,13 @@
 	// can create their own sandbox inside the devcontainer.
 	"runArgs": ["--env-file", ".env", "--security-opt", "seccomp=unconfined"],
 
-	// mount CLI configs and OpenClaw data
+	// Mount CLI configs and OpenClaw data as named Docker volumes.
+	// These survive normal devcontainer rebuilds; only delete them when you
+	// intentionally want to reset local Codex/Gemini/OpenClaw state.
 	"mounts": [
 		"source=deskclaw-gemini,target=/home/node/.gemini,type=volume",
 		"source=deskclaw-codex,target=/home/node/.codex,type=volume",
+		"source=deskclaw-claude,target=/home/node/.claude,type=volume",
 		"source=deskclaw-data,target=/home/node/.openclaw,type=volume"
 	],
 
@@ -34,12 +37,14 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "sudo apt-get update && sudo apt-get install -y bubblewrap && sudo mkdir -p /home/node/.codex/sessions /home/node/.gemini /home/node/.openclaw && sudo chown -R node:node /home/node/.codex /home/node/.gemini /home/node/.openclaw && npm install -g @google/gemini-cli @openai/codex openclaw@latest",
+	"postCreateCommand": "sudo apt-get update && sudo apt-get install -y bubblewrap && sudo mkdir -p /home/node/.codex/sessions /home/node/.gemini /home/node/.claude /home/node/.openclaw && sudo chown -R node:node /home/node/.codex /home/node/.gemini /home/node/.claude /home/node/.openclaw && npm install -g @google/gemini-cli @openai/codex @anthropic-ai/claude-code openclaw@latest",
 
 	// Configure tool-specific properties.
 	"customizations": {
 		"vscode": {
-			"extensions": ["openai.chatgpt"]
+			// Install the OpenAI Codex/ChatGPT extension in the remote VS Code window.
+			// The Dev Containers extension itself must still be installed on the host.
+			"extensions": ["OpenAI.chatgpt", "Anthropic.claude-code"]
 		}
 	},
 

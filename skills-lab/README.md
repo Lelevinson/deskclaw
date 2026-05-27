@@ -1,130 +1,62 @@
-# Skills Lab
+# skills-lab/
 
-`skills-lab/` contains test plans and scripted scenarios for checking individual OpenClaw skill ideas before building the full DeskClaw workspace.
+Test plans and scripted scenarios for checking individual skills before the full DeskClaw workspace exists. **This is evaluation only.** Skill sources of truth live under [`../skills/`](../skills/), not here.
 
-It is **not** the skill source of truth and not the final application workspace. Do not put production integrations, customer data, social-channel setup, dashboards, or long-term OpenClaw runtime state here.
+For OpenClaw setup and the `skills.load.extraDirs` command, see [`../docs/openclaw/setup.md`](../docs/openclaw/setup.md).
 
-## Current experiments
-
-The current skill experiments are:
-
-- `policy-oracle`: answer customer policy questions using bundled policy references.
-- `search-products`: recommend products using a bundled demo product catalog.
-- `sentiment-router`: decide whether automation should continue or hand off to a human.
-
-The agent should:
-
-- Read only the relevant local references under `/workspaces/deskclaw/skills/<skill-name>/references/`.
-- Answer only with facts found in those references.
-- Avoid inventing policy details, product facts, or escalation actions.
-- Say the information is not available when the relevant reference does not mention it.
-- Suggest human confirmation or handoff when the skill rules call for it.
-
-## Folder layout
+## Layout
 
 ```text
 skills-lab/
   README.md
-  test-plan.md
   scenarios/
     policy-oracle-tests.md
     search-products-tests.md
     sentiment-router-tests.md
 ```
 
-The OpenClaw-ready skill structures live outside this lab:
+## How to run the scenarios
 
-```text
-../skills/
-  policy-oracle/
-    SKILL.md
-    references/
-      faq.md
-      product-care.md
-      returns.md
-      shipping.md
-  search-products/
-    SKILL.md
-    references/
-      products.json
-  sentiment-router/
-    SKILL.md
-    references/
-      escalation-rules.md
-```
+1. Confirm OpenClaw is configured and can see the skills:
 
-## How to test as an OpenClaw skill
+   ```bash
+   openclaw skills list
+   ```
 
-Configure OpenClaw once so it scans the repo-managed skills folder:
+   `policy-oracle`, `search-products`, and `sentiment-router` should appear. If they don't, see [`setup.md`](../docs/openclaw/setup.md).
 
-```bash
-openclaw config set skills.load.extraDirs '["/workspaces/deskclaw/skills"]' --strict-json
-```
+2. Start the gateway and TUI:
 
-If older copied skills exist with the same names, remove them so the repo-managed skills are the versions under test:
+   ```bash
+   openclaw gateway
+   openclaw tui
+   ```
 
-```bash
-rm -rf /home/node/.openclaw/workspace/skills/policy-oracle
-rm -rf /home/node/.openclaw/workspace/skills/search-products
-rm -rf /home/node/.openclaw/workspace/skills/sentiment-router
-```
+3. In the TUI, start a fresh session with `/new`, then paste prompts from `scenarios/<skill>-tests.md`. The agent should answer from bundled references — you should never need to paste reference text into the chat.
 
-Then check whether OpenClaw sees the skills:
+## Expected agent behavior
 
-```bash
-openclaw skills list
-```
+The agent should:
 
-Start or restart the gateway and TUI:
+1. Use only the bundled skill `references/` as facts.
+2. Answer directly when the reference contains the information.
+3. Say *"the available reference does not mention that"* when the information is missing — never invent.
+4. Suggest a human teammate or trigger handoff when the skill's rules require it.
 
-```bash
-openclaw gateway
-```
+## Pass / fail criteria
 
-```bash
-openclaw tui
-```
+A scenario **passes** if the answer:
 
-In the TUI, start a fresh session:
+- Matches a fact in the relevant bundled reference, or clearly states the reference doesn't cover it.
+- Adds no unsupported details (carrier names, cut-off times, coupon codes, payment methods, medical claims, product-specific compatibility, internal support actions).
+- Uses a helpful customer-service tone.
 
-```text
-/new
-```
+A scenario **fails** if the answer:
 
-Then ask one of the scenario prompts, for example:
+- Invents a policy, product, or routing detail not in the references.
+- Gives a confident answer for information that is actually missing.
+- Mentions future integrations or final-application features that are not part of the skill.
 
-```text
-Use the policy-oracle skill. How long does standard shipping take?
-```
+## Known model behavior
 
-Continue with the remaining questions in `scenarios/`.
-You should not need to paste reference text into the chat.
-
-## Important path note
-
-This lab lives in the git repo at:
-
-```text
-/workspaces/deskclaw/skills-lab/
-```
-
-The canonical skills live in:
-
-```text
-/workspaces/deskclaw/skills/
-```
-
-OpenClaw does not use `skills-lab/` directly. It loads the skill from the configured repo skill root.
-
-## Current model note
-
-`policy-oracle` has been observed working with `openai-codex/gpt-5.5`. The local
-`ollama/gemma4:e4b` model may still need prompt or skill wording improvements
-before it follows the skill reliably.
-
-## Success rule
-
-This lab is successful when the agent answers known customer-policy and product
-questions from the skill reference files, refuses to invent unsupported details,
-and routes frustrated or sensitive customer messages according to the escalation
-rules.
+Scenarios can be run against either model option (see [`setup.md §5`](../docs/openclaw/setup.md#5-models)). `gpt-5.5` via Codex has been the more reliable skill-follower so far; the local Ollama model has sometimes returned generic "no task found" responses. If that happens, start a fresh session with `/new`, confirm `openclaw skills list` still shows the skill, and treat skill-prompt clarity as the first thing to fix before switching models.

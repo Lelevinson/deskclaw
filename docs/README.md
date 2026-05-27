@@ -1,22 +1,13 @@
-# Project Docs
+# docs/
 
-This folder holds supporting documentation that does not need to stay in the repository root.
-
-Root files stay intentionally small:
-
-- `README.md`: teammate onboarding and repository overview
-- `ARCHITECTURE.md`: current prototype scope and active technical source of truth
-- `AGENTS.md`: contributor and Codex guidance
-
-Supporting docs live here:
+Supporting documentation. Root-level files stay small; everything operational or historical lives under `docs/`.
 
 ```text
 docs/
   openclaw/
-    LEARNING.md   # detailed OpenClaw/devcontainer lessons
-    notes.md      # short command reminders
+    setup.md      # OpenClaw install, config, commands, fixes — single source
   archive/
-    PROPOSAL.md   # historical proposal/presentation snapshot
+    PROPOSAL.md   # historical proposal/presentation snapshot (read-only)
 ```
 
-Use the archived proposal for presentation context only. When current implementation direction changes, update `ARCHITECTURE.md`, `README.md`, and the relevant docs under this folder.
+For project scope, see [`../ARCHITECTURE.md`](../ARCHITECTURE.md). For contributor rules, see [`../AGENTS.md`](../AGENTS.md).

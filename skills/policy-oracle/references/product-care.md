@@ -1,7 +1,5 @@
 # Product Care Policy
 
-This file is a local product-care source for the `policy-oracle` skills-lab test.
-
 ## General care
 
 - Customers should follow the care label or product page instructions when they are available.

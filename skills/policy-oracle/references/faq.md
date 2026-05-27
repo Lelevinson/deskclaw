@@ -1,7 +1,5 @@
 # Customer FAQ
 
-This file is a local FAQ source for the `policy-oracle` skills-lab test.
-
 ## Order changes
 
 - Customers may request an order change before the order is packed.
