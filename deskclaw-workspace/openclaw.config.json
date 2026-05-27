@@ -1,0 +1,12 @@
+{
+  "name": "DeskClaw",
+  "description": "Conversational commerce agent for a small D2C skincare brand",
+  "gateway": {
+    "port": 18789
+  },
+  "skills": {
+    "load": {
+      "extraDirs": ["/workspaces/deskclaw/skills"]
+    }
+  }
+}

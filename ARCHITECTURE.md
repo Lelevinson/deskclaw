@@ -33,10 +33,10 @@ DeskClaw is a local-first conversational commerce agent prototype for small D2C 
 - Escalation rules under `skills/sentiment-router/references/escalation-rules.md`
 - Scripted test scenarios under [`skills-lab/scenarios/`](skills-lab/scenarios/)
 - Devcontainer + Ollama wiring + Codex provider + repo-skill loading via `skills.load.extraDirs`
+- `deskclaw-workspace/` with SOUL.md, AGENTS.md, config, knowledge base, catalog, and demo scenarios
 
 **Not implemented**
 
-- `deskclaw-workspace/` (workspace prompts, final catalog location, conversation fixtures)
 - `package.json`, `src/`, or any application code
 - Automated evaluation harness (the scenario files currently require manual TUI testing)
 - CI, linting, deployment
@@ -81,14 +81,12 @@ These are explicitly **not** part of the first prototype. Adding any of them req
 - Custom Node.js/React dashboard for human handoff
 - Appointment-booking skills
 
-## 6. Open questions
+## 6. Resolved decisions
 
-These need a decision before the next implementation step. Each should land in a commit that resolves it.
-
-- [ ] Should the final workspace catalog stay JSON or move to SQLite?
-- [ ] What exact frustration signals should trigger `urgent_handoff` vs `handoff_recommended`?
-- [ ] What is the minimal simulated chat interface for the demo (TUI only? lightweight web UI?)?
-- [ ] Is the demo brand intentionally Taiwan skincare (NT$, skincare catalog), or should the catalog be made domain-neutral?
+- **Catalog format:** JSON. Simple, inspectable, sufficient for the MVP. Revisit if querying becomes a bottleneck.
+- **Escalation signals:** Defined in `skills/sentiment-router/references/escalation-rules.md`. `handoff_recommended` = frustration, repeated failures, explicit human request. `urgent_handoff` = safety, legal, chargeback, social media threats.
+- **Demo interface:** OpenClaw TUI only. No custom web UI for the first prototype.
+- **Demo brand:** Intentionally a Taiwan-based skincare brand (NT$ pricing, skincare catalog). This is the course project's chosen domain, not a placeholder.
 
 ## 7. Source-of-truth order
 

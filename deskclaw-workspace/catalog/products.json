@@ -1,0 +1,114 @@
+{
+  "catalog_name": "DeskClaw Demo Product Catalog",
+  "currency": "NTD",
+  "products": [
+    {
+      "id": "cloud-cleanser",
+      "name": "Cloud Cleanser",
+      "category": "cleanser",
+      "price_ntd": 420,
+      "stock_status": "in_stock",
+      "tags": ["beginner", "daily", "gentle", "fragrance-free", "dry-skin", "sensitive-skin"],
+      "best_for": ["first cleanser", "gentle daily cleansing", "dry or sensitive skin"],
+      "avoid_if": ["customer wants an exfoliating cleanser"],
+      "short_description": "A gentle fragrance-free daily cleanser for simple routines.",
+      "link": "/products/cloud-cleanser"
+    },
+    {
+      "id": "clear-day-gel",
+      "name": "Clear Day Gel Moisturizer",
+      "category": "moisturizer",
+      "price_ntd": 560,
+      "stock_status": "in_stock",
+      "tags": ["oily-skin", "combination-skin", "lightweight", "daily", "fragrance-free"],
+      "best_for": ["oily skin", "combination skin", "lightweight daytime moisture"],
+      "avoid_if": ["customer wants a rich night cream"],
+      "short_description": "A lightweight gel moisturizer for oily or combination skin.",
+      "link": "/products/clear-day-gel"
+    },
+    {
+      "id": "calm-barrier-cream",
+      "name": "Calm Barrier Cream",
+      "category": "moisturizer",
+      "price_ntd": 680,
+      "stock_status": "in_stock",
+      "tags": ["dry-skin", "sensitive-skin", "rich", "night", "fragrance-free"],
+      "best_for": ["dry skin", "sensitive skin", "nighttime moisture", "barrier support"],
+      "avoid_if": ["customer wants a very lightweight gel texture"],
+      "short_description": "A rich fragrance-free cream for dry or sensitive skin.",
+      "link": "/products/calm-barrier-cream"
+    },
+    {
+      "id": "sunny-shield-spf50",
+      "name": "Sunny Shield SPF50",
+      "category": "sunscreen",
+      "price_ntd": 520,
+      "stock_status": "in_stock",
+      "tags": ["sun-protection", "daily", "all-skin-types", "morning-routine"],
+      "best_for": ["daily sun protection", "morning skincare routine"],
+      "avoid_if": ["customer wants a waterproof sports sunscreen"],
+      "short_description": "A daily SPF50 sunscreen for morning routines.",
+      "link": "/products/sunny-shield-spf50"
+    },
+    {
+      "id": "soft-reset-toner",
+      "name": "Soft Reset Exfoliating Toner",
+      "category": "toner",
+      "price_ntd": 620,
+      "stock_status": "in_stock",
+      "tags": ["exfoliating", "dullness", "texture", "experienced-users", "night"],
+      "best_for": ["dull-looking skin", "uneven texture", "customers already comfortable with exfoliation"],
+      "avoid_if": ["customer says their skin is irritated", "customer wants a beginner routine"],
+      "short_description": "An exfoliating toner for customers already comfortable with active products.",
+      "link": "/products/soft-reset-toner"
+    },
+    {
+      "id": "glow-starter-kit",
+      "name": "Glow Starter Kit",
+      "category": "set",
+      "price_ntd": 980,
+      "stock_status": "in_stock",
+      "tags": ["starter-kit", "beginner", "gift", "routine", "under-1000"],
+      "best_for": ["first skincare routine", "simple gift", "customer who wants a complete starter set under NT$1000"],
+      "avoid_if": ["customer wants only one single product"],
+      "short_description": "A starter set for customers who want a simple routine or easy gift.",
+      "link": "/products/glow-starter-kit"
+    },
+    {
+      "id": "travel-mini-trio",
+      "name": "Travel Mini Trio",
+      "category": "set",
+      "price_ntd": 720,
+      "stock_status": "low_stock",
+      "tags": ["travel", "mini", "gift", "under-800", "beginner"],
+      "best_for": ["travel", "small gift", "trying multiple products under NT$800"],
+      "avoid_if": ["customer wants full-size products"],
+      "short_description": "A travel-friendly mini set that works well as a small gift.",
+      "link": "/products/travel-mini-trio"
+    },
+    {
+      "id": "cotton-carry-pouch",
+      "name": "Cotton Carry Pouch",
+      "category": "accessory",
+      "price_ntd": 350,
+      "stock_status": "in_stock",
+      "tags": ["accessory", "travel", "gift", "under-500", "fabric"],
+      "best_for": ["organizing products", "travel", "budget-friendly add-on gift"],
+      "avoid_if": ["customer asks for skincare treatment"],
+      "short_description": "A washable fabric pouch for travel or product storage.",
+      "link": "/products/cotton-carry-pouch"
+    },
+    {
+      "id": "night-repair-oil",
+      "name": "Night Repair Oil",
+      "category": "facial oil",
+      "price_ntd": 840,
+      "stock_status": "out_of_stock",
+      "tags": ["night", "dry-skin", "facial-oil", "rich"],
+      "best_for": ["customers asking about rich nighttime facial oil"],
+      "avoid_if": ["customer wants an in-stock product", "customer has oily skin and wants a lightweight texture"],
+      "short_description": "A rich nighttime facial oil for dry skin.",
+      "link": "/products/night-repair-oil"
+    }
+  ]
+}
