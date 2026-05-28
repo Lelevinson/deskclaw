@@ -1,6 +1,6 @@
 ---
 name: search-products
-description: Recommend DeskClaw demo products from the bundled local product catalog based on customer needs, budget, use case, skin type, or gift intent.
+description: Recommend DeskClaw demo products from the shared local product catalog based on customer needs, budget, use case, skin type, or gift intent.
 ---
 
 # search-products
@@ -12,7 +12,7 @@ Use this skill when a customer asks what to buy, asks for a recommendation, comp
 Before answering a product-search or recommendation question, read:
 
 ```text
-{baseDir}/references/products.json
+{baseDir}/../../data/catalog/products.json
 ```
 
 Use only products and facts from that catalog. Do not invent products, prices, discounts, stock, ingredients, medical effects, or compatibility details.
@@ -23,7 +23,7 @@ When the catalog contains a suitable match:
 
 - Recommend 1-3 products.
 - Include product name, price in NT$, and a short reason tied to the customer's request.
-- Mention relevant cautions from `avoid_if` when they matter.
+- Mention relevant cautions from `avoidIf` when they matter.
 - Prefer in-stock products. Mention low stock only if the catalog says so.
 
 When the customer gives very little information:
