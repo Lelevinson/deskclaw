@@ -2,6 +2,8 @@
 
 Use these questions in OpenClaw TUI after following the setup steps in [`../README.md`](../README.md), configuring the commerce MCP server in [`../../docs/commerce/actions.md`](../../docs/commerce/actions.md), and starting a fresh session.
 
+These prompts intentionally use normal customer wording for cart actions. The separate "Customer context" lines simulate the account identity that a real channel would normally provide.
+
 Reset local commerce state before a full run:
 
 ```bash

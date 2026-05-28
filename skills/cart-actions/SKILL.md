@@ -7,6 +7,8 @@ description: Use MCP-backed DeskClaw commerce tools to look up customers, inspec
 
 Use this skill when a customer asks DeskClaw to add a product to their cart, inspect their cart, or perform another cart/account commerce action.
 
+Customers will usually speak naturally. Treat ordinary wording such as "add Cloud Cleanser to my cart", "can you put this in my bag", "what is in my cart?", or "do I already have this?" as cart/account intent. Do not expect the customer to mention this skill, MCP, tools, product ids, customer ids, or internal command names.
+
 ## Required safety order
 
 1. Check whether the message should be handled by `sentiment-router` first. If the customer is angry, asks for a human, reports harm, threatens chargeback/legal action, or is otherwise sensitive, do not perform commerce actions.
@@ -23,6 +25,7 @@ Use this skill when a customer asks DeskClaw to add a product to their cart, ins
 - Never mutate a cart without explicit customer confirmation.
 - After the customer confirms a preview, commit the existing pending action. Do not create another preview unless the previous confirmation expired or the customer changed product or quantity.
 - Never invent tool results, customer ids, product ids, prices, stock, or cart state.
+- If channel identity or account context is missing, ask for the missing account context instead of guessing.
 - If a commerce tool is unavailable or returns an error, explain briefly and suggest a human teammate.
 - Keep replies short and customer-facing. Do not reveal internal tool names unless the user is asking as a developer.
 

@@ -35,6 +35,8 @@ skills-lab/
 
 3. In the TUI, start a fresh session with `/new`, then paste prompts from `scenarios/<skill>-tests.md`. The agent should answer from bundled references — you should never need to paste reference text into the chat.
 
+Some scenario prompts include phrases such as "Use the search-products skill" to force manual lab routing. Real customer messages should not need those phrases; the skill descriptions under [`../skills/`](../skills/) are what tell OpenClaw when normal customer wording should activate a skill.
+
 ## Expected agent behavior
 
 The agent should:

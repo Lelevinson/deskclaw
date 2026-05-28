@@ -18,6 +18,8 @@ customer message
 -> future website reads the same database/backend state
 ```
 
+Customers should not need to name a skill or tool. The skill should infer intent from normal shopping/support wording, while channel or account context supplies the customer identity needed by the MCP tools.
+
 ## 2. Files
 
 ```text
