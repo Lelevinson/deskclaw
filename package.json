@@ -7,7 +7,8 @@
     "build": "tsc -p tsconfig.json",
     "check": "tsc --noEmit -p tsconfig.json",
     "commerce:reset": "node dist/cli/reset-commerce-db.js",
-    "commerce:mcp": "node dist/mcp/commerce-server.js"
+    "commerce:mcp": "node dist/mcp/commerce-server.js",
+    "commerce:test": "npm run build && node dist/cli/commerce-smoke-test.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
