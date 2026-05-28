@@ -4,6 +4,8 @@ Supporting documentation. Root-level files stay small; everything operational or
 
 ```text
 docs/
+  commerce/
+    actions.md    # commerce action pipeline, local data, MCP tools
   openclaw/
     setup.md      # OpenClaw install, config, commands, fixes — single source
   archive/

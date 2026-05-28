@@ -18,6 +18,7 @@ Skill names use lowercase letters, numbers, and hyphens (e.g. `policy-oracle`).
 
 ## Current skills
 
+- [`cart-actions/`](cart-actions/) — guides MCP-backed customer cart actions with preview, confirmation, execution, and audit logging.
 - [`policy-oracle/`](policy-oracle/) — answers shipping, returns, FAQ, warranty, and product-care policy questions from bundled markdown references.
 - [`search-products/`](search-products/) — recommends products from a bundled demo JSON catalog.
 - [`sentiment-router/`](sentiment-router/) — classifies customer messages as `continue`, `handoff_recommended`, or `urgent_handoff`.

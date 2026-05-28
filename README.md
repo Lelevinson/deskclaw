@@ -39,6 +39,10 @@ The Dev Containers extension must be installed in your host VS Code before openi
 
 Once the container is open, run the one-time OpenClaw config and verification commands in [`docs/openclaw/setup.md §2`](docs/openclaw/setup.md#2-first-time-setup-inside-the-devcontainer). That doc also covers commands, model setup, and troubleshooting.
 
+### Commerce action tools
+
+DeskClaw includes a local mock commerce action layer for agent-visible actions such as adding a product to a customer's cart. See [`docs/commerce/actions.md`](docs/commerce/actions.md) for setup, MCP wiring, and the confirmation flow.
+
 ## Devcontainer at a glance
 
 The exact container definition lives in [`.devcontainer/devcontainer.json`](.devcontainer/devcontainer.json). In short, it uses a Node.js / TypeScript devcontainer image, loads local environment variables from `.env`, forwards the OpenClaw gateway port, mounts named Docker volumes for CLI/OpenClaw runtime state, and installs the required CLIs globally inside the container.
@@ -51,8 +55,11 @@ Those named volumes survive normal **Rebuild Container** runs and hold auth/sess
 README.md                       # this file — what + first-time setup
 ARCHITECTURE.md                 # scope, stack, status, layout, resolved decisions
 AGENTS.md                       # contributor rules + topic→file map
+data/                           # committed demo seed data
+src/                            # local commerce core + MCP server
 docs/
   README.md                     # index of supporting docs
+  commerce/actions.md           # commerce action pipeline + MCP wiring
   openclaw/setup.md             # all OpenClaw ops in one place
   archive/PROPOSAL.md           # historical proposal — read-only
 skills/                         # repo-managed OpenClaw skills (canonical)

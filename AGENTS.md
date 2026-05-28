@@ -21,6 +21,7 @@ If you have a question or want to change something, this table tells you where t
 | Is X in scope? Is X done? What's the stack? | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | How do I install / configure / debug OpenClaw? | [`docs/openclaw/setup.md`](docs/openclaw/setup.md) |
 | How do I start the project for the first time? | [`README.md`](README.md) |
+| How do commerce actions / MCP tools work? | [`docs/commerce/actions.md`](docs/commerce/actions.md) |
 | How should I work in this repo? (commit style, rules) | [`AGENTS.md`](AGENTS.md) — this file |
 | What skills exist and how are they named? | [`skills/README.md`](skills/README.md) |
 | How a skill *behaves* | the skill's own `SKILL.md` under [`skills/`](skills/) |
@@ -73,8 +74,8 @@ fix: correct shipping policy reference path
 
 If implementation work resumes from here, the likely order is:
 
-1. Validate `policy-oracle`, `search-products`, and `sentiment-router` via the scenario files in [`skills-lab/scenarios/`](skills-lab/scenarios/).
-2. Verify OpenClaw can reach the configured model — local Ollama or `gpt-5.5` via Codex ([setup.md §5](docs/openclaw/setup.md#5-models)).
+1. Validate `policy-oracle`, `search-products`, `sentiment-router`, and `cart-actions` via the scenario files in [`skills-lab/scenarios/`](skills-lab/scenarios/).
+2. Verify OpenClaw can reach the configured model and commerce MCP server ([setup.md §5](docs/openclaw/setup.md#5-models), [actions.md](docs/commerce/actions.md)).
 3. Add an automated scenario runner so the tests produce a pass/fail score instead of requiring manual TUI input.
-4. Use the scenario results to tighten skill prompts, references, or evaluation coverage.
+4. Use the scenario results to tighten skill prompts, references, tool contracts, or evaluation coverage.
 5. Only after that, consider any deferred extension.

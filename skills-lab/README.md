@@ -13,6 +13,7 @@ skills-lab/
     policy-oracle-tests.md
     search-products-tests.md
     sentiment-router-tests.md
+    cart-actions-tests.md
 ```
 
 ## How to run the scenarios
@@ -23,7 +24,7 @@ skills-lab/
    openclaw skills list
    ```
 
-   `policy-oracle`, `search-products`, and `sentiment-router` should appear. If they don't, see [`setup.md`](../docs/openclaw/setup.md).
+   `policy-oracle`, `search-products`, `sentiment-router`, and `cart-actions` should appear. If they don't, see [`setup.md`](../docs/openclaw/setup.md).
 
 2. Start the gateway and TUI:
 

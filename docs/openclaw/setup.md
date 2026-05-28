@@ -4,7 +4,7 @@ Single source of truth for OpenClaw install, configuration, repo-skill loading, 
 
 ## 1. Architecture (in one paragraph)
 
-OpenClaw runs as a local gateway (`openclaw gateway`) on `ws://127.0.0.1:18789`. Channels (TUI, dashboard) connect to the gateway, the gateway routes to a model (local Ollama or `gpt-5.5` via the OpenAI Codex provider — see [§5](#5-models)), and the model uses **skills** — instruction folders with a `SKILL.md` and optional `references/`. DeskClaw's shared skills live in [`skills/`](../../skills/) and are loaded via the `skills.load.extraDirs` config below.
+OpenClaw runs as a local gateway (`openclaw gateway`) on `ws://127.0.0.1:18789`. Channels (TUI, dashboard) connect to the gateway, the gateway routes to a model (local Ollama or `gpt-5.5` via the OpenAI Codex provider — see [§5](#5-models)), and the model uses **skills** — instruction folders with a `SKILL.md` and optional `references/`. DeskClaw's shared skills live in [`skills/`](../../skills/) and are loaded via the `skills.load.extraDirs` config below. Commerce actions additionally use a local MCP server; see [`../commerce/actions.md`](../commerce/actions.md).
 
 ## 2. First-time setup inside the devcontainer
 
@@ -16,7 +16,7 @@ openclaw config get skills.load.extraDirs --json
 openclaw skills list
 ```
 
-The third command should show `policy-oracle`, `search-products`, and `sentiment-router`. If a skill of the same name already exists under `/home/node/.openclaw/workspace/skills/`, the workspace copy wins — remove it to test the repo-managed version:
+The third command should show `policy-oracle`, `search-products`, `sentiment-router`, and `cart-actions`. If a skill of the same name already exists under `/home/node/.openclaw/workspace/skills/`, the workspace copy wins — remove it to test the repo-managed version:
 
 ```bash
 rm -rf /home/node/.openclaw/workspace/skills/<skill-name>

@@ -1,2 +1,5 @@
 .env
 .codex/
+node_modules/
+dist/
+.local/
