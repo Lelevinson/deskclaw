@@ -1,6 +1,6 @@
 # sentiment-router Test Scenarios
 
-Use these questions in OpenClaw TUI after configuring OpenClaw to scan `/workspaces/deskclaw/skills`, confirming `sentiment-router` appears in `openclaw skills list`, and starting a fresh session.
+Use these questions in OpenClaw TUI after following the setup steps in [`../README.md`](../README.md) and starting a fresh session.
 
 The expected response format is:
 

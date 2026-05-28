@@ -12,7 +12,7 @@ DeskClaw is a local-first conversational commerce agent prototype for small D2C 
 - **Automated support** — answer policy and FAQ questions from local business documents.
 - **Basic product assistance** — search a small local catalog and recommend suitable items.
 - **Human handoff safety** — detect frustration or sensitive cases and escalate.
-- **Scripted evaluation** — validate behavior with support, sales, and frustration scenarios.
+- **Scripted evaluation** — validate behavior with policy, product-recommendation, and escalation scenarios.
 
 ## 2. Stack
 
@@ -33,7 +33,6 @@ DeskClaw is a local-first conversational commerce agent prototype for small D2C 
 - Escalation rules under `skills/sentiment-router/references/escalation-rules.md`
 - Scripted test scenarios under [`skills-lab/scenarios/`](skills-lab/scenarios/)
 - Devcontainer + Ollama wiring + Codex provider + repo-skill loading via `skills.load.extraDirs`
-- `deskclaw-workspace/` with SOUL.md, AGENTS.md, config, knowledge base, catalog, and demo scenarios
 
 **Not implemented**
 
@@ -41,7 +40,7 @@ DeskClaw is a local-first conversational commerce agent prototype for small D2C 
 - Automated evaluation harness (the scenario files currently require manual TUI testing)
 - CI, linting, deployment
 
-## 4. Planned file layout
+## 4. Repository layout
 
 ```text
 skills/                       # canonical, repo-managed
@@ -59,17 +58,9 @@ skills-lab/                   # evaluation only, not a skill source
   README.md                   # how to run + pass/fail criteria
   scenarios/
     {policy-oracle,search-products,sentiment-router}-tests.md
-
-deskclaw-workspace/           # planned
-  openclaw.config.json
-  SOUL.md
-  AGENTS.md
-  knowledge/{shipping,returns,faq,product-care}.md
-  catalog/products.json
-  scenarios/{support,sales,frustration}-chat.md
 ```
 
-The layout under `skills/` and `skills-lab/` is current; everything under `deskclaw-workspace/` is planned.
+This is the tracked repo layout, not generated runtime state. Personal OpenClaw runtime data stays in `/home/node/.openclaw` and is not committed.
 
 ## 5. Deferred extensions (out of MVP scope)
 

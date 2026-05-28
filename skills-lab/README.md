@@ -1,6 +1,6 @@
 # skills-lab/
 
-Test plans and scripted scenarios for checking individual skills before the full DeskClaw workspace exists. **This is evaluation only.** Skill sources of truth live under [`../skills/`](../skills/), not here.
+Test plans and scripted scenarios for checking individual repo skills independently of full workspace chat flows. **This is evaluation only.** Skill sources of truth live under [`../skills/`](../skills/), not here.
 
 For OpenClaw setup and the `skills.load.extraDirs` command, see [`../docs/openclaw/setup.md`](../docs/openclaw/setup.md).
 

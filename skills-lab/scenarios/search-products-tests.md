@@ -1,6 +1,6 @@
 # search-products Test Scenarios
 
-Use these questions in OpenClaw TUI after configuring OpenClaw to scan `/workspaces/deskclaw/skills`, confirming `search-products` appears in `openclaw skills list`, and starting a fresh session.
+Use these questions in OpenClaw TUI after following the setup steps in [`../README.md`](../README.md) and starting a fresh session.
 
 ## Test 1: Oily skin recommendation
 

@@ -7,7 +7,7 @@ Rules for contributors and AI agents working in this repo. **This file owns the 
 For any new chat or task, read in order:
 
 1. [`AGENTS.md`](AGENTS.md) — this file
-2. [`ARCHITECTURE.md`](ARCHITECTURE.md) — scope, stack, status, planned layout
+2. [`ARCHITECTURE.md`](ARCHITECTURE.md) — scope, stack, status, repository layout
 3. [`README.md`](README.md) — onboarding
 
 Read [`docs/openclaw/setup.md`](docs/openclaw/setup.md) when the task touches OpenClaw, the devcontainer, or local tooling.
@@ -73,9 +73,8 @@ fix: correct shipping policy reference path
 
 If implementation work resumes from here, the likely order is:
 
-1. Decide the open questions in [`ARCHITECTURE.md`](ARCHITECTURE.md) §6.
-2. Validate `policy-oracle`, `search-products`, and `sentiment-router` via the scenario files in [`skills-lab/scenarios/`](skills-lab/scenarios/).
-3. Create `deskclaw-workspace/` and the initial OpenClaw config from the planned layout in `ARCHITECTURE.md` §4.
-4. Verify OpenClaw can reach the configured model — local Ollama or `gpt-5.5` via Codex ([setup.md §5](docs/openclaw/setup.md#5-models)).
-5. Add an automated scenario runner so the tests produce a pass/fail score instead of requiring manual TUI input.
-6. Only after that, consider any deferred extension.
+1. Validate `policy-oracle`, `search-products`, and `sentiment-router` via the scenario files in [`skills-lab/scenarios/`](skills-lab/scenarios/).
+2. Verify OpenClaw can reach the configured model — local Ollama or `gpt-5.5` via Codex ([setup.md §5](docs/openclaw/setup.md#5-models)).
+3. Add an automated scenario runner so the tests produce a pass/fail score instead of requiring manual TUI input.
+4. Use the scenario results to tighten skill prompts, references, or evaluation coverage.
+5. Only after that, consider any deferred extension.

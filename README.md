@@ -41,27 +41,15 @@ Once the container is open, run the one-time OpenClaw config and verification co
 
 ## Devcontainer at a glance
 
-- Microsoft Node.js / TypeScript devcontainer image
-- Loads local environment variables from `.env`
-- Forwards port `18789` for the OpenClaw gateway
-- Persistent named Docker volumes for local state:
+The exact container definition lives in [`.devcontainer/devcontainer.json`](.devcontainer/devcontainer.json). In short, it uses a Node.js / TypeScript devcontainer image, loads local environment variables from `.env`, forwards the OpenClaw gateway port, mounts named Docker volumes for CLI/OpenClaw runtime state, and installs the required CLIs globally inside the container.
 
-  ```text
-  deskclaw-codex   -> /home/node/.codex
-  deskclaw-gemini  -> /home/node/.gemini
-  deskclaw-claude  -> /home/node/.claude
-  deskclaw-data    -> /home/node/.openclaw
-  ```
-
-- `postCreateCommand` installs `bubblewrap`, `@google/gemini-cli`, `@openai/codex`, `@anthropic-ai/claude-code`, `openclaw@latest`
-
-These named volumes survive normal **Rebuild Container** runs and hold auth/session/gateway state. Only remove them when intentionally resetting. OpenClaw is installed globally in the container, not under the shared workspace mount, because the Windows↔Linux file bridge chokes on local installs there.
+Those named volumes survive normal **Rebuild Container** runs and hold auth/session/gateway state. Only remove them when intentionally resetting. OpenClaw is installed globally in the container, not under the shared workspace mount, because the Windows-Linux file bridge chokes on local installs there. See [`docs/openclaw/setup.md`](docs/openclaw/setup.md) for operational details.
 
 ## Repository map
 
 ```text
 README.md                       # this file — what + first-time setup
-ARCHITECTURE.md                 # scope, stack, status, layout, open questions
+ARCHITECTURE.md                 # scope, stack, status, layout, resolved decisions
 AGENTS.md                       # contributor rules + topic→file map
 docs/
   README.md                     # index of supporting docs
