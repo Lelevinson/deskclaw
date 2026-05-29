@@ -51,7 +51,7 @@ Rule: if a fact appears in more than one file, one of them is wrong. Fix it in t
 
 ## Scope Guardrail
 
-`ARCHITECTURE.md` owns scope. Before adding a new channel, utility, or deferred feature, check [`ARCHITECTURE.md §5`](ARCHITECTURE.md#5-deferred-extensions-out-of-mvp-scope) and update it first if the work changes scope.
+`ARCHITECTURE.md` owns scope. Before adding a new channel, utility, or deferred feature, check [`ARCHITECTURE.md §5`](ARCHITECTURE.md#5-extension-scope) and update it first if the work changes scope.
 
 ## Commit style
 

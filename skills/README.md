@@ -49,20 +49,22 @@ These are not OpenClaw skills. They are reusable tool operations that skills can
 | `shop_cart_confirm_latest_add_item` | `cart-actions` | Commit the latest matching pending add-to-cart action after customer confirmation. |
 | `shop_action_log_list` | `cart-actions`, demos/debugging | Inspect what happened for verification. |
 
-## Possible Future Utilities
+## Planned Utilities (backlog)
 
-These are ideas, not implemented scope. Before building any of them, check [`../ARCHITECTURE.md`](../ARCHITECTURE.md) and update scope first if needed.
+These are scoped but not yet built. The full reasoning, research basis, and ordering live in [`../docs/planning/skill-roadmap.md`](../docs/planning/skill-roadmap.md) §4; scope is owned by [`../ARCHITECTURE.md`](../ARCHITECTURE.md) §5. Build the top open item, one feature branch each. Build order: **cart-edit → tool-level eval harness → order-status → returns-intake**; `handoff-ticket` and `product-compatibility` are independent.
 
-> **Under review.** This table was drafted by an earlier AI and has not been validated. It is being reviewed and reprioritized in [`../docs/planning/skill-roadmap.md`](../docs/planning/skill-roadmap.md) — treat it as input, not a committed plan.
+| Customer-facing utility | Type | Inner tools / data | Notes |
+|---|---|---|---|
+| Remove / update cart item | `cart-actions` extension | preview/confirm remove + update-quantity tools; extend `PendingAction.type` | First branch. No new data domain; reuses the identity → preview → confirm → audit pipeline. |
+| Order status lookup | new `order-status` skill | read-only `shop_orders_list_for_channel` / `shop_order_get`; new `data/shop/orders.json` | Highest-volume real query. Safe by construction — keyed on the resolved `customerId`, never a typed order number. New visible data domain. |
+| Return / exchange intake | new `returns-actions` skill (depends on orders) | `shop_return_preview` / `shop_return_confirm`; new `data/shop/returns.json`; `data/policies/returns.md` | Creates a return *request* then hands off; never auto-refunds. |
+| Human handoff ticket | `sentiment-router` extension | `shop_handoff_create` (append-only record); optional identity | Durable escalation/audit record. Independent of orders. |
+| Product / ingredient-compatibility Q&A | `policy-oracle` extension | new `data/catalog/compatibility.md`; no tools | Answer only from data; escalate reaction/medical language to `sentiment-router`. |
+| Mock storefront demo | UI, not a skill | reads shared shop state (catalog, carts, orders, action logs) | Build after the `orders` domain exists; one read-only view, not per skill. |
 
-| Customer-facing utility | Likely skill | Likely inner tools/data |
-|---|---|---|
-| Remove or update cart item | `cart-actions` extension or new cart skill | customer lookup, cart read, preview/confirm cart mutation |
-| Order status lookup | future `order-status` skill | customer lookup, order lookup data/tool |
-| Return request intake | future `returns-actions` skill | customer lookup, order lookup, return-policy data, handoff rules |
-| Address or shipping preference update | future account action skill | customer lookup, preview/confirm account mutation |
-| Human handoff ticket creation | `sentiment-router` extension or new handoff skill | routing rules, ticket/log tool |
-| Mock storefront demo | UI, not a skill | reads the same shop backend state and action logs |
+### Reviewed and deferred
+
+Cut or postponed in the 2026-05-29 roadmap session (see [`../ARCHITECTURE.md`](../ARCHITECTURE.md) §5 "Deferred"): customer-initiated **address / shipping-address mutation** (top account-takeover signal → handoff), **subscription management**, **restock / back-in-stock alerts**, and any **autonomous cancellation or refund** (intake-and-handoff only).
 
 ## Development Workflow
 

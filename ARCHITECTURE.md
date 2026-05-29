@@ -41,6 +41,8 @@ DeskClaw is a local-first conversational commerce agent prototype for small D2C 
 - CI, linting, deployment
 - Mock e-commerce website UI
 
+**Planned next (in scope, not yet built)** — scoped in [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §4; build order: cart-edit → tool-level eval harness → order-status → returns-intake, with handoff-ticket and product-compatibility Q&A as independent items. The `orders` data domain (introduced by order-status) is the first new visible data domain and the prerequisite for the mock storefront.
+
 ## 4. Repository layout
 
 ```text
@@ -77,15 +79,34 @@ skills-lab/                   # evaluation only, not a skill source
 
 This is the tracked repo layout, not generated runtime state. Personal OpenClaw runtime data stays in `/home/node/.openclaw` and is not committed.
 
-## 5. Deferred extensions (out of MVP scope)
+## 5. Extension scope
 
-These are explicitly **not** part of the first prototype. Adding any of them requires updating this file first.
+This section owns the boundary of what may be built. The detailed, ordered backlog lives in [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §4; this section records only what is in scope and what is fenced out. Adding anything from the deferred list requires updating this file first.
+
+### In scope (planned, not yet built)
+
+Decided in the 2026-05-29 roadmap session. New data domains noted because they trigger storefront UI work (§6).
+
+- **Cart edits** — remove item / change quantity. Extends `cart-actions`; no new data domain.
+- **Tool-level evaluation harness** — deterministic tests over `src/shop` service functions (identity gating, preview/confirm, audit). Closes the "Not implemented" eval gap above for the tool layer.
+- **Order status lookup** — read-only, identity-gated. Introduces the **`orders`** data domain (the first new *visible* data domain).
+- **Return / exchange intake** — captures a return *request* and hands off the refund/exchange; never auto-issues money. Depends on the `orders` domain; adds a **`returns`** sub-domain.
+- **Handoff ticket records** — durable escalation/audit records for `sentiment-router` handoffs.
+- **Product / ingredient-compatibility Q&A** — extends `policy-oracle` from a brand-authored compatibility data file; answer-only-from-data, escalate reaction/medical language.
+
+### Deferred (out of scope)
+
+Explicitly **not** part of the prototype.
 
 - Real WhatsApp / Instagram / Gmail integrations
 - Deep-link or QR onboarding flows
 - Dynamic discount / promo-code negotiation
 - Custom Node.js/React dashboard for human handoff
 - Appointment-booking skills
+- **Autonomous cancellations or refunds** — the agent may intake and hand off; it must never issue a refund or cancel a paid order itself (research-refuted as an autonomous action).
+- **Customer-initiated address / shipping-address mutation** — top account-takeover signal; route to handoff. Revisit only with stronger step-up verification.
+- **Subscription management** — recurring-order domain; cancel sits in the autonomous-mutation no-go zone.
+- **Restock / back-in-stock alerts** — requires an async outbound notification channel we do not have.
 
 ## 6. Resolved decisions
 
