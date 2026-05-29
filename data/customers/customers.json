@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "customers": [
+    {
+      "id": "customer-demo-lin",
+      "displayName": "Lin Demo"
+    }
+  ]
+}

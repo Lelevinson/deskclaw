@@ -1,2 +1,6 @@
 .env
 .codex/
+node_modules/
+dist/
+.local/
+.claude/settings.local.json

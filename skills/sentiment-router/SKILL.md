@@ -12,7 +12,7 @@ Use this skill when a customer message shows frustration, anger, repeated unreso
 Before deciding whether to escalate, read:
 
 ```text
-{baseDir}/references/escalation-rules.md
+{baseDir}/../../data/routing/escalation-rules.md
 ```
 
 Use only those routing rules. Do not diagnose the customer, argue with the customer, or invent internal support actions.

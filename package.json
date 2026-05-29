@@ -1,0 +1,22 @@
+{
+  "name": "deskclaw",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "shop:reset": "node dist/cli/reset-shop-db.js",
+    "shop:mcp": "node dist/mcp/shop-server.js",
+    "shop:test": "npm run build && node dist/cli/shop-smoke-test.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^6.0.3"
+  }
+}
