@@ -2,7 +2,7 @@
 
 Working doc for deciding which DeskClaw skills to build next, in what order, and what each needs. This is the durable handoff between the research/brainstorm session and the implementation sessions — planning chats don't share memory, so decisions live **here**, not in chat history.
 
-**Status:** BRIEF — agenda is set; the deliverable (§4) is not yet filled in. The research/brainstorm session fills §3–§4 and updates scope.
+**Status:** DECIDED (2026-05-29) — research run, futures table reviewed, backlog scoped. §4 is the committed plan; ARCHITECTURE §5 and the `skills/README.md` futures table were updated to match. Implementation sessions take the top open item.
 
 ## 1. Grounded truth (what exists today)
 
@@ -40,17 +40,85 @@ Then use the findings to:
 - surface anything missing (e.g. product Q&A, restock alerts, order tracking, subscriptions)
 - map each survivor onto the skill / inner-tool / data layers
 
-## 4. Deliverable (fill in during the session)
+### Findings (deep-research, 2026-05-29)
 
-A prioritized, scoped backlog. For each chosen skill:
+Ran `deep-research` (6 angles, 25 sources, 25 claims verified, 21 confirmed / 4 killed). Full report in the session task output; the load-bearing points:
 
-- name + one-line customer value
-- new skill? extension of an existing one? inner-tool-only?
-- inner tools + data it needs
-- scope impact — does [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md) §5 need updating first?
-- rough order / dependencies
+**What customers actually ask for, ranked.**
 
-Then: rewrite the futures table in [`../../skills/README.md`](../../skills/README.md) to match, and update ARCHITECTURE §5 for anything newly in scope. Implementation sessions take the top item and follow the [`../../skills/README.md`](../../skills/README.md) workflow, one feature branch each.
+- **Table-stakes (high confidence):** order status / tracking — "where's my order?" is the single highest-volume post-purchase query (~20–40% of contacts); returns / exchanges; product & ingredient-compatibility Q&A ("can I use this serum with retinol?" — called out as the canonical *skincare* example); subscription management (skip / pause / swap / cancel); gated address changes.
+- **Nice-to-have (medium, 2-1 vote):** live inventory / restock checks; discount / promo issuance (usually code-validation gated by integration, not autonomous issuance).
+- **Explicitly refuted — do not build:** autonomous cancellations and refunds (0-3 ✗). The agent may *intake* a refund/cancel and hand off; it must not auto-issue one. "Covers most requests day one" was also refuted (1-2).
+
+**Safety spine (high confidence).**
+
+- Customer-typed identifiers are weak proof: order numbers are short / sequential / guessable, and email-binding only resists enumeration — it is *not* strong identity proof against targeted account-takeover.
+- Exposing tracking PII (carrier, ZIP, recipient name) without a gate enables social engineering, porch piracy, and chargeback fraud.
+- **Account takeover (ATO) is the central fraud vector** — it rides on a legitimate-looking, already-authenticated account, so an authenticated session cannot be assumed honest.
+- **Mutating actions are the highest-risk operations** (address change, stored-card reuse, refunds, loyalty/gift redemptions); they need step-up verification, explicit confirmation, audit, and often human review. Address changes are a top ATO signal.
+- Human handoff is essential, not optional, for complex / high-stakes / emotional / edge cases — and the company, not the chatbot, is legally accountable for what the agent says or does (Moffatt v. Air Canada, 2024).
+
+**DeskClaw-specific reframe (why this is good news for us).** The research's headline pitfall — "the customer-supplied order number / email is guessable and low-assurance" — is one DeskClaw *already designs out*. Identity is never a customer-typed value; it is the channel binding `channel + externalUserId → accountLink → customerId` ([`../../src/shop/service.ts`](../../src/shop/service.ts) `resolveLinkedCustomer`), and `cart-actions` already refuses a typed customer id as proof. So a read keyed on the resolved `customerId` (e.g. order status) is **safe by construction**: we expose only what the linked identity owns and never trust an identifier the sender chose. The existing identity → preview → confirm → audit pipeline is exactly the "step-up + confirm + audit for mutations" the sources demand; our gap is breadth (one mutation type, no orders), not the safety model.
+
+## 4. Deliverable — prioritized backlog (DECIDED)
+
+### Verdict on the §2 table
+
+| §2 item | Verdict | Why |
+|---|---|---|
+| Remove / update cart item | **BUILD — first** | Cheapest possible win. Same `carts` domain, same identity gate, same preview→confirm→audit pipeline; only new `PendingAction` types. `cart-actions/SKILL.md` already names it as the next extension. Proves the pipeline generalizes to new mutation types and de-risks every later mutation. |
+| Order status lookup | **BUILD — keystone** | The #1 real customer query (WISMO). Read-only and safe by construction under our channel binding. Introduces the `orders` data domain, which unlocks returns and the storefront orders view. |
+| Return / exchange intake | **BUILD — scoped down** | Table-stakes, but autonomous refunds were *refuted*. Scope = capture an intake request (order + reason + exchange-vs-refund preference), preview/confirm/log it, then hand off for the actual money movement. Depends on the `orders` domain. |
+| Address / shipping preference update | **DEFER** | Research's #1 ATO-exploit signal and a PII mutation. High risk for low demo value; keep out of scope and route such asks to handoff. Revisit only with stronger step-up verification. |
+| Human handoff ticket creation | **BUILD — cheap, independent** | Sentiment-router only *classifies* today; there is no durable escalation record. Research elevates handoff + audit to mandatory. A `shop_handoff_create` tool that appends a handoff record gives the audit trail the sources demand. Reuses the append-only action-log infra; identity is optional (escalations can fire for unlinked senders). |
+| Mock storefront demo | **KEEP DEFERRED (UI, not a skill)** | Already governed by ARCHITECTURE §6. Build it once the first visible data domain (`orders`) exists, as one read-only view over shared shop state — not per skill. |
+
+### Newly surfaced by research
+
+| Candidate | Verdict | Why |
+|---|---|---|
+| Product / ingredient-compatibility Q&A | **BUILD — small, independent** | Canonical skincare action ("can I use this with retinol?"). Falls between `policy-oracle` (policy) and `search-products` (catalog). Extension of `policy-oracle` backed by a new compatibility data file; no tools, no pipeline. Carries a regulated-product accuracy risk → answer only from data, escalate medical/reaction language to `sentiment-router`. |
+| Subscription management | **DEFER** | Large new recurring-order domain, and the highest-value sub-action (cancel) sits in the refuted autonomous-mutation zone. Out of MVP scope. |
+| Restock / back-in-stock alerts | **DEFER** | We already model `out_of_stock` + `stockStatus`, but "alert" implies async outbound notification, which needs a notification channel we don't have. Out of scope for a synchronous chat MVP. |
+
+### Scoped backlog (each = one feature branch)
+
+For each: customer value · type · tools+data · scope impact · order.
+
+1. **cart-edit** (`cart-actions` extension) — "remove this" / "make it 2 instead". *Extension.* Tools: `shop_cart_preview_remove_item` / `_update_quantity` + matching confirm tools; extend `PendingAction.type` union ([`types.ts`](../../src/shop/types.ts)). Data: none new (reuses `carts`). Scope: no new domain — fits current scope. **Order: 1 (first branch).**
+2. **eval-harness (tool-level)** — not a customer skill; a safety net. *Inner-tooling / test infra.* Deterministic tests over `src/shop` service functions (identity gating, preview/confirm, expiry, audit logging) run from a seeded DB. Data: reuses `data/` baseline. Scope: closes the §3 "not implemented" gap; no product-scope change. **Order: 2 — before the first new data domain.** See §"Eval harness" below.
+3. **order-status** (new `order-status` skill) — "where's my order?". *New skill + new data domain.* Tools: `shop_orders_list_for_channel`, `shop_order_get` (read-only, identity-gated). Data: **new `data/shop/orders.json`** (orders owned by `customerId`, with status + line items + tracking fields). Scope: **new visible data domain → update ARCHITECTURE first** (done in this session). **Order: 3 (keystone — unlocks 4 and the storefront).**
+4. **returns-intake** (new `returns-actions` skill) — "I want to return / exchange this". *New skill, depends on `orders`.* Tools: `shop_return_preview` / `shop_return_confirm` (creates a return *request*, not a refund); reuses identity + preview→confirm→audit; auto-handoff for the money movement. **Plus a refund/return-status read** (`shop_return_status` — "is my refund approved / processed yet?"): read-only, identity-gated, safe by construction, over a `status` field on each return record. This is a *read folded into this skill*, not a separate skill, and is distinct from `policy-oracle` answering the generic "5–7 business days" timeframe. Data: **new `data/shop/returns.json`** (with per-return `status`) + return-window facts in `data/policies/returns.md`. Scope: new sub-domain — update ARCHITECTURE. **Order: 4 (after order-status).**
+5. **handoff-ticket** (`sentiment-router` extension) — durable escalation record. *Extension + one inner tool.* Tool: `shop_handoff_create` appending a handoff/ticket record; optional identity. Data: handoff records (new `data/shop/handoffs.json` or an action-log type). Scope: small; record-keeping for an existing behavior. **Order: parallelizable — slot anytime after the eval harness; independent of orders.**
+6. **product-compatibility** (`policy-oracle` extension) — ingredient/routine compatibility answers. *Extension, data-only.* Tools: none. Data: **new `data/catalog/compatibility.md`** (safe, brand-authored pairings/avoid-with facts). Scope: no new tool/pipeline; reuses the answer-only-from-data contract. **Order: parallelizable — independent of everything above.**
+
+**Dependency graph:** `cart-edit` → `eval-harness` → `order-status` → `returns-intake`. `handoff-ticket` and `product-compatibility` are independent and can land in any gap. `storefront UI` (deferred) depends on `order-status` existing.
+
+Implementation sessions take the top open item and follow the [`../../skills/README.md`](../../skills/README.md) workflow, one feature branch each.
+
+### Completeness check (2026-05-29)
+
+Walked the full customer journey (pre-purchase → buying → post-purchase → support → retention) plus skincare specifics to confirm nothing is missing. **The build backlog above is complete for the MVP.** Coverage by stage: discover/compare/gift and "in stock?" → `search-products` (catalog carries `stockStatus`); ingredient/routine compatibility → `product-compatibility`; "is this safe for my allergy/pregnancy?" → `sentiment-router` urgent handoff (safety by design); cart add/view/remove/update → `cart-actions` + `cart-edit`; "where's my order?" → `order-status`; return/exchange + refund-status → `returns-actions`; cancel/address change → deferred (intake + handoff); policy/care/refund-timeframe → `policy-oracle`; frustration/dispute + audit → `sentiment-router` + `handoff-ticket`.
+
+One capability was added from this check (refund/return-status read, folded into item 4 above). Everything else surfaced was either already covered or a deliberate post-MVP deferral, now recorded in [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md) §5:
+
+- **Checkout (cart → paid order)** — no payment in a local mock and the riskiest mutation; deferred. Consequence: `data/shop/orders.json` is **seeded fixtures**, not agent-created — `order-status` and `returns-actions` read pre-existing orders. Stated so it is a decision, not a silent gap.
+- **Self-service account linking** for unlinked senders — deferred with deep-link/QR onboarding; the demo is pre-linked and skills already ask unlinked users to verify.
+- **Loyalty / points / gift balance** — not in the data model; research flags it as cash-equivalent high-risk. Deferred.
+- **Proactive / outbound** (post-purchase check-ins, review requests, abandoned-cart nudges) — no async outbound channel; deferred (same blocker as restock alerts).
+
+Considered and **not** added (avoid padding): reorder/replenishment (retention, depends on order history — clearly post-MVP) and a multi-product routine builder (`search-products` + `product-compatibility` + the existing starter kit cover the MVP need).
+
+## 5. Eval harness — recommendation
+
+**Build a tool-level harness now (backlog item 2), before the first new data domain. Defer full skill/agent scenario automation.**
+
+The repo's own position (ARCHITECTURE §6) is to fix the operational limit — manual TUI testing — before skill count grows, and the research reinforces it (the company is legally accountable; mutating actions need audit; vendor guides omit the safety layer entirely). But "the eval harness" is really two layers with very different cost/value:
+
+- **Tool layer (cheap, high value, build now):** the three-layer + MCP boundary means the safety-critical logic lives in plain TypeScript service functions. Deterministic tests can assert the things that actually protect customers — unlinked/revoked identity is refused, preview is required before confirm, a confirm of someone else's pending action is rejected, expiry works, every mutation writes an audit log — with no model in the loop. This is the regression net every new mutation type (cart-edit, returns) leans on.
+- **Skill/agent layer (expensive, defer / keep manual):** does the model route to the right skill and ask for confirmation? This needs a model in the loop and is closer to the existing TUI scenarios in `skills-lab/`. Automating it (scripted prompts against OpenClaw + assertions) is real work for lower marginal safety; keep it manual for now and lighten it incrementally.
+
+Sequencing note: do `cart-edit` *first* (tiny, fully inside the already-tested path) so the harness has two more `PendingAction` types to exercise as its initial target, then build the harness before `order-status` introduces the first new domain and the first PII-bearing read.
 
 ## Rules to respect
 
