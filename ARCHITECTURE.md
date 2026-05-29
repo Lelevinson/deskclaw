@@ -29,7 +29,7 @@ DeskClaw is a local-first conversational commerce agent prototype for small D2C 
 
 **Implemented**
 
-- Repo-managed OpenClaw skills under [`skills/`](skills/): `policy-oracle`, `search-products`, `sentiment-router`, `cart-actions`
+- Repo-managed OpenClaw skills under [`skills/`](skills/): `policy-oracle`, `search-products`, `sentiment-router`, `cart-actions` (add / remove / change-quantity, all gated by the identity → preview → confirm → audit pipeline)
 - Shared business data under [`data/`](data/): catalog, policies, routing rules, customers, account links, and shop runtime baseline state
 - Shop MCP server under `src/mcp/shop-server.ts` and shared shop logic under `src/shop/`
 - Scripted test scenarios under [`skills-lab/scenarios/`](skills-lab/scenarios/)
@@ -41,7 +41,7 @@ DeskClaw is a local-first conversational commerce agent prototype for small D2C 
 - CI, linting, deployment
 - Mock e-commerce website UI
 
-**Planned next (in scope, not yet built)** — scoped in [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §4; build order: cart-edit → tool-level eval harness → order-status → returns-intake, with handoff-ticket and product-compatibility Q&A as independent items. The `orders` data domain (introduced by order-status) is the first new visible data domain and the prerequisite for the mock storefront.
+**Planned next (in scope, not yet built)** — scoped in [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §4; build order: ~~cart-edit~~ (shipped 2026-05-29) → **tool-level eval harness (next)** → order-status → returns-intake, with handoff-ticket and product-compatibility Q&A as independent items. The `orders` data domain (introduced by order-status) is the first new visible data domain and the prerequisite for the mock storefront.
 
 ## 4. Repository layout
 
