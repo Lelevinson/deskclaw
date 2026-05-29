@@ -1,9 +1,13 @@
 import {
   confirmLatestAddItemForChannel,
+  confirmLatestRemoveItemForChannel,
+  confirmLatestUpdateQuantityForChannel,
   getCartForChannel,
   listActionLogs,
   lookupCustomerByChannel,
   previewAddItemForChannel,
+  previewRemoveItemForChannel,
+  previewUpdateQuantityForChannel,
   searchProducts
 } from "../shop/service.js";
 import { resetShopDb } from "../shop/store.js";
@@ -76,6 +80,50 @@ async function main() {
   const cartAfterDuplicate = await getCartForChannel("simulated-chat", "demo-lin");
   assert(cartAfterDuplicate.data?.items[0]?.quantity === 1, "only latest duplicate preview should commit once");
   console.log("ok duplicate preview handling");
+
+  // --- cart-edit: remove item ---
+  await resetShopDb();
+  await previewAddItemForChannel("simulated-chat", "demo-lin", "cloud-cleanser", 2);
+  await confirmLatestAddItemForChannel("simulated-chat", "demo-lin", "cloud-cleanser", 2);
+  const removeMissing = await previewRemoveItemForChannel("simulated-chat", "demo-lin", "soft-reset-toner");
+  assert(!removeMissing.ok && removeMissing.error?.includes("not in your cart"), "removing an item not in the cart should fail");
+  const removePreview = await previewRemoveItemForChannel("simulated-chat", "demo-lin", "cloud-cleanser");
+  assert(removePreview.ok && removePreview.data?.pendingAction.type === "cart.remove_item", "remove preview should stage a remove action");
+  const cartAfterRemovePreview = await getCartForChannel("simulated-chat", "demo-lin");
+  assert(cartAfterRemovePreview.data?.items[0]?.quantity === 2, "remove preview must not mutate cart");
+  const removeConfirm = await confirmLatestRemoveItemForChannel("simulated-chat", "demo-lin", "cloud-cleanser");
+  assert(removeConfirm.ok && removeConfirm.data?.cart.items.length === 0, "confirming remove should empty the cart");
+  const removeLogs = await listActionLogs("customer-demo-lin", 10);
+  assert(removeLogs.data?.some((log) => log.type === "cart.remove_item" && log.status === "success"), "remove success log should exist");
+  console.log("ok remove item");
+
+  // --- cart-edit: update quantity ---
+  await resetShopDb();
+  await previewAddItemForChannel("simulated-chat", "demo-lin", "cloud-cleanser", 1);
+  await confirmLatestAddItemForChannel("simulated-chat", "demo-lin", "cloud-cleanser", 1);
+  const updateMissing = await previewUpdateQuantityForChannel("simulated-chat", "demo-lin", "soft-reset-toner", 2);
+  assert(!updateMissing.ok && updateMissing.error?.includes("not in your cart"), "updating an item not in the cart should fail");
+  const updateZero = await previewUpdateQuantityForChannel("simulated-chat", "demo-lin", "cloud-cleanser", 0);
+  assert(!updateZero.ok, "updating quantity to 0 should be rejected (use remove instead)");
+  const updateSame = await previewUpdateQuantityForChannel("simulated-chat", "demo-lin", "cloud-cleanser", 1);
+  assert(!updateSame.ok && updateSame.error?.includes("already at quantity"), "updating to the current quantity should be a no-op rejection");
+  const updatePreview = await previewUpdateQuantityForChannel("simulated-chat", "demo-lin", "cloud-cleanser", 3);
+  assert(updatePreview.ok && updatePreview.data?.pendingAction.quantity === 3, "update preview should stage the target quantity");
+  const cartAfterUpdatePreview = await getCartForChannel("simulated-chat", "demo-lin");
+  assert(cartAfterUpdatePreview.data?.items[0]?.quantity === 1, "update preview must not mutate cart");
+  const updateConfirm = await confirmLatestUpdateQuantityForChannel("simulated-chat", "demo-lin", "cloud-cleanser", 3);
+  assert(updateConfirm.ok && updateConfirm.data?.cart.items[0]?.quantity === 3, "confirming update should set the new quantity");
+  console.log("ok update quantity");
+
+  // --- cart-edit: update quantity above stock ---
+  await resetShopDb();
+  await previewAddItemForChannel("simulated-chat", "demo-lin", "travel-mini-trio", 1);
+  await confirmLatestAddItemForChannel("simulated-chat", "demo-lin", "travel-mini-trio", 1);
+  const aboveStock = await previewUpdateQuantityForChannel("simulated-chat", "demo-lin", "travel-mini-trio", 4);
+  assert(!aboveStock.ok && aboveStock.error?.includes("available"), "updating above available stock should fail");
+  const cartAfterAboveStock = await getCartForChannel("simulated-chat", "demo-lin");
+  assert(cartAfterAboveStock.data?.items[0]?.quantity === 1, "failed update must not mutate cart");
+  console.log("ok update above stock refusal");
 
   await resetShopDb();
   console.log("Shop smoke tests passed.");

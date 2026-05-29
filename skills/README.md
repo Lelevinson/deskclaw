@@ -47,15 +47,21 @@ These are not OpenClaw skills. They are reusable tool operations that skills can
 | `shop_cart_preview_add_item` | `cart-actions` | Validate and stage an add-to-cart action before confirmation. |
 | `shop_cart_confirm_add_item` | `cart-actions` | Commit a known pending add-to-cart action. |
 | `shop_cart_confirm_latest_add_item` | `cart-actions` | Commit the latest matching pending add-to-cart action after customer confirmation. |
+| `shop_cart_preview_remove_item` | `cart-actions` | Validate and stage a remove-from-cart action before confirmation. |
+| `shop_cart_confirm_remove_item` | `cart-actions` | Commit a known pending remove-from-cart action. |
+| `shop_cart_confirm_latest_remove_item` | `cart-actions` | Commit the latest matching pending remove-from-cart action after customer confirmation. |
+| `shop_cart_preview_update_quantity` | `cart-actions` | Validate and stage a change to an existing cart item's quantity before confirmation. |
+| `shop_cart_confirm_update_quantity` | `cart-actions` | Commit a known pending update-quantity action. |
+| `shop_cart_confirm_latest_update_quantity` | `cart-actions` | Commit the latest matching pending update-quantity action after customer confirmation. |
 | `shop_action_log_list` | `cart-actions`, demos/debugging | Inspect what happened for verification. |
 
 ## Planned Utilities (backlog)
 
-These are scoped but not yet built. The full reasoning, research basis, and ordering live in [`../docs/planning/skill-roadmap.md`](../docs/planning/skill-roadmap.md) §4; scope is owned by [`../ARCHITECTURE.md`](../ARCHITECTURE.md) §5. Build the top open item, one feature branch each. Build order: **cart-edit → tool-level eval harness → order-status → returns-intake**; `handoff-ticket` and `product-compatibility` are independent.
+These are scoped but not yet built. The full reasoning, research basis, and ordering live in [`../docs/planning/skill-roadmap.md`](../docs/planning/skill-roadmap.md) §4; scope is owned by [`../ARCHITECTURE.md`](../ARCHITECTURE.md) §5. Build the top open item, one feature branch each. Build order: **~~cart-edit~~ (shipped) → tool-level eval harness (next) → order-status → returns-intake**; `handoff-ticket` and `product-compatibility` are independent.
 
 | Customer-facing utility | Type | Inner tools / data | Notes |
 |---|---|---|---|
-| Remove / update cart item | `cart-actions` extension | preview/confirm remove + update-quantity tools; extend `PendingAction.type` | First branch. No new data domain; reuses the identity → preview → confirm → audit pipeline. |
+| ✅ Remove / update cart item | `cart-actions` extension | preview/confirm remove + update-quantity tools; extended `PendingAction.type` | **Shipped 2026-05-29.** No new data domain; reuses the identity → preview → confirm → audit pipeline. |
 | Order status lookup | new `order-status` skill | read-only `shop_orders_list_for_channel` / `shop_order_get`; new `data/shop/orders.json` | Highest-volume real query. Safe by construction — keyed on the resolved `customerId`, never a typed order number. New visible data domain. |
 | Return / exchange intake + refund status | new `returns-actions` skill (depends on orders) | `shop_return_preview` / `shop_return_confirm` / `shop_return_status`; new `data/shop/returns.json` (per-return `status`); `data/policies/returns.md` | Creates a return *request* then hands off; never auto-refunds. Includes a read-only "is my refund processed?" status check. |
 | Human handoff ticket | `sentiment-router` extension | `shop_handoff_create` (append-only record); optional identity | Durable escalation/audit record. Independent of orders. |

@@ -5,10 +5,16 @@ import * as z from "zod/v4";
 import {
   confirmAddItemForChannel,
   confirmLatestAddItemForChannel,
+  confirmLatestRemoveItemForChannel,
+  confirmLatestUpdateQuantityForChannel,
+  confirmRemoveItemForChannel,
+  confirmUpdateQuantityForChannel,
   getCartForChannel,
   listActionLogs,
   lookupCustomerByChannel,
   previewAddItemForChannel,
+  previewRemoveItemForChannel,
+  previewUpdateQuantityForChannel,
   searchProducts
 } from "../shop/service.js";
 
@@ -116,6 +122,98 @@ server.registerTool(
   },
   async ({ channel, externalUserId, productId, quantity }) =>
     jsonText(await confirmLatestAddItemForChannel(channel, externalUserId, productId, quantity))
+);
+
+server.registerTool(
+  "shop_cart_preview_remove_item",
+  {
+    title: "Preview Remove Item From Cart",
+    description: "Validate and stage a remove-from-cart action for a linked channel identity. Use this before asking the customer to confirm.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel."),
+      productId: z.string().min(1)
+    })
+  },
+  async ({ channel, externalUserId, productId }) =>
+    jsonText(await previewRemoveItemForChannel(channel, externalUserId, productId))
+);
+
+server.registerTool(
+  "shop_cart_confirm_remove_item",
+  {
+    title: "Confirm Remove Item From Cart",
+    description: "Commit a staged remove-from-cart action for the same linked channel identity after explicit customer confirmation.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel."),
+      pendingActionId: z.string().min(1)
+    })
+  },
+  async ({ channel, externalUserId, pendingActionId }) =>
+    jsonText(await confirmRemoveItemForChannel(channel, externalUserId, pendingActionId))
+);
+
+server.registerTool(
+  "shop_cart_confirm_latest_remove_item",
+  {
+    title: "Confirm Latest Remove Item From Cart",
+    description: "Commit the latest matching staged remove-from-cart action for the same linked channel identity after explicit customer confirmation.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel."),
+      productId: z.string().min(1).optional()
+    })
+  },
+  async ({ channel, externalUserId, productId }) =>
+    jsonText(await confirmLatestRemoveItemForChannel(channel, externalUserId, productId))
+);
+
+server.registerTool(
+  "shop_cart_preview_update_quantity",
+  {
+    title: "Preview Update Cart Item Quantity",
+    description: "Validate and stage a change to an existing cart item's quantity for a linked channel identity. The quantity is the new target amount. Use this before asking the customer to confirm.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel."),
+      productId: z.string().min(1),
+      quantity: z.number().int().min(1).max(10).describe("The new target quantity for the cart line.")
+    })
+  },
+  async ({ channel, externalUserId, productId, quantity }) =>
+    jsonText(await previewUpdateQuantityForChannel(channel, externalUserId, productId, quantity))
+);
+
+server.registerTool(
+  "shop_cart_confirm_update_quantity",
+  {
+    title: "Confirm Update Cart Item Quantity",
+    description: "Commit a staged update-quantity action for the same linked channel identity after explicit customer confirmation.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel."),
+      pendingActionId: z.string().min(1)
+    })
+  },
+  async ({ channel, externalUserId, pendingActionId }) =>
+    jsonText(await confirmUpdateQuantityForChannel(channel, externalUserId, pendingActionId))
+);
+
+server.registerTool(
+  "shop_cart_confirm_latest_update_quantity",
+  {
+    title: "Confirm Latest Update Cart Item Quantity",
+    description: "Commit the latest matching staged update-quantity action for the same linked channel identity after explicit customer confirmation.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel."),
+      productId: z.string().min(1).optional(),
+      quantity: z.number().int().min(1).max(10).optional().describe("The new target quantity, used to disambiguate which staged update to commit.")
+    })
+  },
+  async ({ channel, externalUserId, productId, quantity }) =>
+    jsonText(await confirmLatestUpdateQuantityForChannel(channel, externalUserId, productId, quantity))
 );
 
 server.registerTool(

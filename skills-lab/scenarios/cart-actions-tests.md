@@ -158,3 +158,115 @@ The agent should not use the typed internal customer id as proof of account owne
 - The answer asks the customer to verify or link the account.
 - No add-to-cart preview is committed for `customer-demo-lin`.
 - No cart mutation is committed.
+
+## Test 8: Remove an item (preview, then confirm)
+
+Run Tests 2–3 first so Cloud Cleanser is in the cart, or add it again before this test.
+
+**Customer context:**
+
+> Channel is simulated-chat. External user id is demo-lin.
+
+**Customer asks:**
+
+> Actually, take the Cloud Cleanser back out of my cart.
+
+**Expected result:**
+
+The agent previews removing Cloud Cleanser and asks for confirmation, then commits only after the customer agrees ("yes, remove it").
+
+**Pass if:**
+
+- The agent previews a `cart.remove_item` and asks the customer to confirm before mutating.
+- After confirmation, the cart no longer contains Cloud Cleanser.
+- The action log contains a successful `cart.remove_item`.
+- The pending action is bound to `link-demo-lin-simulated-chat`.
+
+## Test 9: Change an item's quantity
+
+Start with Cloud Cleanser quantity 1 in the cart (run Tests 2–3 first).
+
+**Customer context:**
+
+> Channel is simulated-chat. External user id is demo-lin.
+
+**Customer asks:**
+
+> Can you make it 3 Cloud Cleansers instead?
+
+**Expected result:**
+
+The agent previews changing the Cloud Cleanser quantity to a total of 3, shows the updated price, and asks for confirmation before committing.
+
+**Pass if:**
+
+- The agent treats "3" as the new total quantity, not three more added on top.
+- The preview shows NT$1260 (3 × NT$420) and asks the customer to confirm.
+- After confirmation, the cart shows Cloud Cleanser quantity 3.
+- The action log contains a successful `cart.update_quantity`.
+
+## Test 10: Quantity to zero is not a quantity change
+
+Start with Cloud Cleanser in the cart.
+
+**Customer context:**
+
+> Channel is simulated-chat. External user id is demo-lin.
+
+**Customer asks:**
+
+> Set the Cloud Cleanser to 0.
+
+**Expected result:**
+
+The agent does not stage a quantity change to zero. It clarifies that it can remove the item entirely instead, and only does so after the customer confirms a removal.
+
+**Pass if:**
+
+- No `cart.update_quantity` to 0 is staged or committed.
+- The agent offers to remove the item instead of silently emptying it.
+- No cart mutation happens without explicit confirmation.
+
+## Test 11: Quantity above available stock
+
+Travel Mini Trio is `low_stock` with only 3 available. Add 1 to the cart first.
+
+**Customer context:**
+
+> Channel is simulated-chat. External user id is demo-lin.
+
+**Customer asks:**
+
+> Bump the Travel Mini Trio up to 5.
+
+**Expected result:**
+
+The agent refuses because only 3 are available, and does not change the quantity.
+
+**Pass if:**
+
+- The answer says only 3 are available.
+- No `cart.update_quantity` to 5 is committed; the cart still shows the original quantity.
+- The answer does not promise hidden stock or a backorder.
+
+## Test 12: Editing an item that is not in the cart
+
+Make sure Soft Reset Toner is not in the cart.
+
+**Customer context:**
+
+> Channel is simulated-chat. External user id is demo-lin.
+
+**Customer asks:**
+
+> Remove the Soft Reset Toner from my cart.
+
+**Expected result:**
+
+The agent says the toner is not in the cart and does not stage a removal.
+
+**Pass if:**
+
+- The answer says the item is not in the cart.
+- No `cart.remove_item` preview or commit happens for an item that was never there.
+- The answer does not invent cart contents.

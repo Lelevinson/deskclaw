@@ -57,13 +57,17 @@ export interface Cart {
   items: CartItem[];
 }
 
+export type PendingActionType = "cart.add_item" | "cart.remove_item" | "cart.update_quantity";
+
 export interface PendingAction {
   id: string;
-  type: "cart.add_item";
+  type: PendingActionType;
   status: "pending" | "completed" | "cancelled" | "expired";
   customerId: string;
   accountLinkId: string;
   productId: string;
+  // For cart.add_item: quantity to add. For cart.update_quantity: the target quantity.
+  // For cart.remove_item: the line quantity being removed (recorded for the audit summary).
   quantity: number;
   summary: string;
   createdAt: string;
