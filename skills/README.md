@@ -53,6 +53,8 @@ These are not OpenClaw skills. They are reusable tool operations that skills can
 
 These are ideas, not implemented scope. Before building any of them, check [`../ARCHITECTURE.md`](../ARCHITECTURE.md) and update scope first if needed.
 
+> **Under review.** This table was drafted by an earlier AI and has not been validated. It is being reviewed and reprioritized in [`../docs/planning/skill-roadmap.md`](../docs/planning/skill-roadmap.md) — treat it as input, not a committed plan.
+
 | Customer-facing utility | Likely skill | Likely inner tools/data |
 |---|---|---|
 | Remove or update cart item | `cart-actions` extension or new cart skill | customer lookup, cart read, preview/confirm cart mutation |

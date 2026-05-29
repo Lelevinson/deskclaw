@@ -6,6 +6,8 @@ Supporting documentation. Root-level files stay small; everything operational or
 docs/
   openclaw/
     setup.md      # OpenClaw install, config, commands, fixes — single source
+  planning/
+    skill-roadmap.md  # which skills to build next — research/brainstorm handoff
   archive/
     PROPOSAL.md   # historical proposal/presentation snapshot (read-only)
 ```
