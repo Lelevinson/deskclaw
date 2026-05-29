@@ -21,11 +21,13 @@ If you have a question or want to change something, this table tells you where t
 | Is X in scope? Is X done? What's the stack? | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | How do I install / configure / debug OpenClaw? | [`docs/openclaw/setup.md`](docs/openclaw/setup.md) |
 | How do I start the project for the first time? | [`README.md`](README.md) |
-| How do commerce actions / MCP tools work? | [`docs/commerce/actions.md`](docs/commerce/actions.md) |
+| How do shop/cart MCP tools work? | [`src/shop/README.md`](src/shop/README.md) |
+| How do we classify and develop skills vs inner tools? | [`skills/README.md`](skills/README.md) |
 | How should I work in this repo? (commit style, rules) | [`AGENTS.md`](AGENTS.md) — this file |
 | What skills exist and how are they named? | [`skills/README.md`](skills/README.md) |
 | How a skill *behaves* | the skill's own `SKILL.md` under [`skills/`](skills/) |
-| The facts a skill answers from | the skill's `references/` files |
+| How is shared data organized? | [`data/README.md`](data/README.md) |
+| What shape should data files use? | [`data/templates.md`](data/templates.md) |
 | How do I run the scenario tests? Pass/fail rules? | [`skills-lab/README.md`](skills-lab/README.md) |
 | The actual test prompts | [`skills-lab/scenarios/`](skills-lab/scenarios/) |
 | Historical proposal narrative | [`docs/archive/PROPOSAL.md`](docs/archive/PROPOSAL.md) — read-only |
@@ -38,22 +40,18 @@ Rule: if a fact appears in more than one file, one of them is wrong. Fix it in t
 - **Treat `ARCHITECTURE.md` as the scope lock.** Adding a deferred extension requires updating `ARCHITECTURE.md` §5 first.
 - **Keep docs in sync with implementation in the same change.** If you add code that contradicts a doc, fix the doc in the same commit.
 - **One fact, one home.** Before adding content, check the topic→file map. If unclear, link to the owning file rather than copying.
+- **Keep shared data rules in `data/`.** Follow [`data/README.md`](data/README.md) and [`data/templates.md`](data/templates.md) instead of repeating data-shape rules here.
 - **Preserve local-first / privacy-first assumptions** unless the user approves a change.
-- **Prefer small, inspectable local files** for the MVP: markdown knowledge, AgentSkills, simple config.
+- **Prefer small, inspectable local files** for the MVP: markdown/data files, repo skills, simple config.
 - **Use Context7 MCP** when current library/API docs would reduce guesswork; do not rely on memory for API shapes.
 - **Treat large all-file diffs with equal insertions/deletions as line-ending churn** — check before committing.
 - **Never commit secrets, generated auth files, or personal OpenClaw workspace state.**
 - **Prefer simulated/local test flows** before attempting real channel integrations.
+- **Develop new skills/utilities review-first by default.** Follow the workflow in [`skills/README.md`](skills/README.md) unless the user explicitly asks to skip review.
 
-## Scope guardrails
+## Scope Guardrail
 
-The following are explicitly **out** of MVP scope (full list in [`ARCHITECTURE.md`](ARCHITECTURE.md) §5):
-
-- Gmail, WhatsApp, Instagram, or other real channel integrations
-- Appointment booking
-- Deep-link / QR onboarding, promo-code generation, custom dashboards
-
-To work on any of these, update `ARCHITECTURE.md` first or label the work clearly as an extension.
+`ARCHITECTURE.md` owns scope. Before adding a new channel, utility, or deferred feature, check [`ARCHITECTURE.md §5`](ARCHITECTURE.md#5-deferred-extensions-out-of-mvp-scope) and update it first if the work changes scope.
 
 ## Commit style
 
@@ -67,15 +65,5 @@ To work on any of these, update `ARCHITECTURE.md` first or label the work clearl
 docs: collapse OpenClaw notes into setup.md
 chore: enable bubblewrap sandbox in devcontainer
 update: container config and proposal script
-fix: correct shipping policy reference path
+fix: correct shipping policy data path
 ```
-
-## Practical next steps
-
-If implementation work resumes from here, the likely order is:
-
-1. Validate `policy-oracle`, `search-products`, `sentiment-router`, and `cart-actions` via the scenario files in [`skills-lab/scenarios/`](skills-lab/scenarios/).
-2. Verify OpenClaw can reach the configured model and commerce MCP server ([setup.md §5](docs/openclaw/setup.md#5-models), [actions.md](docs/commerce/actions.md)).
-3. Add an automated scenario runner so the tests produce a pass/fail score instead of requiring manual TUI input.
-4. Use the scenario results to tighten skill prompts, references, tool contracts, or evaluation coverage.
-5. Only after that, consider any deferred extension.

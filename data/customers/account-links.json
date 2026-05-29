@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "accountLinks": [
+    {
+      "id": "link-demo-lin-whatsapp",
+      "customerId": "customer-demo-lin",
+      "channel": "whatsapp",
+      "externalUserId": "+886900000001",
+      "status": "linked",
+      "linkedAt": "2026-05-28T00:00:00.000Z"
+    },
+    {
+      "id": "link-demo-lin-simulated-chat",
+      "customerId": "customer-demo-lin",
+      "channel": "simulated-chat",
+      "externalUserId": "demo-lin",
+      "status": "linked",
+      "linkedAt": "2026-05-28T00:00:00.000Z"
+    }
+  ]
+}

@@ -23,7 +23,7 @@ Install on your own machine before opening the project:
 - VS Code Dev Containers extension
 - Ollama installed natively on the host — only required if you plan to run the local model option
 
-The Dev Containers extension must be installed in your host VS Code before opening the repo. The devcontainer requests the OpenAI Codex/ChatGPT extension (`OpenAI.chatgpt`) inside the remote container, which provides the `gpt-5.5` option. See [`docs/openclaw/setup.md §5`](docs/openclaw/setup.md#5-models) for both model setups.
+The Dev Containers extension must be installed in your host VS Code before opening the repo. The devcontainer requests the OpenAI Codex/ChatGPT extension (`OpenAI.chatgpt`) inside the remote container, which provides the `gpt-5.5` option. See [`docs/openclaw/setup.md §6`](docs/openclaw/setup.md#6-models) for both model setups.
 
 ### Open the project
 
@@ -39,9 +39,9 @@ The Dev Containers extension must be installed in your host VS Code before openi
 
 Once the container is open, run the one-time OpenClaw config and verification commands in [`docs/openclaw/setup.md §2`](docs/openclaw/setup.md#2-first-time-setup-inside-the-devcontainer). That doc also covers commands, model setup, and troubleshooting.
 
-### Commerce action tools
+### Shop action tools
 
-DeskClaw includes a local mock commerce action layer for agent-visible actions such as adding a product to a customer's cart. See [`docs/commerce/actions.md`](docs/commerce/actions.md) for setup, MCP wiring, and the confirmation flow.
+DeskClaw includes a local mock shop backend for agent-visible actions such as adding a product to a customer's cart. See [`src/shop/README.md`](src/shop/README.md) for the design contract and [`docs/openclaw/setup.md §4`](docs/openclaw/setup.md#4-shop-mcp-tools) for commands.
 
 ## Devcontainer at a glance
 
@@ -55,11 +55,10 @@ Those named volumes survive normal **Rebuild Container** runs and hold auth/sess
 README.md                       # this file — what + first-time setup
 ARCHITECTURE.md                 # scope, stack, status, layout, resolved decisions
 AGENTS.md                       # contributor rules + topic→file map
-data/                           # committed demo seed data
-src/                            # local commerce core + MCP server
+data/                           # shared business facts + local state data
+src/                            # local shop backend + MCP server
 docs/
   README.md                     # index of supporting docs
-  commerce/actions.md           # commerce action pipeline + MCP wiring
   openclaw/setup.md             # all OpenClaw ops in one place
   archive/PROPOSAL.md           # historical proposal — read-only
 skills/                         # repo-managed OpenClaw skills (canonical)

@@ -11,6 +11,14 @@ export interface Product {
   bestFor: string[];
   avoidIf: string[];
   shortDescription: string;
+  link: string;
+}
+
+export interface ProductCatalog {
+  version: number;
+  catalogName: string;
+  currency: string;
+  products: Product[];
 }
 
 export interface ChannelIdentity {
@@ -21,7 +29,21 @@ export interface ChannelIdentity {
 export interface Customer {
   id: string;
   displayName: string;
-  channelIdentities: ChannelIdentity[];
+}
+
+export interface AccountLink extends ChannelIdentity {
+  id: string;
+  customerId: string;
+  status: "linked" | "revoked";
+  linkedAt: string;
+}
+
+export interface LinkedCustomer {
+  customerId: string;
+  displayName: string;
+  accountLinkId: string;
+  channel: string;
+  externalUserId: string;
 }
 
 export interface CartItem {
@@ -40,6 +62,7 @@ export interface PendingAction {
   type: "cart.add_item";
   status: "pending" | "completed" | "cancelled" | "expired";
   customerId: string;
+  accountLinkId: string;
   productId: string;
   quantity: number;
   summary: string;
@@ -58,10 +81,11 @@ export interface ActionLog {
   metadata?: Record<string, unknown>;
 }
 
-export interface CommerceDatabase {
+export interface ShopDatabase {
   version: number;
   products: Product[];
   customers: Customer[];
+  accountLinks: AccountLink[];
   carts: Cart[];
   pendingActions: PendingAction[];
   actionLogs: ActionLog[];
