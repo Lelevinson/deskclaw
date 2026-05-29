@@ -32,16 +32,17 @@ DeskClaw is a local-first conversational commerce agent prototype for small D2C 
 - Repo-managed OpenClaw skills under [`skills/`](skills/): `policy-oracle`, `search-products`, `sentiment-router`, `cart-actions` (add / remove / change-quantity, all gated by the identity → preview → confirm → audit pipeline)
 - Shared business data under [`data/`](data/): catalog, policies, routing rules, customers, account links, and shop runtime baseline state
 - Shop MCP server under `src/mcp/shop-server.ts` and shared shop logic under `src/shop/`
+- **Tool-level eval harness** under `src/cli/shop-eval.ts` (`npm run shop:eval`): deterministic, no-model tests over the `src/shop` service functions, asserting the safety-critical guarantees (identity gating, ownership proof, preview→confirm, expiry, refusals, audit logging) across all three cart action types. Run from a per-test `data/` reset; named PASS/FAIL with a non-zero exit on failure.
 - Scripted test scenarios under [`skills-lab/scenarios/`](skills-lab/scenarios/)
 - Devcontainer + Ollama wiring + Codex provider + repo-skill loading via `skills.load.extraDirs`
 
 **Not implemented**
 
-- Automated evaluation harness (the scenario files currently require manual TUI testing)
+- Automated evaluation at the **skill/agent (model-in-the-loop) layer** — the `skills-lab/` scenario files still require manual TUI testing (the tool layer is covered by the eval harness above; deferred by [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §5)
 - CI, linting, deployment
 - Mock e-commerce website UI
 
-**Planned next (in scope, not yet built)** — scoped in [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §4; build order: ~~cart-edit~~ (shipped 2026-05-29) → **tool-level eval harness (next)** → order-status → returns-intake, with handoff-ticket and product-compatibility Q&A as independent items. The `orders` data domain (introduced by order-status) is the first new visible data domain and the prerequisite for the mock storefront.
+**Planned next (in scope, not yet built)** — scoped in [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §4; build order: ~~cart-edit~~ (shipped 2026-05-29) → ~~tool-level eval harness~~ (shipped 2026-05-29) → **order-status (next)** → returns-intake, with handoff-ticket and product-compatibility Q&A as independent items. The `orders` data domain (introduced by order-status) is the first new visible data domain and the prerequisite for the mock storefront.
 
 ## 4. Repository layout
 
@@ -87,8 +88,8 @@ This section owns the boundary of what may be built. The detailed, ordered backl
 
 Decided in the 2026-05-29 roadmap session. New data domains noted because they trigger storefront UI work (§6).
 
-- **Cart edits** — remove item / change quantity. Extends `cart-actions`; no new data domain.
-- **Tool-level evaluation harness** — deterministic tests over `src/shop` service functions (identity gating, preview/confirm, audit). Closes the "Not implemented" eval gap above for the tool layer.
+- ~~**Cart edits** — remove item / change quantity. Extends `cart-actions`; no new data domain.~~ **Shipped 2026-05-29.**
+- ~~**Tool-level evaluation harness** — deterministic tests over `src/shop` service functions (identity gating, preview/confirm, audit).~~ **Shipped 2026-05-29** (`npm run shop:eval`); closed the "Not implemented" eval gap above for the tool layer.
 - **Order status lookup** — read-only, identity-gated. Introduces the **`orders`** data domain (the first new *visible* data domain).
 - **Return / exchange intake + status** — captures a return *request* and hands off the refund/exchange (never auto-issues money), plus a read-only refund/return-status check ("is my refund processed?"). Depends on the `orders` domain; adds a **`returns`** sub-domain.
 - **Handoff ticket records** — durable escalation/audit records for `sentiment-router` handoffs.

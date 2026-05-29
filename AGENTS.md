@@ -47,7 +47,7 @@ Rule: if a fact appears in more than one file, one of them is wrong. Fix it in t
 - **Treat large all-file diffs with equal insertions/deletions as line-ending churn** — check before committing.
 - **Never commit secrets, generated auth files, or personal OpenClaw workspace state.**
 - **Prefer simulated/local test flows** before attempting real channel integrations.
-- **Develop new skills/utilities review-first by default.** Follow the workflow in [`skills/README.md`](skills/README.md) unless the user explicitly asks to skip review.
+- **Develop new skills/utilities review-first by default** — review the design up front *and* the diff before merge (step 10 of the workflow). Follow the workflow in [`skills/README.md`](skills/README.md) unless the user explicitly asks to skip review.
 
 ## Scope Guardrail
 

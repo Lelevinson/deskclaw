@@ -45,10 +45,10 @@ npm run build
 npm run shop:reset
 ```
 
-Run the local shop smoke test:
+Run the local shop eval harness (deterministic tool-level safety tests):
 
 ```bash
-npm run shop:test
+npm run shop:eval
 ```
 
 Configure OpenClaw to see the shop MCP server:
