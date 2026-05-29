@@ -68,6 +68,8 @@ Cut or postponed in the 2026-05-29 roadmap session — full list and reasoning i
 
 ## Development Workflow
 
+**Start a fresh implementation chat per utility.** Decisions and scope live in [`../docs/planning/skill-roadmap.md`](../docs/planning/skill-roadmap.md) §4 and [`../ARCHITECTURE.md`](../ARCHITECTURE.md), not in chat history — so each utility begins clean by reading those, which keeps context small and sessions independent.
+
 Use this order when adding one customer utility at a time:
 
 1. Name the customer-facing utility in plain language.
