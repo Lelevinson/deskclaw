@@ -99,6 +99,17 @@ If a skill behaves wrong, treat it as a prompt/skill-wording issue first — `/n
   ```
   Paste into the dashboard's **Gateway Token** field. Do not commit or share it.
 - **Dashboard says `device token mismatch`:** `localhost:18789` and `127.0.0.1:18789` use separate browser storage. Pick one origin (prefer `localhost`) and clear site data for the other, or use a private window.
+- **WhatsApp QR login fails with missing `@whiskeysockets/baileys`:** for extension/demo-channel experiments, install the bundled plugin runtime dependencies inside the global OpenClaw package:
+  ```bash
+  cd /usr/local/share/npm-global/lib/node_modules/openclaw
+  npm install --no-save --legacy-peer-deps @whiskeysockets/baileys@7.0.0-rc.9 https-proxy-agent@^9.0.0 jimp@^1.6.1 typebox@1.1.33 undici@8.1.0
+  ```
+- **WhatsApp downloaded plugin conflict:** if setup downloads `/home/node/.openclaw/extensions/whatsapp` and then fails with a missing internal module like `plugin-sdk/root-alias.cjs/bundled-channel-config-schema`, move the downloaded extension aside and use the bundled plugin:
+  ```bash
+  mv /home/node/.openclaw/extensions/whatsapp /home/node/.openclaw/extensions/whatsapp.disabled-20260520
+  openclaw plugins enable whatsapp
+  ```
+  Restart the gateway after enabling.
 - **Full reset:** `openclaw reset` then `rm -rf /home/node/.openclaw/* /home/node/.openclaw/.[!.]*`
 
 ## 9. Context7 MCP for Codex
