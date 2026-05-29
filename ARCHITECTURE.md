@@ -96,6 +96,8 @@ These are explicitly **not** part of the first prototype. Adding any of them req
 - **Escalation signals:** Defined in `data/routing/escalation-rules.md`. `handoff_recommended` = frustration, repeated failures, explicit human request. `urgent_handoff` = safety, legal, chargeback, social media threats.
 - **Demo interface:** OpenClaw TUI only. No custom web UI for the first prototype.
 - **Demo brand:** Intentionally a Taiwan-based skincare brand (NT$ pricing, skincare catalog). This is the course project's chosen domain, not a placeholder.
+- **Skill ↔ UI integration order:** Build customer skills against the shared shop backend and `data/` first, and test them in the TUI (one feature branch per customer capability, spanning whatever skill/tool/data layers it needs). The mock storefront comes later as a single read-only view over the same shop state (catalog, carts, action logs) — it is wired to the shared state, not to individual skills. A new skill needs new UI work only when it introduces a new **visible data domain** (for example orders or returns), not once per skill.
+- **Scaling unit:** The three-layer split (customer skill → inner tool → shared data, see [`skills/README.md`](skills/README.md)) plus the typed MCP boundary is what makes added skills cheap. The first expected limits are operational, not structural: manual TUI testing (mitigated by the not-yet-built eval harness in §3) and the whole-file JSON store. Address those before skill count grows; do not restructure the layers preemptively.
 
 ## 7. Source-of-truth order
 
