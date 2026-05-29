@@ -57,14 +57,14 @@ These are scoped but not yet built. The full reasoning, research basis, and orde
 |---|---|---|---|
 | Remove / update cart item | `cart-actions` extension | preview/confirm remove + update-quantity tools; extend `PendingAction.type` | First branch. No new data domain; reuses the identity → preview → confirm → audit pipeline. |
 | Order status lookup | new `order-status` skill | read-only `shop_orders_list_for_channel` / `shop_order_get`; new `data/shop/orders.json` | Highest-volume real query. Safe by construction — keyed on the resolved `customerId`, never a typed order number. New visible data domain. |
-| Return / exchange intake | new `returns-actions` skill (depends on orders) | `shop_return_preview` / `shop_return_confirm`; new `data/shop/returns.json`; `data/policies/returns.md` | Creates a return *request* then hands off; never auto-refunds. |
+| Return / exchange intake + refund status | new `returns-actions` skill (depends on orders) | `shop_return_preview` / `shop_return_confirm` / `shop_return_status`; new `data/shop/returns.json` (per-return `status`); `data/policies/returns.md` | Creates a return *request* then hands off; never auto-refunds. Includes a read-only "is my refund processed?" status check. |
 | Human handoff ticket | `sentiment-router` extension | `shop_handoff_create` (append-only record); optional identity | Durable escalation/audit record. Independent of orders. |
 | Product / ingredient-compatibility Q&A | `policy-oracle` extension | new `data/catalog/compatibility.md`; no tools | Answer only from data; escalate reaction/medical language to `sentiment-router`. |
 | Mock storefront demo | UI, not a skill | reads shared shop state (catalog, carts, orders, action logs) | Build after the `orders` domain exists; one read-only view, not per skill. |
 
 ### Reviewed and deferred
 
-Cut or postponed in the 2026-05-29 roadmap session (see [`../ARCHITECTURE.md`](../ARCHITECTURE.md) §5 "Deferred"): customer-initiated **address / shipping-address mutation** (top account-takeover signal → handoff), **subscription management**, **restock / back-in-stock alerts**, and any **autonomous cancellation or refund** (intake-and-handoff only).
+Cut or postponed in the 2026-05-29 roadmap session — full list and reasoning in [`../ARCHITECTURE.md`](../ARCHITECTURE.md) §5 "Deferred": customer-initiated **address / shipping-address mutation** (top account-takeover signal → handoff), **subscription management**, **restock / back-in-stock alerts**, any **autonomous cancellation or refund** (intake-and-handoff only), **checkout / cart→order** (no payment in the mock; `orders.json` is seeded fixtures), **self-service account linking**, **loyalty / points**, and **proactive / outbound messaging**. A completeness pass over the full customer journey confirmed the backlog above is otherwise complete for the MVP ([`../docs/planning/skill-roadmap.md`](../docs/planning/skill-roadmap.md) §4).
 
 ## Development Workflow
 

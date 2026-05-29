@@ -90,7 +90,7 @@ Decided in the 2026-05-29 roadmap session. New data domains noted because they t
 - **Cart edits** — remove item / change quantity. Extends `cart-actions`; no new data domain.
 - **Tool-level evaluation harness** — deterministic tests over `src/shop` service functions (identity gating, preview/confirm, audit). Closes the "Not implemented" eval gap above for the tool layer.
 - **Order status lookup** — read-only, identity-gated. Introduces the **`orders`** data domain (the first new *visible* data domain).
-- **Return / exchange intake** — captures a return *request* and hands off the refund/exchange; never auto-issues money. Depends on the `orders` domain; adds a **`returns`** sub-domain.
+- **Return / exchange intake + status** — captures a return *request* and hands off the refund/exchange (never auto-issues money), plus a read-only refund/return-status check ("is my refund processed?"). Depends on the `orders` domain; adds a **`returns`** sub-domain.
 - **Handoff ticket records** — durable escalation/audit records for `sentiment-router` handoffs.
 - **Product / ingredient-compatibility Q&A** — extends `policy-oracle` from a brand-authored compatibility data file; answer-only-from-data, escalate reaction/medical language.
 
@@ -107,6 +107,10 @@ Explicitly **not** part of the prototype.
 - **Customer-initiated address / shipping-address mutation** — top account-takeover signal; route to handoff. Revisit only with stronger step-up verification.
 - **Subscription management** — recurring-order domain; cancel sits in the autonomous-mutation no-go zone.
 - **Restock / back-in-stock alerts** — requires an async outbound notification channel we do not have.
+- **Checkout (cart → paid order)** — no payment exists in the local mock and it is the riskiest mutation. Consequence: `data/shop/orders.json` is **seeded fixture data**, not agent-created; `order-status` and `returns-actions` read pre-existing orders.
+- **Self-service account linking** — creating/repairing an account link from chat is deferred with the deep-link/QR onboarding above. The demo ships one pre-linked customer; unlinked senders are asked to verify, not linked in-flow.
+- **Loyalty / points / gift balance** — not in the data model and flagged as cash-equivalent high-risk; out of scope.
+- **Proactive / outbound messaging** (post-purchase check-ins, review requests, abandoned-cart nudges) — requires an async outbound channel we do not have; same blocker as restock alerts.
 
 ## 6. Resolved decisions
 
