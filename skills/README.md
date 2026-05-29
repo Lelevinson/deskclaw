@@ -87,4 +87,5 @@ Use this order when adding one customer utility at a time:
 7. Add or update scenario prompts under [`../skills-lab/scenarios/`](../skills-lab/scenarios/).
 8. Run code checks and smoke tests for any tool code.
 9. Run TUI scenarios with a fresh `/new` session.
-10. Later, integrate the mock UI against the same backend/data, then use the UI to verify visible state changes.
+10. Review the diff before opening the PR (for example with `/code-review`); fix or note any findings, then open the PR.
+11. Later, integrate the mock UI against the same backend/data, then use the UI to verify visible state changes.
