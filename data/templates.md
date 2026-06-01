@@ -116,6 +116,29 @@ Seeded order fixtures (there is no checkout in the prototype, so orders are not 
 }
 ```
 
+## `shop/returns.json`
+
+Seeded return/exchange request records. A return is opened against a **delivered** order the same `customerId` owns; `returns-actions` only ever returns the linked customer's own records. The agent can only ever create a return in the `requested` state — it intakes a request and hands the actual refund/exchange to a human (ARCHITECTURE §5). Every later status (and the seeded fixtures) is set by a human reviewer, the same way `orders.json` is seeded because there is no checkout.
+
+```jsonc
+{
+  "version": 1,
+  "returns": [
+    {
+      "id": "return-2026-0001", // stable return id; NOT proof of ownership on its own
+      "customerId": "customer-stable-id",
+      "orderId": "order-2026-0001", // always an order this same customer owns
+      "status": "refunded", // requested | approved | rejected | refund_processing | refunded | exchange_shipped | completed
+      "resolution": "refund", // refund | exchange
+      "reason": "Short customer-stated reason for the return or exchange.",
+      "createdAt": "2026-05-10T08:20:00.000Z",
+      "updatedAt": "2026-05-14T02:30:00.000Z",
+      "statusDetail": "Optional human-authored note, e.g. refund amount and destination."
+    }
+  ]
+}
+```
+
 ## `shop/pending-actions.json`
 
 ```jsonc
@@ -136,6 +159,24 @@ Seeded order fixtures (there is no checkout in the prototype, so orders are not 
       "completedAt": "2026-05-28T00:05:00.000Z" // optional, only when completed
     }
   ]
+}
+```
+
+`pendingActions` is a discriminated union on `type`. A cart action (`cart.add_item` | `cart.remove_item` | `cart.update_quantity`) carries `productId` + `quantity` as above. A `return.create` action carries `orderId`, `resolution` (`refund` | `exchange`), and `reason` instead, and confirming it creates a `returns` record in the `requested` state — it never issues a refund:
+
+```jsonc
+{
+  "id": "pending-stable-id",
+  "type": "return.create",
+  "status": "pending",
+  "customerId": "customer-stable-id",
+  "accountLinkId": "link-customer-channel",
+  "orderId": "order-2026-0001",
+  "resolution": "refund",
+  "reason": "Short customer-stated reason.",
+  "summary": "Open a refund request for Customer Display Name on order order-2026-0001.",
+  "createdAt": "2026-05-28T00:00:00.000Z",
+  "expiresAt": "2026-05-28T01:00:00.000Z"
 }
 ```
 

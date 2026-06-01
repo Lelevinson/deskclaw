@@ -19,6 +19,7 @@ import path from "node:path";
 
 import {
   confirmAddItemForChannel,
+  confirmCreateReturnForChannel,
   confirmLatestAddItemForChannel,
   confirmLatestRemoveItemForChannel,
   confirmLatestUpdateQuantityForChannel,
@@ -26,10 +27,13 @@ import {
   confirmUpdateQuantityForChannel,
   getCartForChannel,
   getOrderForChannel,
+  getReturnForChannel,
   listActionLogs,
   listOrdersForChannel,
+  listReturnsForChannel,
   lookupCustomerByChannel,
   previewAddItemForChannel,
+  previewCreateReturnForChannel,
   previewRemoveItemForChannel,
   previewUpdateQuantityForChannel,
   searchProducts
@@ -54,9 +58,12 @@ const MALLORY_EXTERNAL = "eval-mallory";
 const MALLORY_CUSTOMER = "customer-eval-mallory";
 const MALLORY_LINK = "link-eval-mallory-simulated-chat";
 const MALLORY_ORDER = "order-eval-mallory-0001";
+const MALLORY_RETURN = "return-eval-mallory-0001";
 
-// --- a seeded order owned by the demo customer (from the data/ baseline) ---
+// --- seeded fixtures owned by the demo customer (from the data/ baseline) ---
 const LIN_SHIPPED_ORDER = "order-2026-0002"; // shipped, carries tracking fields
+const LIN_DELIVERED_ORDER = "order-2026-0001"; // delivered -> eligible for a return
+const LIN_SEEDED_RETURN = "return-2026-0001"; // refunded, against the delivered order
 
 // --- tiny runner ---------------------------------------------------------
 interface TestResult {
@@ -128,6 +135,44 @@ async function injectSecondCustomerWithOrder(): Promise<void> {
       shipping: { carrier: "Black Cat Express", trackingNumber: "TW000000000001" }
     });
   });
+}
+
+/** Inject a second linked customer who owns one delivered order and one return,
+ *  to test cross-customer return reads and "open a return on someone else's order". */
+async function injectSecondCustomerWithReturn(): Promise<void> {
+  await injectSecondCustomer();
+  await patchDb((db) => {
+    db.orders.push({
+      id: MALLORY_ORDER,
+      customerId: MALLORY_CUSTOMER,
+      status: "delivered",
+      placedAt: "2026-05-20T00:00:00.000Z",
+      updatedAt: "2026-05-23T00:00:00.000Z",
+      items: [{ productId: "cloud-cleanser", quantity: 1, unitPriceNtd: 420 }],
+      totalNtd: 420,
+      shipping: { carrier: "Black Cat Express", trackingNumber: "TW000000000002" }
+    });
+    db.returns.push({
+      // Terminal status on purpose: this fixture exists to test return-ownership
+      // isolation, and a terminal return leaves Mallory's order free to open a new
+      // one (so the "owner can open a return on her own order" check still holds).
+      id: MALLORY_RETURN,
+      customerId: MALLORY_CUSTOMER,
+      orderId: MALLORY_ORDER,
+      status: "refunded",
+      resolution: "refund",
+      reason: "Changed my mind.",
+      createdAt: "2026-05-24T00:00:00.000Z",
+      updatedAt: "2026-05-25T00:00:00.000Z"
+    });
+  });
+}
+
+/** Count the returns currently owned by the demo customer. */
+async function returnCount(): Promise<number> {
+  const list = await listReturnsForChannel(CH, LIN);
+  assert(list.ok && list.data, "return list read should succeed");
+  return list.data.length;
 }
 
 /** Add + confirm an item so a later remove/update has something to act on. */
@@ -511,6 +556,228 @@ async function main(): Promise<void> {
     assert(
       get.data.items[0]?.name === "Calm Barrier Cream" && get.data.items[0]?.subtotalNtd === 680,
       "order lines should resolve the product name from the catalog and compute a subtotal"
+    );
+  });
+
+  group("Returns intake (identity-gated; intake-and-handoff, never auto-refund)");
+
+  await test("unlinked channel identity cannot preview, confirm, or read returns", async () => {
+    const preview = await previewCreateReturnForChannel(CH, "unknown-user", LIN_DELIVERED_ORDER, "refund", "broken");
+    assert(!preview.ok, "unknown channel identity must not stage a return");
+    const confirm = await confirmCreateReturnForChannel(CH, "unknown-user", "pending_whatever");
+    assert(!confirm.ok, "unknown channel identity must not confirm a return");
+    const list = await listReturnsForChannel(CH, "unknown-user");
+    assert(!list.ok, "unknown channel identity must not list returns");
+    const get = await getReturnForChannel(CH, "unknown-user", LIN_SEEDED_RETURN);
+    assert(!get.ok, "unknown channel identity must not read a return");
+  });
+
+  await test("revoked account link cannot preview or read returns", async () => {
+    await patchDb((db) => {
+      const link = db.accountLinks.find((entry) => entry.id === LIN_WHATSAPP_LINK);
+      assert(link, "baseline must contain the whatsapp link to revoke");
+      link.status = "revoked";
+    });
+    const preview = await previewCreateReturnForChannel("whatsapp", LIN_WHATSAPP_EXTERNAL, LIN_DELIVERED_ORDER, "refund", "broken");
+    assert(!preview.ok, "a revoked link must not stage a return");
+    const list = await listReturnsForChannel("whatsapp", LIN_WHATSAPP_EXTERNAL);
+    assert(!list.ok, "a revoked link must not list returns");
+    // The same customer's still-linked channel must keep working.
+    const stillLinked = await listReturnsForChannel(CH, LIN);
+    assert(stillLinked.ok, "a different, still-linked channel for the same customer must still read returns");
+  });
+
+  await test("a typed customer id is not accepted as ownership proof for returns", async () => {
+    const preview = await previewCreateReturnForChannel(CH, LIN_CUSTOMER, LIN_DELIVERED_ORDER, "refund", "broken");
+    assert(!preview.ok, "typing a customer id as the external channel id must not stage a return");
+    const list = await listReturnsForChannel(CH, LIN_CUSTOMER);
+    assert(!list.ok, "typing a customer id as the external channel id must not list returns");
+  });
+
+  await test("a return can only be opened on an order the customer owns", async () => {
+    await injectSecondCustomerWithReturn();
+    // Lin supplies Mallory's real, existing (delivered) order id. Identity is the
+    // channel binding, not the order number, so this must be refused...
+    const hijack = await previewCreateReturnForChannel(CH, LIN, MALLORY_ORDER, "refund", "want it back");
+    assert(!hijack.ok, "a customer must not open a return on another customer's order");
+    // ...and refused IDENTICALLY to a truly unknown order id, so existence never leaks.
+    const unknown = await previewCreateReturnForChannel(CH, LIN, "order-does-not-exist", "refund", "want it back");
+    assert(
+      hijack.error === unknown.error,
+      "a non-owned order id must return the same message as an unknown id (no existence leak)"
+    );
+    // Mallory can open a return against her own delivered order.
+    const owner = await previewCreateReturnForChannel(CH, MALLORY_EXTERNAL, MALLORY_ORDER, "refund", "want it back");
+    assert(owner.ok, owner.error ?? "the rightful owner should be able to open a return on her own order");
+  });
+
+  await test("a return on an order that has not been delivered is refused", async () => {
+    // order-2026-0002 is shipped, not delivered.
+    const preview = await previewCreateReturnForChannel(CH, LIN, LIN_SHIPPED_ORDER, "refund", "changed my mind");
+    assert(
+      !preview.ok && preview.error?.includes("not been delivered"),
+      "a return on a non-delivered order must be refused"
+    );
+    assert((await returnCount()) === 1, "a refused return preview must not create a return record");
+  });
+
+  await test("an invalid resolution is refused", async () => {
+    const preview = await previewCreateReturnForChannel(CH, LIN, LIN_DELIVERED_ORDER, "store-credit", "broken");
+    assert(!preview.ok && preview.error?.includes("refund"), "a resolution other than refund/exchange must be refused");
+  });
+
+  await test("return preview never creates a return record and writes a preview log", async () => {
+    const before = await returnCount();
+    const preview = await previewCreateReturnForChannel(CH, LIN, LIN_DELIVERED_ORDER, "refund", "Pump still leaks.");
+    assert(preview.ok, preview.error ?? "return preview should succeed on a delivered owned order");
+    assert((await returnCount()) === before, "return preview must not create a return record");
+    const logs = await listActionLogs(LIN_CUSTOMER, 20);
+    assert(
+      logs.data?.some((log) => log.type === "return.create.preview" && log.status === "preview"),
+      "a return preview must write a preview audit log"
+    );
+  });
+
+  await test("confirm creates a REQUEST in 'requested' state (not a refund) and writes a success log", async () => {
+    const before = await returnCount();
+    const preview = await previewCreateReturnForChannel(CH, LIN, LIN_DELIVERED_ORDER, "refund", "Pump still leaks.");
+    assert(preview.ok && preview.data, preview.error ?? "return preview should succeed");
+    const confirm = await confirmCreateReturnForChannel(CH, LIN, preview.data.pendingAction.id);
+    assert(confirm.ok && confirm.data, confirm.error ?? "return confirm should succeed");
+    // The agent creates a request for human review, never an issued refund.
+    assert(
+      confirm.data.returnRequest.status === "requested",
+      "a confirmed return must be created in the 'requested' state, never refunded/approved"
+    );
+    assert(confirm.data.returnRequest.orderId === LIN_DELIVERED_ORDER, "the request must reference the owned order");
+    assert((await returnCount()) === before + 1, "confirm must create exactly one new return record");
+    const logs = await listActionLogs(LIN_CUSTOMER, 20);
+    assert(
+      logs.data?.some((log) => log.type === "return.create" && log.status === "success"),
+      "a successful return confirm must write a success audit log"
+    );
+  });
+
+  await test("confirm does not move money: order totals and the cart are untouched", async () => {
+    const orderBefore = await getOrderForChannel(CH, LIN, LIN_DELIVERED_ORDER);
+    assert(orderBefore.ok && orderBefore.data, "owner should read the delivered order");
+    const totalBefore = orderBefore.data.totalNtd;
+
+    const preview = await previewCreateReturnForChannel(CH, LIN, LIN_DELIVERED_ORDER, "refund", "Pump still leaks.");
+    assert(preview.ok && preview.data, preview.error ?? "return preview should succeed");
+    const confirm = await confirmCreateReturnForChannel(CH, LIN, preview.data.pendingAction.id);
+    assert(confirm.ok, confirm.error ?? "return confirm should succeed");
+
+    const orderAfter = await getOrderForChannel(CH, LIN, LIN_DELIVERED_ORDER);
+    assert(
+      orderAfter.ok && orderAfter.data?.totalNtd === totalBefore && orderAfter.data.status === "delivered",
+      "opening a return must not change the order's total or status"
+    );
+    assert((await cartItemCount()) === 0, "opening a return must not touch the cart");
+  });
+
+  await test("a return request cannot be confirmed twice", async () => {
+    const before = await returnCount();
+    const preview = await previewCreateReturnForChannel(CH, LIN, LIN_DELIVERED_ORDER, "exchange", "Wrong shade.");
+    assert(preview.ok && preview.data, preview.error ?? "return preview should succeed");
+    const pendingId = preview.data.pendingAction.id;
+    const first = await confirmCreateReturnForChannel(CH, LIN, pendingId);
+    assert(first.ok, first.error ?? "first return confirm should succeed");
+    const second = await confirmCreateReturnForChannel(CH, LIN, pendingId);
+    assert(!second.ok, "a completed return request must not be confirmable a second time");
+    assert((await returnCount()) === before + 1, "double confirm must not create a second return record");
+  });
+
+  await test("confirming another customer's pending return request is rejected", async () => {
+    await injectSecondCustomerWithReturn();
+    const preview = await previewCreateReturnForChannel(CH, LIN, LIN_DELIVERED_ORDER, "refund", "Pump still leaks.");
+    assert(preview.ok && preview.data, preview.error ?? "owner preview should succeed");
+    const pendingId = preview.data.pendingAction.id;
+    // Mallory (a different, legitimately-linked customer) tries to confirm Lin's request.
+    const hijack = await confirmCreateReturnForChannel(CH, MALLORY_EXTERNAL, pendingId);
+    assert(!hijack.ok, "a different customer must not confirm someone else's pending return");
+    // The rightful owner can still confirm.
+    const owner = await confirmCreateReturnForChannel(CH, LIN, pendingId);
+    assert(owner.ok, owner.error ?? "the rightful owner should still be able to confirm");
+  });
+
+  await test("return status reads are own-returns-only and do not leak existence", async () => {
+    await injectSecondCustomerWithReturn();
+    const list = await listReturnsForChannel(CH, LIN);
+    assert(list.ok && list.data, list.error ?? "owner return list should succeed");
+    assert(
+      list.data.every((entry) => entry.id !== MALLORY_RETURN),
+      "a customer's return list must not include another customer's return"
+    );
+    // Quoting Mallory's real return id as Lin is refused, identically to an unknown id.
+    const hijack = await getReturnForChannel(CH, LIN, MALLORY_RETURN);
+    assert(!hijack.ok, "a customer must not read another customer's return by quoting its id");
+    const unknown = await getReturnForChannel(CH, LIN, "return-does-not-exist");
+    assert(
+      hijack.error === unknown.error,
+      "a non-owned return id must return the same message as an unknown id (no existence leak)"
+    );
+    // Mallory can read her own return.
+    const owner = await getReturnForChannel(CH, MALLORY_EXTERNAL, MALLORY_RETURN);
+    assert(owner.ok, owner.error ?? "the rightful owner should read her own return");
+  });
+
+  await test("the owner reads a seeded refund's status ('is my refund processed yet?')", async () => {
+    const get = await getReturnForChannel(CH, LIN, LIN_SEEDED_RETURN);
+    assert(get.ok && get.data, get.error ?? "the owner should read their seeded return");
+    assert(get.data.status === "refunded", "the seeded return should report status 'refunded'");
+    assert(get.data.resolution === "refund" && get.data.orderId === LIN_DELIVERED_ORDER, "the seeded return links to the delivered order");
+  });
+
+  await test("a second return cannot be opened while one is already in progress for the order", async () => {
+    const first = await previewCreateReturnForChannel(CH, LIN, LIN_DELIVERED_ORDER, "refund", "Pump leaks.");
+    assert(first.ok && first.data, first.error ?? "first return preview should succeed");
+    const confirm = await confirmCreateReturnForChannel(CH, LIN, first.data.pendingAction.id);
+    assert(confirm.ok, confirm.error ?? "first return confirm should succeed");
+    // The order now has an open (requested) return; a second one is refused.
+    const second = await previewCreateReturnForChannel(CH, LIN, LIN_DELIVERED_ORDER, "exchange", "Also the lid.");
+    assert(
+      !second.ok && second.error?.includes("in progress"),
+      "a second return on an order with one already in progress must be refused"
+    );
+    assert((await returnCount()) === 2, "the refused second preview must not create a return (baseline + 1)");
+  });
+
+  await test("confirm re-checks eligibility: an order no longer delivered is refused at confirm", async () => {
+    const before = await returnCount();
+    const preview = await previewCreateReturnForChannel(CH, LIN, LIN_DELIVERED_ORDER, "refund", "Pump leaks.");
+    assert(preview.ok && preview.data, preview.error ?? "return preview should succeed");
+    // The order's eligibility changes between preview and confirm (e.g. a human edit).
+    await patchDb((db) => {
+      const order = db.orders.find((entry) => entry.id === LIN_DELIVERED_ORDER);
+      assert(order, "the delivered order must exist");
+      order.status = "cancelled";
+    });
+    const confirm = await confirmCreateReturnForChannel(CH, LIN, preview.data.pendingAction.id);
+    assert(!confirm.ok, "confirm must refuse once the order is no longer eligible");
+    assert((await returnCount()) === before, "a refused confirm must not create a return record");
+    const logs = await listActionLogs(LIN_CUSTOMER, 20);
+    assert(
+      logs.data?.some((log) => log.type === "return.create" && log.status === "failed"),
+      "a refused confirm must write a failed audit log"
+    );
+  });
+
+  await test("a persisted DB predating the returns field can still intake a return", async () => {
+    // Simulate a .local/shop-db.json written before this feature: drop the
+    // `returns` key entirely, then confirm a return still works (the store
+    // backfills missing arrays on read, so the push path never throws).
+    await patchDb((db) => {
+      delete (db as Partial<ShopDatabase>).returns;
+    });
+    const list = await listReturnsForChannel(CH, LIN);
+    assert(list.ok && list.data?.length === 0, "a DB without a returns key should read as zero returns, not throw");
+    const preview = await previewCreateReturnForChannel(CH, LIN, LIN_DELIVERED_ORDER, "refund", "Pump still leaks.");
+    assert(preview.ok && preview.data, preview.error ?? "preview should succeed on a backfilled DB");
+    const confirm = await confirmCreateReturnForChannel(CH, LIN, preview.data.pendingAction.id);
+    assert(
+      confirm.ok && confirm.data?.returnRequest.status === "requested",
+      confirm.error ?? "confirm must create a request even when the loaded DB lacked a returns array"
     );
   });
 

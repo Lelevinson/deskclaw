@@ -6,6 +6,7 @@ import type {
   ActionLog,
   Cart,
   CartLine,
+  CartPendingActionType,
   CartView,
   Customer,
   LinkedCustomer,
@@ -15,6 +16,10 @@ import type {
   OrderView,
   PendingAction,
   Product,
+  ReturnPendingAction,
+  ReturnRequest,
+  ReturnResolution,
+  ReturnStatus,
   ShopDatabase
 } from "./types.js";
 
@@ -114,7 +119,7 @@ function findProduct(db: ShopDatabase, productId: string): Product | undefined {
 function supersedePendingActions(
   db: ShopDatabase,
   customerId: string,
-  type: PendingAction["type"],
+  type: CartPendingActionType,
   productId: string
 ): void {
   for (const pending of db.pendingActions) {
@@ -122,6 +127,8 @@ function supersedePendingActions(
       pending.status === "pending" &&
       pending.type === type &&
       pending.customerId === customerId &&
+      // "productId" in pending narrows the union to a cart action.
+      "productId" in pending &&
       pending.productId === productId
     ) {
       pending.status = "expired";
@@ -1012,18 +1019,290 @@ export async function getOrderForChannel(
     return { ok: false, error: linked.error };
   }
 
-  const customerId = linked.data.customer.id;
-  const order = (db.orders ?? []).find(
-    (entry) => entry.id === orderId && entry.customerId === customerId
-  );
-
-  // A non-owned order and a truly unknown id return the SAME message, so the
-  // order id leaks nothing about other customers and is never itself proof.
+  const order = findOwnedOrder(db, linked.data.customer.id, orderId);
   if (!order) {
-    return { ok: false, error: "No order with that id was found for your account." };
+    return { ok: false, error: ORDER_NOT_FOUND_FOR_ACCOUNT };
   }
 
   return { ok: true, data: buildOrderView(db, order) };
+}
+
+// Look up an order only if the given customer owns it. A non-owned order and a
+// truly unknown id are indistinguishable to the caller (both yield undefined ->
+// the same not-found message), so the order id never leaks or acts as proof.
+function findOwnedOrder(db: ShopDatabase, customerId: string, orderId: string): Order | undefined {
+  return (db.orders ?? []).find((entry) => entry.id === orderId && entry.customerId === customerId);
+}
+
+const ORDER_NOT_FOUND_FOR_ACCOUNT = "No order with that id was found for your account.";
+
+function isReturnResolution(value: string): value is ReturnResolution {
+  return value === "refund" || value === "exchange";
+}
+
+// A return is "closed" once it reaches one of these states; anything else is still
+// in progress and should block opening a second return on the same order.
+const TERMINAL_RETURN_STATUSES: ReadonlySet<ReturnStatus> = new Set(["rejected", "refunded", "completed"]);
+
+function hasOpenReturnForOrder(db: ShopDatabase, customerId: string, orderId: string): boolean {
+  return (db.returns ?? []).some(
+    (entry) =>
+      entry.customerId === customerId &&
+      entry.orderId === orderId &&
+      !TERMINAL_RETURN_STATUSES.has(entry.status)
+  );
+}
+
+function previewCreateReturnForLink(
+  db: ShopDatabase,
+  linked: LinkedCustomerRecord,
+  orderId: string,
+  resolution: string,
+  reason: string
+): ServiceResult<{ pendingAction: ReturnPendingAction; confirmationText: string }> {
+  // Identity is already resolved by the caller; gate on ownership first (matching
+  // the order-status contract) before validating the request's own fields.
+  const customerId = linked.customer.id;
+  const order = findOwnedOrder(db, customerId, orderId);
+  if (!order) {
+    return { ok: false, error: ORDER_NOT_FOUND_FOR_ACCOUNT };
+  }
+
+  // Returns are only eligible once an order has been delivered (returns policy:
+  // within 7 days after delivery). The agent intakes a request; a human reviews it.
+  if (order.status !== "delivered") {
+    return {
+      ok: false,
+      error: `Order ${order.id} is not eligible for a return yet because it has not been delivered.`
+    };
+  }
+
+  // One open return per order: don't let a customer (or a retrying agent) stack
+  // duplicate requests a human would then have to reconcile. A terminal return
+  // (rejected / refunded / completed) does not block a fresh request.
+  if (hasOpenReturnForOrder(db, customerId, order.id)) {
+    return { ok: false, error: `You already have a return in progress for order ${order.id}.` };
+  }
+
+  if (!isReturnResolution(resolution)) {
+    return { ok: false, error: "Resolution must be either 'refund' or 'exchange'." };
+  }
+
+  const trimmedReason = reason.trim();
+  if (!trimmedReason) {
+    return { ok: false, error: "Please share a brief reason for the return or exchange." };
+  }
+
+  const action: ReturnPendingAction = {
+    id: `pending_${randomUUID()}`,
+    type: "return.create",
+    status: "pending",
+    customerId,
+    accountLinkId: linked.accountLink.id,
+    orderId: order.id,
+    resolution,
+    reason: trimmedReason,
+    summary: `Open a ${resolution} request for ${linked.customer.displayName} on order ${order.id}.`,
+    createdAt: nowIso(),
+    expiresAt: new Date(Date.now() + PENDING_ACTION_TTL_MS).toISOString()
+  };
+
+  // Supersede any earlier still-pending return request the customer staged for the
+  // same order, so a stale preview cannot be confirmed alongside a fresh one.
+  for (const pending of db.pendingActions) {
+    if (
+      pending.status === "pending" &&
+      pending.type === "return.create" &&
+      pending.customerId === customerId &&
+      pending.orderId === order.id
+    ) {
+      pending.status = "expired";
+    }
+  }
+
+  db.pendingActions.push(action);
+  addLog(db, {
+    type: "return.create.preview",
+    status: "preview",
+    customerId,
+    summary: action.summary,
+    metadata: {
+      pendingActionId: action.id,
+      accountLinkId: linked.accountLink.id,
+      channel: linked.accountLink.channel,
+      orderId: order.id,
+      resolution
+    }
+  });
+
+  return {
+    ok: true,
+    data: {
+      pendingAction: action,
+      confirmationText: `I can open a ${resolution} request on order ${order.id} ("${trimmedReason}"). A teammate reviews it and handles the actual ${resolution} — I can't issue it myself. Should I submit the request?`
+    }
+  };
+}
+
+export async function previewCreateReturnForChannel(
+  channel: string,
+  externalUserId: string,
+  orderId: string,
+  resolution: string,
+  reason: string
+): Promise<ServiceResult<{ pendingAction: ReturnPendingAction; confirmationText: string }>> {
+  const db = await readShopDb();
+  const linked = resolveLinkedCustomer(db, channel, externalUserId);
+  if (!linked.ok || !linked.data) {
+    return { ok: false, error: linked.error };
+  }
+
+  const result = previewCreateReturnForLink(db, linked.data, orderId, resolution, reason);
+  if (result.ok) {
+    await writeShopDb(db);
+  }
+  return result;
+}
+
+function confirmCreateReturnForLink(
+  db: ShopDatabase,
+  accountLink: AccountLink,
+  pendingActionId: string
+): ServiceResult<{ returnRequest: ReturnRequest; action: ReturnPendingAction }> {
+  const action = db.pendingActions.find((entry) => entry.id === pendingActionId);
+
+  if (!action) {
+    return { ok: false, error: "Pending action not found." };
+  }
+  if (action.type !== "return.create") {
+    return { ok: false, error: "Pending action is not a return request." };
+  }
+  if (action.customerId !== accountLink.customerId || action.accountLinkId !== accountLink.id) {
+    return { ok: false, error: "Pending action does not belong to this linked channel identity." };
+  }
+  if (action.status !== "pending") {
+    return { ok: false, error: `Pending action is already ${action.status}.` };
+  }
+  if (Date.parse(action.expiresAt) < Date.now()) {
+    action.status = "expired";
+    return { ok: false, error: "Pending action expired. Preview the action again before confirming." };
+  }
+
+  const customerId = accountLink.customerId;
+  // Re-check ownership AND eligibility at confirm time; never trust the staged
+  // order blindly (mirrors the cart confirms re-validating stock before committing).
+  const order = findOwnedOrder(db, customerId, action.orderId);
+  if (!order || order.status !== "delivered") {
+    const reason = !order
+      ? ORDER_NOT_FOUND_FOR_ACCOUNT
+      : `Order ${order.id} is no longer eligible for a return.`;
+    addLog(db, {
+      type: "return.create",
+      status: "failed",
+      customerId,
+      summary: reason,
+      metadata: {
+        pendingActionId: action.id,
+        accountLinkId: accountLink.id,
+        channel: accountLink.channel,
+        orderId: action.orderId
+      }
+    });
+    return { ok: false, error: reason };
+  }
+
+  const now = nowIso();
+  // The agent only ever creates the request in "requested"; it never issues money.
+  const returnRequest: ReturnRequest = {
+    id: `return_${randomUUID()}`,
+    customerId,
+    orderId: order.id,
+    status: "requested",
+    resolution: action.resolution,
+    reason: action.reason,
+    createdAt: now,
+    updatedAt: now
+  };
+  db.returns.push(returnRequest);
+
+  action.status = "completed";
+  action.completedAt = now;
+  addLog(db, {
+    type: "return.create",
+    status: "success",
+    customerId,
+    summary: action.summary,
+    metadata: {
+      pendingActionId: action.id,
+      accountLinkId: accountLink.id,
+      channel: accountLink.channel,
+      orderId: order.id,
+      returnId: returnRequest.id,
+      resolution: action.resolution
+    }
+  });
+
+  return { ok: true, data: { returnRequest, action } };
+}
+
+export async function confirmCreateReturnForChannel(
+  channel: string,
+  externalUserId: string,
+  pendingActionId: string
+): Promise<ServiceResult<{ returnRequest: ReturnRequest; action: ReturnPendingAction }>> {
+  const db = await readShopDb();
+  const linked = resolveLinkedCustomer(db, channel, externalUserId);
+  if (!linked.ok || !linked.data) {
+    return { ok: false, error: linked.error };
+  }
+
+  const result = confirmCreateReturnForLink(db, linked.data.accountLink, pendingActionId);
+  await writeShopDb(db);
+  return result;
+}
+
+export async function listReturnsForChannel(
+  channel: string,
+  externalUserId: string
+): Promise<ServiceResult<ReturnRequest[]>> {
+  const db = await readShopDb();
+  const linked = resolveLinkedCustomer(db, channel, externalUserId);
+  if (!linked.ok || !linked.data) {
+    return { ok: false, error: linked.error };
+  }
+
+  const customerId = linked.data.customer.id;
+  const returns = (db.returns ?? [])
+    // Only the linked customer's own returns are ever returned.
+    .filter((entry) => entry.customerId === customerId)
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+
+  return { ok: true, data: returns };
+}
+
+export async function getReturnForChannel(
+  channel: string,
+  externalUserId: string,
+  returnId: string
+): Promise<ServiceResult<ReturnRequest>> {
+  const db = await readShopDb();
+  const linked = resolveLinkedCustomer(db, channel, externalUserId);
+  if (!linked.ok || !linked.data) {
+    return { ok: false, error: linked.error };
+  }
+
+  const customerId = linked.data.customer.id;
+  const found = (db.returns ?? []).find(
+    (entry) => entry.id === returnId && entry.customerId === customerId
+  );
+
+  // A non-owned return and a truly unknown id return the SAME message, so the
+  // return id never leaks existence and is never itself proof of ownership.
+  if (!found) {
+    return { ok: false, error: "No return with that id was found for your account." };
+  }
+
+  return { ok: true, data: found };
 }
 
 export async function listActionLogs(

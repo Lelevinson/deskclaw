@@ -57,23 +57,39 @@ export interface Cart {
   items: CartItem[];
 }
 
-export type PendingActionType = "cart.add_item" | "cart.remove_item" | "cart.update_quantity";
+export type CartPendingActionType = "cart.add_item" | "cart.remove_item" | "cart.update_quantity";
+export type ReturnPendingActionType = "return.create";
+export type PendingActionType = CartPendingActionType | ReturnPendingActionType;
 
-export interface PendingAction {
+interface PendingActionBase {
   id: string;
-  type: PendingActionType;
   status: "pending" | "completed" | "cancelled" | "expired";
   customerId: string;
   accountLinkId: string;
-  productId: string;
-  // For cart.add_item: quantity to add. For cart.update_quantity: the target quantity.
-  // For cart.remove_item: the line quantity being removed (recorded for the audit summary).
-  quantity: number;
   summary: string;
   createdAt: string;
   expiresAt: string;
   completedAt?: string;
 }
+
+export interface CartPendingAction extends PendingActionBase {
+  type: CartPendingActionType;
+  productId: string;
+  // For cart.add_item: quantity to add. For cart.update_quantity: the target quantity.
+  // For cart.remove_item: the line quantity being removed (recorded for the audit summary).
+  quantity: number;
+}
+
+// A staged return *request*. Confirming it creates a return record for human
+// review only — it never issues a refund or exchange (ARCHITECTURE §5).
+export interface ReturnPendingAction extends PendingActionBase {
+  type: ReturnPendingActionType;
+  orderId: string;
+  resolution: ReturnResolution;
+  reason: string;
+}
+
+export type PendingAction = CartPendingAction | ReturnPendingAction;
 
 export type OrderStatus =
   | "placed"
@@ -110,6 +126,34 @@ export interface Order {
   shipping?: OrderShipping;
 }
 
+// A return is opened against a delivered order the customer owns. The agent only
+// ever creates one in the "requested" state; every later state is set by a human
+// reviewer / the seeded fixtures (there is no autonomous refund — ARCHITECTURE §5).
+export type ReturnStatus =
+  | "requested"
+  | "approved"
+  | "rejected"
+  | "refund_processing"
+  | "refunded"
+  | "exchange_shipped"
+  | "completed";
+
+export type ReturnResolution = "refund" | "exchange";
+
+export interface ReturnRequest {
+  id: string;
+  customerId: string;
+  // The order this return is opened against; always an order the same customer owns.
+  orderId: string;
+  status: ReturnStatus;
+  resolution: ReturnResolution;
+  reason: string;
+  createdAt: string;
+  updatedAt: string;
+  // Optional human-authored note, e.g. "Refunded NT$940 to original payment method".
+  statusDetail?: string;
+}
+
 export interface ActionLog {
   id: string;
   type: string;
@@ -127,6 +171,7 @@ export interface ShopDatabase {
   accountLinks: AccountLink[];
   carts: Cart[];
   orders: Order[];
+  returns: ReturnRequest[];
   pendingActions: PendingAction[];
   actionLogs: ActionLog[];
 }
