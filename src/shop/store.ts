@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { AccountLink, ActionLog, Cart, Customer, Order, PendingAction, ProductCatalog, ShopDatabase } from "./types.js";
+import type { AccountLink, ActionLog, Cart, Customer, Order, PendingAction, ProductCatalog, ReturnRequest, ShopDatabase } from "./types.js";
 
 const DEFAULT_DATA_DIR = path.resolve(process.cwd(), "data");
 const DEFAULT_DB_PATH = path.resolve(process.cwd(), ".local/shop-db.json");
@@ -33,26 +33,43 @@ async function readInitialDatabase(): Promise<ShopDatabase> {
   );
   const cartState = await readJsonFile<{ carts: Cart[] }>(path.join(dataDir, "shop/carts.json"));
   const orderState = await readJsonFile<{ orders: Order[] }>(path.join(dataDir, "shop/orders.json"));
+  const returnState = await readJsonFile<{ returns: ReturnRequest[] }>(path.join(dataDir, "shop/returns.json"));
   const pendingActionState = await readJsonFile<{ pendingActions: PendingAction[] }>(
     path.join(dataDir, "shop/pending-actions.json")
   );
   const actionLogState = await readJsonFile<{ actionLogs: ActionLog[] }>(path.join(dataDir, "shop/action-logs.json"));
 
-  return {
+  return normalizeShopDb({
     version: 1,
     products: catalog.products,
     customers: customerData.customers,
     accountLinks: accountLinkData.accountLinks,
     carts: cartState.carts,
     orders: orderState.orders,
+    returns: returnState.returns,
     pendingActions: pendingActionState.pendingActions,
     actionLogs: actionLogState.actionLogs
-  };
+  });
+}
+
+// Backfill arrays a persisted DB may predate (e.g. one written before the
+// `returns` domain existed), so the ShopDatabase "every array is present"
+// invariant holds at the JSON boundary and write paths can push safely without
+// each guarding `?? []`. Runs on every DB-producing path — the persisted-read
+// happy path below, and the seed path via readInitialDatabase (which both the
+// ENOENT branch and resetShopDb use). New array-valued domains go here too.
+function normalizeShopDb(db: ShopDatabase): ShopDatabase {
+  db.carts ??= [];
+  db.orders ??= [];
+  db.returns ??= [];
+  db.pendingActions ??= [];
+  db.actionLogs ??= [];
+  return db;
 }
 
 export async function readShopDb(): Promise<ShopDatabase> {
   try {
-    return await readJsonFile(getShopDbPath());
+    return normalizeShopDb(await readJsonFile<ShopDatabase>(getShopDbPath()));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
       throw error;

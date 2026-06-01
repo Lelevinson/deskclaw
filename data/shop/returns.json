@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "returns": [
+    {
+      "id": "return-2026-0001",
+      "customerId": "customer-demo-lin",
+      "orderId": "order-2026-0001",
+      "status": "refunded",
+      "resolution": "refund",
+      "reason": "Cleanser pump arrived cracked and leaking.",
+      "createdAt": "2026-05-10T08:20:00.000Z",
+      "updatedAt": "2026-05-14T02:30:00.000Z",
+      "statusDetail": "Refunded NT$420 to the original payment method."
+    }
+  ]
+}

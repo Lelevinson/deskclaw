@@ -4,6 +4,7 @@ import * as z from "zod/v4";
 
 import {
   confirmAddItemForChannel,
+  confirmCreateReturnForChannel,
   confirmLatestAddItemForChannel,
   confirmLatestRemoveItemForChannel,
   confirmLatestUpdateQuantityForChannel,
@@ -11,10 +12,13 @@ import {
   confirmUpdateQuantityForChannel,
   getCartForChannel,
   getOrderForChannel,
+  getReturnForChannel,
   listActionLogs,
   listOrdersForChannel,
+  listReturnsForChannel,
   lookupCustomerByChannel,
   previewAddItemForChannel,
+  previewCreateReturnForChannel,
   previewRemoveItemForChannel,
   previewUpdateQuantityForChannel,
   searchProducts
@@ -245,6 +249,69 @@ server.registerTool(
     })
   },
   async ({ channel, externalUserId, orderId }) => jsonText(await getOrderForChannel(channel, externalUserId, orderId))
+);
+
+server.registerTool(
+  "shop_return_preview",
+  {
+    title: "Preview Return / Exchange Request",
+    description:
+      "Validate and stage a return or exchange REQUEST for a linked channel identity. The request can only be opened against a delivered order the linked customer owns; an unknown or non-owned order id is refused identically (the order number is never proof). This never issues a refund or exchange — it stages a request a human reviews. Use before asking the customer to confirm.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel."),
+      orderId: z.string().min(1).describe("The order to return, scoped to the linked customer."),
+      resolution: z.enum(["refund", "exchange"]).describe("What the customer wants: a refund or an exchange."),
+      reason: z.string().min(1).describe("A brief customer-stated reason for the return or exchange.")
+    })
+  },
+  async ({ channel, externalUserId, orderId, resolution, reason }) =>
+    jsonText(await previewCreateReturnForChannel(channel, externalUserId, orderId, resolution, reason))
+);
+
+server.registerTool(
+  "shop_return_confirm",
+  {
+    title: "Confirm Return / Exchange Request",
+    description:
+      "Commit a staged return/exchange request for the same linked channel identity after explicit customer confirmation. This creates a return REQUEST record in the 'requested' state for human review only — it never issues a refund or exchange. The actual money movement is handed off to a teammate.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel."),
+      pendingActionId: z.string().min(1)
+    })
+  },
+  async ({ channel, externalUserId, pendingActionId }) =>
+    jsonText(await confirmCreateReturnForChannel(channel, externalUserId, pendingActionId))
+);
+
+server.registerTool(
+  "shop_returns_list_for_channel",
+  {
+    title: "List Returns For Channel",
+    description:
+      "List return/exchange requests for the customer account linked to the channel identity. Read-only; returns only the linked customer's own returns, with each return's current status. Never accept a customer-typed return number or customer id as proof of identity.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel.")
+    })
+  },
+  async ({ channel, externalUserId }) => jsonText(await listReturnsForChannel(channel, externalUserId))
+);
+
+server.registerTool(
+  "shop_return_get",
+  {
+    title: "Get Return Status",
+    description:
+      "Read one return/exchange request's status (e.g. 'is my refund approved or processed yet?'), but only if it belongs to the customer account linked to the channel identity. An unknown or non-owned return id returns the same not-found result; the return id is never itself proof of ownership.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel."),
+      returnId: z.string().min(1).describe("The return id to look up, scoped to the linked customer.")
+    })
+  },
+  async ({ channel, externalUserId, returnId }) => jsonText(await getReturnForChannel(channel, externalUserId, returnId))
 );
 
 server.registerTool(
