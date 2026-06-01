@@ -10,10 +10,12 @@ import {
   confirmLatestUpdateQuantityForChannel,
   confirmRemoveItemForChannel,
   confirmUpdateQuantityForChannel,
+  createHandoff,
   getCartForChannel,
   getOrderForChannel,
   getReturnForChannel,
   listActionLogs,
+  listHandoffs,
   listOrdersForChannel,
   listReturnsForChannel,
   lookupCustomerByChannel,
@@ -312,6 +314,44 @@ server.registerTool(
     })
   },
   async ({ channel, externalUserId, returnId }) => jsonText(await getReturnForChannel(channel, externalUserId, returnId))
+);
+
+server.registerTool(
+  "shop_handoff_create",
+  {
+    title: "Create Handoff / Escalation Record",
+    description:
+      "Append a durable escalation record when sentiment-router routes to handoff_recommended or urgent_handoff (NEVER for continue). Append-only: there is no preview/confirm and it makes no money/account mutation — it records the agent's escalation judgment and writes an audit log. Identity is OPTIONAL and must never block an escalation: pass the channel + externalUserId and a customerId is linked automatically when the sender is linked, otherwise the escalation is still recorded against the raw channel identity. Never pass or trust a typed customer id as proof.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel."),
+      classification: z
+        .enum(["handoff_recommended", "urgent_handoff"])
+        .describe("The sentiment-router classification; must be one of the two handoff signals (continue records nothing)."),
+      category: z
+        .string()
+        .min(1)
+        .describe("Short triage label, for example refund_dispute, safety_reaction, or human_requested."),
+      reason: z.string().min(1).describe("One short internal reason for the escalation."),
+      summary: z.string().min(1).describe("A short customer-safe summary of the situation for the human picking it up.")
+    })
+  },
+  async ({ channel, externalUserId, classification, category, reason, summary }) =>
+    jsonText(await createHandoff(channel, externalUserId, classification, category, reason, summary))
+);
+
+server.registerTool(
+  "shop_handoff_list",
+  {
+    title: "List Handoff / Escalation Records",
+    description:
+      "Read recent escalation/handoff records for staff triage, audit, and demo verification. Optionally filter by customerId. Staff/ops-only; not a customer-facing read.",
+    inputSchema: z.object({
+      customerId: z.string().min(1).optional(),
+      limit: z.number().int().min(1).max(100).default(20)
+    })
+  },
+  async ({ customerId, limit }) => jsonText(await listHandoffs(customerId, limit))
 );
 
 server.registerTool(
