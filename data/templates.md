@@ -29,6 +29,24 @@ When adding a new data file, use the final filename from the start, add its temp
 }
 ```
 
+## `catalog/compatibility.md`
+
+```markdown
+# Product Compatibility
+
+## Safe Pairings
+
+- Product A can be used with Product B in a named routine.
+
+## Avoid / Caution
+
+- Product C should not be paired with another active unless a human teammate confirms.
+
+## Missing Details
+
+List compatibility details the agent must not invent.
+```
+
 ## `customers/customers.json`
 
 ```jsonc
@@ -56,6 +74,90 @@ When adding a new data file, use the final filename from the start, add its temp
       "externalUserId": "+886900000001", // identity supplied by the channel
       "status": "linked", // linked | revoked
       "linkedAt": "2026-05-28T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+## `shop/orders.json`
+
+```jsonc
+{
+  "version": 1,
+  "orders": [
+    {
+      "id": "order-stable-id",
+      "orderNumber": "DC-1001", // customer-facing reference; never ownership proof by itself
+      "customerId": "customer-stable-id",
+      "placedAt": "2026-05-28T00:00:00.000Z",
+      "status": "shipped", // processing | packed | shipped | delivered
+      "paymentStatus": "paid",
+      "fulfillmentStatus": "fulfilled", // processing | packed | fulfilled
+      "currency": "NTD",
+      "items": [
+        {
+          "productId": "stable-product-id",
+          "quantity": 1,
+          "priceNtd": 420
+        }
+      ],
+      "subtotalNtd": 420,
+      "shippingNtd": 60,
+      "totalNtd": 480,
+      "tracking": {
+        "carrier": "Demo Express",
+        "trackingNumber": "DEMO1001TW",
+        "trackingUrl": "https://example.local/tracking/DEMO1001TW",
+        "status": "In transit",
+        "shippedAt": "2026-05-28T01:00:00.000Z",
+        "estimatedDelivery": "2026-05-30"
+      }
+    }
+  ]
+}
+```
+
+## `shop/returns.json`
+
+```jsonc
+{
+  "version": 1,
+  "returns": [
+    {
+      "id": "return-stable-id",
+      "customerId": "customer-stable-id",
+      "accountLinkId": "link-customer-channel",
+      "orderId": "order-stable-id",
+      "orderNumber": "DC-1001",
+      "requestType": "refund", // refund | exchange
+      "reason": "Customer-provided reason.",
+      "status": "submitted", // pending_confirmation | submitted | approved | rejected | processed
+      "summary": "Customer-safe summary.",
+      "requestedAt": "2026-05-28T00:00:00.000Z",
+      "confirmedAt": "2026-05-28T00:05:00.000Z"
+    }
+  ]
+}
+```
+
+## `shop/handoffs.json`
+
+```jsonc
+{
+  "version": 1,
+  "handoffTickets": [
+    {
+      "id": "handoff-stable-id",
+      "status": "open",
+      "priority": "urgent", // standard | urgent
+      "reason": "Short routing reason.",
+      "customerMessage": "Original customer message.",
+      "suggestedReply": "Customer-facing handoff reply.",
+      "createdAt": "2026-05-28T00:00:00.000Z",
+      "customerId": "customer-stable-id",
+      "accountLinkId": "link-customer-channel",
+      "channel": "whatsapp",
+      "externalUserId": "+886900000001"
     }
   ]
 }

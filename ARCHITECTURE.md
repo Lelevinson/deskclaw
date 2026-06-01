@@ -29,20 +29,20 @@ DeskClaw is a local-first conversational commerce agent prototype for small D2C 
 
 **Implemented**
 
-- Repo-managed OpenClaw skills under [`skills/`](skills/): `policy-oracle`, `search-products`, `sentiment-router`, `cart-actions` (add / remove / change-quantity, all gated by the identity → preview → confirm → audit pipeline)
-- Shared business data under [`data/`](data/): catalog, policies, routing rules, customers, account links, and shop runtime baseline state
+- Repo-managed OpenClaw skills under [`skills/`](skills/): `policy-oracle`, `search-products`, `sentiment-router`, `cart-actions` (add / remove / change-quantity, all gated by the identity → preview → confirm → audit pipeline), `order-status` (read-only, identity-gated order lookup), `returns-actions` (return/exchange intake and status), plus `sentiment-router` handoff tickets and `policy-oracle` compatibility Q&A
+- Shared business data under [`data/`](data/): catalog, policies, routing rules, customers, account links, orders, returns, handoff tickets, compatibility notes, and shop runtime baseline state
 - Shop MCP server under `src/mcp/shop-server.ts` and shared shop logic under `src/shop/`
-- **Tool-level eval harness** under `src/cli/shop-eval.ts` (`npm run shop:eval`): deterministic, no-model tests over the `src/shop` service functions, asserting the safety-critical guarantees (identity gating, ownership proof, preview→confirm, expiry, refusals, audit logging) across all three cart action types. Run from a per-test `data/` reset; named PASS/FAIL with a non-zero exit on failure.
+- **Tool-level eval harness** under `src/cli/shop-eval.ts` (`npm run shop:eval`): deterministic, no-model tests over the `src/shop` service functions, asserting the safety-critical guarantees (identity gating, ownership proof, identity-gated order/return reads, cart preview expiry, preview→confirm, refusals, audit logging, and handoff ticket creation) across cart, order-status, returns, and handoff tools. Run from a per-test `data/` reset; named PASS/FAIL with a non-zero exit on failure.
 - Scripted test scenarios under [`skills-lab/scenarios/`](skills-lab/scenarios/)
 - Devcontainer + Ollama wiring + Codex provider + repo-skill loading via `skills.load.extraDirs`
+- Local browser demo server (`npm run demo:server`) for testing MVP flows, plus a static read-only storefront smoke render (`npm run shop:storefront`)
 
 **Not implemented**
 
 - Automated evaluation at the **skill/agent (model-in-the-loop) layer** — the `skills-lab/` scenario files still require manual TUI testing (the tool layer is covered by the eval harness above; deferred by [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §5)
 - CI, linting, deployment
-- Mock e-commerce website UI
 
-**Planned next (in scope, not yet built)** — scoped in [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §4; build order: ~~cart-edit~~ (shipped 2026-05-29) → ~~tool-level eval harness~~ (shipped 2026-05-29) → **order-status (next)** → returns-intake, with handoff-ticket and product-compatibility Q&A as independent items. The `orders` data domain (introduced by order-status) is the first new visible data domain and the prerequisite for the mock storefront.
+**Planned next (in scope, not yet built)** — scoped in [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §4; build order: ~~cart-edit~~ (shipped 2026-05-29) → ~~tool-level eval harness~~ (shipped 2026-05-29) → ~~order-status~~ (shipped 2026-05-29) → ~~returns-intake~~ (shipped 2026-05-30), with ~~handoff-ticket~~, ~~product-compatibility Q&A~~, and ~~local demo UI / storefront smoke render~~ also shipped. Remaining non-shipped items are deferred/manual items listed above or fenced out below.
 
 ## 4. Repository layout
 
@@ -50,7 +50,11 @@ DeskClaw is a local-first conversational commerce agent prototype for small D2C 
 skills/                       # canonical, repo-managed
   cart-actions/
     SKILL.md
+  order-status/
+    SKILL.md
   policy-oracle/
+    SKILL.md
+  returns-actions/
     SKILL.md
   search-products/
     SKILL.md
@@ -70,12 +74,12 @@ data/
   policies/{faq,product-care,returns,shipping}.md
   routing/escalation-rules.md
   customers/{customers,account-links}.json
-  shop/{carts,pending-actions,action-logs}.json
+  shop/{orders,returns,handoffs,carts,pending-actions,action-logs}.json
 
 skills-lab/                   # evaluation only, not a skill source
   README.md                   # how to run + pass/fail criteria
   scenarios/
-    {policy-oracle,search-products,sentiment-router,cart-actions}-tests.md
+    {policy-oracle,search-products,sentiment-router,cart-actions,order-status,returns-actions,product-compatibility}-tests.md
 ```
 
 This is the tracked repo layout, not generated runtime state. Personal OpenClaw runtime data stays in `/home/node/.openclaw` and is not committed.
@@ -90,10 +94,11 @@ Decided in the 2026-05-29 roadmap session. New data domains noted because they t
 
 - ~~**Cart edits** — remove item / change quantity. Extends `cart-actions`; no new data domain.~~ **Shipped 2026-05-29.**
 - ~~**Tool-level evaluation harness** — deterministic tests over `src/shop` service functions (identity gating, preview/confirm, audit).~~ **Shipped 2026-05-29** (`npm run shop:eval`); closed the "Not implemented" eval gap above for the tool layer.
-- **Order status lookup** — read-only, identity-gated. Introduces the **`orders`** data domain (the first new *visible* data domain).
-- **Return / exchange intake + status** — captures a return *request* and hands off the refund/exchange (never auto-issues money), plus a read-only refund/return-status check ("is my refund processed?"). Depends on the `orders` domain; adds a **`returns`** sub-domain.
-- **Handoff ticket records** — durable escalation/audit records for `sentiment-router` handoffs.
-- **Product / ingredient-compatibility Q&A** — extends `policy-oracle` from a brand-authored compatibility data file; answer-only-from-data, escalate reaction/medical language.
+- ~~**Order status lookup** — read-only, identity-gated. Introduces the **`orders`** data domain (the first new *visible* data domain).~~ **Shipped 2026-05-29.**
+- ~~**Return / exchange intake + status** — captures a return *request* and hands off the refund/exchange (never auto-issues money), plus a read-only refund/return-status check ("is my refund processed?"). Depends on the `orders` domain; adds a **`returns`** sub-domain.~~ **Shipped 2026-05-30.**
+- ~~**Handoff ticket records** — durable escalation/audit records for `sentiment-router` handoffs.~~ **Shipped 2026-05-30.**
+- ~~**Product / ingredient-compatibility Q&A** — extends `policy-oracle` from a brand-authored compatibility data file; answer-only-from-data, escalate reaction/medical language.~~ **Shipped 2026-05-30.**
+- ~~**Local demo UI / storefront smoke render** — local browser demo for MVP flows plus a static read-only storefront render over shared state.~~ **Shipped 2026-05-30** (`npm run demo:server`, `npm run shop:storefront`).
 
 ### Deferred (out of scope)
 
@@ -118,12 +123,12 @@ Explicitly **not** part of the prototype.
 - **Catalog format:** JSON. Simple, inspectable, sufficient for the MVP. Revisit if querying becomes a bottleneck.
 - **Skill/tool split:** Customer-facing behaviors live as skills under `skills/`. Reusable typed operations, such as account identity lookup or cart mutation, live as inner tools under `src/`. Shared facts and local runtime baseline data live under `data/`.
 - **Shop writes:** The agent must use typed MCP tools, not raw database access. Mutating actions require a linked channel identity, preview, explicit customer confirmation, execution, and audit logging.
-- **Shared data ownership:** Product, policy, routing, customer, account-link, and shop state facts live under `data/`. Skills point to these files instead of copying them.
+- **Shared data ownership:** Product, policy, routing, customer, account-link, order, and shop state facts live under `data/`. Skills point to these files instead of copying them.
 - **Escalation signals:** Defined in `data/routing/escalation-rules.md`. `handoff_recommended` = frustration, repeated failures, explicit human request. `urgent_handoff` = safety, legal, chargeback, social media threats.
 - **Demo interface:** OpenClaw TUI only. No custom web UI for the first prototype.
 - **Demo brand:** Intentionally a Taiwan-based skincare brand (NT$ pricing, skincare catalog). This is the course project's chosen domain, not a placeholder.
-- **Skill ↔ UI integration order:** Build customer skills against the shared shop backend and `data/` first, and test them in the TUI (one feature branch per customer capability, spanning whatever skill/tool/data layers it needs). The mock storefront comes later as a single read-only view over the same shop state (catalog, carts, action logs) — it is wired to the shared state, not to individual skills. A new skill needs new UI work only when it introduces a new **visible data domain** (for example orders or returns), not once per skill.
-- **Scaling unit:** The three-layer split (customer skill → inner tool → shared data, see [`skills/README.md`](skills/README.md)) plus the typed MCP boundary is what makes added skills cheap. The first expected limits are operational, not structural: manual TUI testing (mitigated by the not-yet-built eval harness in §3) and the whole-file JSON store. Address those before skill count grows; do not restructure the layers preemptively.
+- **Skill ↔ UI integration order:** Build customer skills against the shared shop backend and `data/` first, and test them in the TUI (one feature branch per customer capability, spanning whatever skill/tool/data layers it needs). The mock storefront comes later as a single read-only view over the same shop state (catalog, carts, orders, returns, handoff tickets, action logs) — it is wired to the shared state, not to individual skills. A new skill needs new UI work only when it introduces a new **visible data domain** (for example orders or returns), not once per skill.
+- **Scaling unit:** The three-layer split (customer skill → inner tool → shared data, see [`skills/README.md`](skills/README.md)) plus the typed MCP boundary is what makes added skills cheap. The first expected limits are operational, not structural: manual TUI testing at the skill/agent layer (the tool layer is now covered by `npm run shop:eval`) and the whole-file JSON store. Address those before skill count grows; do not restructure the layers preemptively.
 
 ## 7. Source-of-truth order
 

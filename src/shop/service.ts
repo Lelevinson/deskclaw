@@ -8,9 +8,17 @@ import type {
   CartLine,
   CartView,
   Customer,
+  HandoffTicket,
+  HandoffTicketView,
   LinkedCustomer,
+  Order,
+  OrderLine,
+  OrderView,
   PendingAction,
   Product,
+  ReturnRequest,
+  ReturnRequestType,
+  ReturnRequestView,
   ShopDatabase
 } from "./types.js";
 
@@ -160,6 +168,63 @@ function buildCartView(db: ShopDatabase, cart: Cart): CartView {
   };
 }
 
+function buildOrderView(db: ShopDatabase, order: Order): OrderView {
+  const items: OrderLine[] = order.items.map((item) => {
+    const product = findProduct(db, item.productId);
+    const name = product?.name ?? item.productId;
+    return {
+      productId: item.productId,
+      name,
+      priceNtd: item.priceNtd,
+      quantity: item.quantity,
+      subtotalNtd: item.priceNtd * item.quantity
+    };
+  });
+
+  return {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    customerId: order.customerId,
+    placedAt: order.placedAt,
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    fulfillmentStatus: order.fulfillmentStatus,
+    currency: order.currency,
+    items,
+    subtotalNtd: order.subtotalNtd,
+    shippingNtd: order.shippingNtd,
+    totalNtd: order.totalNtd,
+    tracking: order.tracking
+  };
+}
+
+function buildReturnRequestView(request: ReturnRequest): ReturnRequestView {
+  return {
+    id: request.id,
+    customerId: request.customerId,
+    orderId: request.orderId,
+    orderNumber: request.orderNumber,
+    requestType: request.requestType,
+    reason: request.reason,
+    status: request.status,
+    summary: request.summary,
+    requestedAt: request.requestedAt,
+    confirmedAt: request.confirmedAt
+  };
+}
+
+function buildHandoffTicketView(ticket: HandoffTicket): HandoffTicketView {
+  return {
+    id: ticket.id,
+    status: ticket.status,
+    priority: ticket.priority,
+    reason: ticket.reason,
+    suggestedReply: ticket.suggestedReply,
+    createdAt: ticket.createdAt,
+    customerId: ticket.customerId
+  };
+}
+
 function validateQuantity(quantity: number): string | undefined {
   if (!Number.isInteger(quantity) || quantity < 1) {
     return "Quantity must be a positive whole number.";
@@ -233,6 +298,53 @@ export async function searchProducts(
     .slice(0, Math.max(1, Math.min(maxResults, 10)));
 
   return { ok: true, data: scored };
+}
+
+export async function listOrdersForChannel(
+  channel: string,
+  externalUserId: string,
+  limit = 5
+): Promise<ServiceResult<OrderView[]>> {
+  const db = await readShopDb();
+  const linked = resolveLinkedCustomer(db, channel, externalUserId);
+  if (!linked.ok || !linked.data) {
+    return { ok: false, error: linked.error };
+  }
+
+  const customerId = linked.data.customer.id;
+  const orders = (db.orders ?? [])
+    .filter((order) => order.customerId === customerId)
+    .sort((a, b) => Date.parse(b.placedAt) - Date.parse(a.placedAt))
+    .slice(0, Math.max(1, Math.min(limit, 20)))
+    .map((order) => buildOrderView(db, order));
+
+  return { ok: true, data: orders };
+}
+
+export async function getOrderForChannel(
+  channel: string,
+  externalUserId: string,
+  orderIdOrNumber: string
+): Promise<ServiceResult<OrderView>> {
+  const db = await readShopDb();
+  const linked = resolveLinkedCustomer(db, channel, externalUserId);
+  if (!linked.ok || !linked.data) {
+    return { ok: false, error: linked.error };
+  }
+
+  const customerId = linked.data.customer.id;
+  const needle = normalize(orderIdOrNumber);
+  const order = (db.orders ?? []).find(
+    (entry) =>
+      entry.customerId === customerId &&
+      (normalize(entry.id) === needle || normalize(entry.orderNumber) === needle)
+  );
+
+  if (!order) {
+    return { ok: false, error: "No matching order was found for this linked channel identity." };
+  }
+
+  return { ok: true, data: buildOrderView(db, order) };
 }
 
 export async function getCartForChannel(
@@ -939,6 +1051,207 @@ export async function confirmLatestUpdateQuantityForChannel(
   const result = confirmUpdateQuantityForLink(db, linkedData.accountLink, pending.id);
   await writeShopDb(db);
   return result;
+}
+
+
+export async function previewReturnForChannel(
+  channel: string,
+  externalUserId: string,
+  orderIdOrNumber: string,
+  requestType: ReturnRequestType,
+  reason: string
+): Promise<ServiceResult<{ returnRequest: ReturnRequestView; confirmationText: string; order: OrderView }>> {
+  const db = await readShopDb();
+  const linked = resolveLinkedCustomer(db, channel, externalUserId);
+  if (!linked.ok || !linked.data) {
+    return { ok: false, error: linked.error };
+  }
+  if (requestType !== "refund" && requestType !== "exchange") {
+    return { ok: false, error: "Return request type must be refund or exchange." };
+  }
+  const cleanReason = reason.trim();
+  if (!cleanReason) {
+    return { ok: false, error: "Return reason is required." };
+  }
+
+  const customerId = linked.data.customer.id;
+  const needle = normalize(orderIdOrNumber);
+  const order = (db.orders ?? []).find(
+    (entry) =>
+      entry.customerId === customerId &&
+      (normalize(entry.id) === needle || normalize(entry.orderNumber) === needle)
+  );
+  if (!order) {
+    return { ok: false, error: "No matching order was found for this linked channel identity." };
+  }
+
+  for (const existing of db.returns ?? []) {
+    if (
+      existing.customerId === customerId &&
+      existing.accountLinkId === linked.data.accountLink.id &&
+      existing.orderId === order.id &&
+      existing.status === "pending_confirmation"
+    ) {
+      existing.status = "rejected";
+    }
+  }
+
+  const summary = `Create a ${requestType} return request for order ${order.orderNumber}: ${cleanReason}.`;
+  const request: ReturnRequest = {
+    id: `return_${randomUUID()}`,
+    customerId,
+    accountLinkId: linked.data.accountLink.id,
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    requestType,
+    reason: cleanReason,
+    status: "pending_confirmation",
+    summary,
+    requestedAt: nowIso()
+  };
+  db.returns.unshift(request);
+  addLog(db, {
+    type: "return.preview",
+    status: "preview",
+    customerId,
+    summary,
+    metadata: {
+      returnRequestId: request.id,
+      accountLinkId: linked.data.accountLink.id,
+      channel: linked.data.accountLink.channel,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      requestType
+    }
+  });
+  await writeShopDb(db);
+
+  return {
+    ok: true,
+    data: {
+      returnRequest: buildReturnRequestView(request),
+      confirmationText: `I can submit a ${requestType} return request for order ${order.orderNumber}. A human teammate will review it before any refund or exchange is processed. Should I submit it?`,
+      order: buildOrderView(db, order)
+    }
+  };
+}
+
+export async function confirmReturnForChannel(
+  channel: string,
+  externalUserId: string,
+  returnRequestId: string
+): Promise<ServiceResult<{ returnRequest: ReturnRequestView }>> {
+  const db = await readShopDb();
+  const linked = resolveLinkedCustomer(db, channel, externalUserId);
+  if (!linked.ok || !linked.data) {
+    return { ok: false, error: linked.error };
+  }
+
+  const request = (db.returns ?? []).find((entry) => entry.id === returnRequestId);
+  if (!request) {
+    return { ok: false, error: "Return request not found." };
+  }
+  if (request.customerId !== linked.data.customer.id || request.accountLinkId !== linked.data.accountLink.id) {
+    return { ok: false, error: "Return request does not belong to this linked channel identity." };
+  }
+  if (request.status !== "pending_confirmation") {
+    return { ok: false, error: `Return request is already ${request.status}.` };
+  }
+
+  request.status = "submitted";
+  request.confirmedAt = nowIso();
+  addLog(db, {
+    type: "return.request",
+    status: "success",
+    customerId: request.customerId,
+    summary: request.summary,
+    metadata: {
+      returnRequestId: request.id,
+      accountLinkId: linked.data.accountLink.id,
+      channel: linked.data.accountLink.channel,
+      orderId: request.orderId,
+      orderNumber: request.orderNumber,
+      requestType: request.requestType
+    }
+  });
+  await writeShopDb(db);
+  return { ok: true, data: { returnRequest: buildReturnRequestView(request) } };
+}
+
+export async function getReturnStatusForChannel(
+  channel: string,
+  externalUserId: string,
+  returnRequestIdOrOrderNumber?: string
+): Promise<ServiceResult<ReturnRequestView[]>> {
+  const db = await readShopDb();
+  const linked = resolveLinkedCustomer(db, channel, externalUserId);
+  if (!linked.ok || !linked.data) {
+    return { ok: false, error: linked.error };
+  }
+  const needle = returnRequestIdOrOrderNumber ? normalize(returnRequestIdOrOrderNumber) : undefined;
+  const requests = (db.returns ?? [])
+    .filter(
+      (entry) =>
+        entry.customerId === linked.data!.customer.id &&
+        (!needle || normalize(entry.id) === needle || normalize(entry.orderNumber) === needle)
+    )
+    .sort((a, b) => Date.parse(b.requestedAt) - Date.parse(a.requestedAt))
+    .map(buildReturnRequestView);
+  return { ok: true, data: requests };
+}
+
+export async function createHandoffTicket(
+  customerMessage: string,
+  reason: string,
+  suggestedReply: string,
+  priority: "standard" | "urgent" = "standard",
+  channel?: string,
+  externalUserId?: string
+): Promise<ServiceResult<{ ticket: HandoffTicketView }>> {
+  const db = await readShopDb();
+  const cleanMessage = customerMessage.trim();
+  const cleanReason = reason.trim();
+  const cleanReply = suggestedReply.trim();
+  if (!cleanMessage || !cleanReason || !cleanReply) {
+    return { ok: false, error: "Customer message, reason, and suggested reply are required." };
+  }
+
+  let linked: LinkedCustomerRecord | undefined;
+  if (channel && externalUserId) {
+    const resolved = resolveLinkedCustomer(db, channel, externalUserId);
+    if (resolved.ok && resolved.data) {
+      linked = resolved.data;
+    }
+  }
+
+  const ticket: HandoffTicket = {
+    id: `handoff_${randomUUID()}`,
+    status: "open",
+    priority,
+    reason: cleanReason,
+    customerMessage: cleanMessage,
+    suggestedReply: cleanReply,
+    createdAt: nowIso(),
+    customerId: linked?.customer.id,
+    accountLinkId: linked?.accountLink.id,
+    channel,
+    externalUserId
+  };
+  db.handoffTickets.unshift(ticket);
+  addLog(db, {
+    type: "handoff.create",
+    status: "success",
+    customerId: linked?.customer.id,
+    summary: `Created ${priority} handoff ticket: ${cleanReason}.`,
+    metadata: {
+      handoffTicketId: ticket.id,
+      accountLinkId: linked?.accountLink.id,
+      channel,
+      priority
+    }
+  });
+  await writeShopDb(db);
+  return { ok: true, data: { ticket: buildHandoffTicketView(ticket) } };
 }
 
 export async function listActionLogs(

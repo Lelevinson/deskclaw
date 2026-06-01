@@ -18,6 +18,9 @@ skills-lab/
     search-products-tests.md
     sentiment-router-tests.md
     cart-actions-tests.md
+    order-status-tests.md
+    returns-actions-tests.md
+    product-compatibility-tests.md
 ```
 
 Do not add a `skills/` folder here. If a skill changes, edit [`../skills/`](../skills/) and update the matching scenario only when the expected behavior changes.
@@ -30,7 +33,7 @@ Do not add a `skills/` folder here. If a skill changes, edit [`../skills/`](../s
    openclaw skills list
    ```
 
-   `policy-oracle`, `search-products`, `sentiment-router`, and `cart-actions` should appear. If they don't, see [`setup.md`](../docs/openclaw/setup.md).
+   `policy-oracle`, `search-products`, `sentiment-router`, `cart-actions`, `order-status`, and `returns-actions` should appear. If they don't, see [`setup.md`](../docs/openclaw/setup.md).
 
 2. Start the gateway and TUI:
 

@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { AccountLink, ActionLog, Cart, Customer, PendingAction, ProductCatalog, ShopDatabase } from "./types.js";
+import type { AccountLink, ActionLog, Cart, Customer, HandoffTicket, Order, PendingAction, ReturnRequest, ProductCatalog, ShopDatabase } from "./types.js";
 
 const DEFAULT_DATA_DIR = path.resolve(process.cwd(), "data");
 const DEFAULT_DB_PATH = path.resolve(process.cwd(), ".local/shop-db.json");
@@ -24,6 +24,16 @@ async function writeJsonFile(filePath: string, db: ShopDatabase): Promise<void> 
   await writeFile(filePath, `${JSON.stringify(db, null, 2)}\n`, "utf8");
 }
 
+function normalizeShopDatabase(db: ShopDatabase): ShopDatabase {
+  db.orders ??= [];
+  db.returns ??= [];
+  db.handoffTickets ??= [];
+  db.carts ??= [];
+  db.pendingActions ??= [];
+  db.actionLogs ??= [];
+  return db;
+}
+
 async function readInitialDatabase(): Promise<ShopDatabase> {
   const dataDir = getShopDataDir();
   const catalog = await readJsonFile<ProductCatalog>(path.join(dataDir, "catalog/products.json"));
@@ -31,6 +41,9 @@ async function readInitialDatabase(): Promise<ShopDatabase> {
   const accountLinkData = await readJsonFile<{ accountLinks: AccountLink[] }>(
     path.join(dataDir, "customers/account-links.json")
   );
+  const orderState = await readJsonFile<{ orders: Order[] }>(path.join(dataDir, "shop/orders.json"));
+  const returnState = await readJsonFile<{ returns: ReturnRequest[] }>(path.join(dataDir, "shop/returns.json"));
+  const handoffState = await readJsonFile<{ handoffTickets: HandoffTicket[] }>(path.join(dataDir, "shop/handoffs.json"));
   const cartState = await readJsonFile<{ carts: Cart[] }>(path.join(dataDir, "shop/carts.json"));
   const pendingActionState = await readJsonFile<{ pendingActions: PendingAction[] }>(
     path.join(dataDir, "shop/pending-actions.json")
@@ -42,6 +55,9 @@ async function readInitialDatabase(): Promise<ShopDatabase> {
     products: catalog.products,
     customers: customerData.customers,
     accountLinks: accountLinkData.accountLinks,
+    orders: orderState.orders,
+    returns: returnState.returns,
+    handoffTickets: handoffState.handoffTickets,
     carts: cartState.carts,
     pendingActions: pendingActionState.pendingActions,
     actionLogs: actionLogState.actionLogs
@@ -50,7 +66,7 @@ async function readInitialDatabase(): Promise<ShopDatabase> {
 
 export async function readShopDb(): Promise<ShopDatabase> {
   try {
-    return await readJsonFile(getShopDbPath());
+    return normalizeShopDatabase(await readJsonFile<ShopDatabase>(getShopDbPath()));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
       throw error;
@@ -58,7 +74,7 @@ export async function readShopDb(): Promise<ShopDatabase> {
 
     const initialDb = await readInitialDatabase();
     await writeShopDb(initialDb);
-    return initialDb;
+    return normalizeShopDatabase(initialDb);
   }
 }
 

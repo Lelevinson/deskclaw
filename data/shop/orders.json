@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "orders": [
+    {
+      "id": "order-demo-lin-1002",
+      "orderNumber": "DC-1002",
+      "customerId": "customer-demo-lin",
+      "placedAt": "2026-05-27T09:30:00.000Z",
+      "status": "shipped",
+      "paymentStatus": "paid",
+      "fulfillmentStatus": "fulfilled",
+      "currency": "NTD",
+      "items": [
+        {
+          "productId": "cloud-cleanser",
+          "quantity": 1,
+          "priceNtd": 420
+        },
+        {
+          "productId": "sunny-shield-spf50",
+          "quantity": 1,
+          "priceNtd": 520
+        }
+      ],
+      "subtotalNtd": 940,
+      "shippingNtd": 60,
+      "totalNtd": 1000,
+      "tracking": {
+        "carrier": "Demo Express",
+        "trackingNumber": "DEMO1002TW",
+        "trackingUrl": "https://example.local/tracking/DEMO1002TW",
+        "status": "In transit",
+        "shippedAt": "2026-05-28T04:00:00.000Z",
+        "estimatedDelivery": "2026-05-30"
+      }
+    },
+    {
+      "id": "order-demo-lin-1001",
+      "orderNumber": "DC-1001",
+      "customerId": "customer-demo-lin",
+      "placedAt": "2026-05-12T10:15:00.000Z",
+      "status": "delivered",
+      "paymentStatus": "paid",
+      "fulfillmentStatus": "fulfilled",
+      "currency": "NTD",
+      "items": [
+        {
+          "productId": "glow-starter-kit",
+          "quantity": 1,
+          "priceNtd": 980
+        }
+      ],
+      "subtotalNtd": 980,
+      "shippingNtd": 0,
+      "totalNtd": 980,
+      "tracking": {
+        "carrier": "Demo Express",
+        "trackingNumber": "DEMO1001TW",
+        "trackingUrl": "https://example.local/tracking/DEMO1001TW",
+        "status": "Delivered",
+        "shippedAt": "2026-05-13T03:30:00.000Z",
+        "deliveredAt": "2026-05-14T08:45:00.000Z"
+      }
+    }
+  ]
+}

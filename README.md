@@ -41,7 +41,7 @@ Once the container is open, run the one-time OpenClaw config and verification co
 
 ### Shop action tools
 
-DeskClaw includes a local mock shop backend for agent-visible actions such as adding a product to a customer's cart. See [`src/shop/README.md`](src/shop/README.md) for the design contract and [`docs/openclaw/setup.md §4`](docs/openclaw/setup.md#4-shop-mcp-tools) for commands.
+DeskClaw includes a local mock shop backend for agent-visible actions such as adding a product to a customer's cart. For local browser testing, run `npm run demo:server` and open `http://127.0.0.1:8787`; see [`src/shop/README.md`](src/shop/README.md) for the design contract and [`docs/openclaw/setup.md §4`](docs/openclaw/setup.md#4-shop-mcp-tools) for commands.
 
 ## Devcontainer at a glance
 

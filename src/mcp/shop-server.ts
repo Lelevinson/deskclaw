@@ -9,10 +9,16 @@ import {
   confirmLatestUpdateQuantityForChannel,
   confirmRemoveItemForChannel,
   confirmUpdateQuantityForChannel,
+  confirmReturnForChannel,
+  createHandoffTicket,
   getCartForChannel,
+  getOrderForChannel,
   listActionLogs,
+  listOrdersForChannel,
   lookupCustomerByChannel,
   previewAddItemForChannel,
+  getReturnStatusForChannel,
+  previewReturnForChannel,
   previewRemoveItemForChannel,
   previewUpdateQuantityForChannel,
   searchProducts
@@ -62,6 +68,35 @@ server.registerTool(
     })
   },
   async ({ query, maxResults }) => jsonText(await searchProducts(query, maxResults))
+);
+
+server.registerTool(
+  "shop_orders_list_for_channel",
+  {
+    title: "List Orders For Linked Channel",
+    description: "Read recent orders for the customer account linked to this channel identity. Do not use customer-typed ids as ownership proof.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel."),
+      limit: z.number().int().min(1).max(20).default(5)
+    })
+  },
+  async ({ channel, externalUserId, limit }) => jsonText(await listOrdersForChannel(channel, externalUserId, limit))
+);
+
+server.registerTool(
+  "shop_order_get",
+  {
+    title: "Get Order For Linked Channel",
+    description: "Read one order only after resolving the linked channel identity; the order id or number is only a filter within that customer's orders.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel."),
+      orderIdOrNumber: z.string().min(1).describe("Order id or customer-facing order number to filter the linked customer's orders.")
+    })
+  },
+  async ({ channel, externalUserId, orderIdOrNumber }) =>
+    jsonText(await getOrderForChannel(channel, externalUserId, orderIdOrNumber))
 );
 
 server.registerTool(
@@ -214,6 +249,72 @@ server.registerTool(
   },
   async ({ channel, externalUserId, productId, quantity }) =>
     jsonText(await confirmLatestUpdateQuantityForChannel(channel, externalUserId, productId, quantity))
+);
+
+
+server.registerTool(
+  "shop_return_preview",
+  {
+    title: "Preview Return Request",
+    description: "Validate and stage a return or exchange request for a linked channel identity. This never issues refunds.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel."),
+      orderIdOrNumber: z.string().min(1),
+      requestType: z.enum(["refund", "exchange"]),
+      reason: z.string().min(1)
+    })
+  },
+  async ({ channel, externalUserId, orderIdOrNumber, requestType, reason }) =>
+    jsonText(await previewReturnForChannel(channel, externalUserId, orderIdOrNumber, requestType, reason))
+);
+
+server.registerTool(
+  "shop_return_confirm",
+  {
+    title: "Confirm Return Request",
+    description: "Submit a staged return or exchange request for human review after explicit customer confirmation. This never issues refunds.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel."),
+      returnRequestId: z.string().min(1)
+    })
+  },
+  async ({ channel, externalUserId, returnRequestId }) =>
+    jsonText(await confirmReturnForChannel(channel, externalUserId, returnRequestId))
+);
+
+server.registerTool(
+  "shop_return_status",
+  {
+    title: "Read Return Request Status",
+    description: "Read submitted return/refund status for the linked channel identity. The id/order number is only a filter within that customer's records.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel."),
+      returnRequestIdOrOrderNumber: z.string().min(1).optional()
+    })
+  },
+  async ({ channel, externalUserId, returnRequestIdOrOrderNumber }) =>
+    jsonText(await getReturnStatusForChannel(channel, externalUserId, returnRequestIdOrOrderNumber))
+);
+
+server.registerTool(
+  "shop_handoff_create",
+  {
+    title: "Create Handoff Ticket",
+    description: "Append a durable human handoff ticket for escalation/audit. Optional channel identity links the ticket to a known customer.",
+    inputSchema: z.object({
+      customerMessage: z.string().min(1),
+      reason: z.string().min(1),
+      suggestedReply: z.string().min(1),
+      priority: z.enum(["standard", "urgent"]).default("standard"),
+      channel: z.string().min(1).optional(),
+      externalUserId: z.string().min(1).optional()
+    })
+  },
+  async ({ customerMessage, reason, suggestedReply, priority, channel, externalUserId }) =>
+    jsonText(await createHandoffTicket(customerMessage, reason, suggestedReply, priority, channel, externalUserId))
 );
 
 server.registerTool(

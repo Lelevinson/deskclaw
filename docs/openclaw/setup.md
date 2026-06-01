@@ -16,7 +16,7 @@ openclaw config get skills.load.extraDirs --json
 openclaw skills list
 ```
 
-The third command should show `policy-oracle`, `search-products`, `sentiment-router`, and `cart-actions`. If a skill of the same name already exists under `/home/node/.openclaw/workspace/skills/`, the workspace copy wins — remove it to test the repo-managed version:
+The third command should show `policy-oracle`, `search-products`, `sentiment-router`, `cart-actions`, `order-status`, and `returns-actions`. If a skill of the same name already exists under `/home/node/.openclaw/workspace/skills/`, the workspace copy wins — remove it to test the repo-managed version:
 
 ```bash
 rm -rf /home/node/.openclaw/workspace/skills/<skill-name>
@@ -43,6 +43,24 @@ Build the shop tools and reset the mock runtime database:
 ```bash
 npm run build
 npm run shop:reset
+```
+
+Start the local browser demo for testing catalog/search, cart, order, return, handoff, and compatibility flows:
+
+```bash
+npm run demo:server
+```
+
+Then open `http://127.0.0.1:8787`. The demo is local-only and uses the resettable JSON shop DB. Render the static read-only storefront smoke file to `.local/storefront.html` when you only need a quick state snapshot:
+
+```bash
+npm run shop:storefront
+```
+
+Run the local demo smoke test:
+
+```bash
+npm run demo:smoke
 ```
 
 Run the local shop eval harness (deterministic tool-level safety tests):

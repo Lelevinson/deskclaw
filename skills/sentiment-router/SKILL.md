@@ -34,3 +34,7 @@ Suggested reply: <brief customer-facing response>
 - Use `urgent_handoff` for safety concerns, threats, legal complaints, public social-media escalation threats, chargeback threats, discrimination/harassment claims, or medical/allergy harm.
 
 Keep the suggested reply calm, brief, and human. Do not continue selling when handoff is recommended.
+
+## Handoff ticket record
+
+When the route is `handoff_recommended` or `urgent_handoff` and the `shop_handoff_create` tool is available, create a handoff ticket with the customer message, short reason, suggested reply, and priority (`urgent` for `urgent_handoff`, otherwise `standard`). Do not continue selling or answering policy details after creating the ticket.

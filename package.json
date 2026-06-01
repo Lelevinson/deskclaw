@@ -10,7 +10,10 @@
     "shop:reset": "node dist/cli/reset-shop-db.js",
     "shop:mcp": "node dist/mcp/shop-server.js",
     "shop:eval": "npm run build && node dist/cli/shop-eval.js",
-    "shop:test": "npm run shop:eval"
+    "shop:test": "npm run shop:eval",
+    "shop:storefront": "npm run build && node dist/cli/render-storefront.js",
+    "demo:server": "npm run build && node dist/cli/demo-server.js",
+    "demo:smoke": "npm run build && node dist/cli/demo-smoke.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

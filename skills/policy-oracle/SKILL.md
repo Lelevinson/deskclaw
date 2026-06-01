@@ -1,11 +1,11 @@
 ---
 name: policy-oracle
-description: Answer DeskClaw customer policy questions about shipping, returns, exchanges, refunds, warranty, product care, and FAQs using only shared local policy data.
+description: Answer DeskClaw customer policy questions about shipping, returns, exchanges, refunds, warranty, product care, FAQs, and brand-authored product compatibility using only shared local data.
 ---
 
 # policy-oracle
 
-Use this skill when a customer asks about DeskClaw customer policies, including shipping, returns, exchanges, refunds, warranty, product care, order changes, or FAQs.
+Use this skill when a customer asks about DeskClaw customer policies, including shipping, returns, exchanges, refunds, warranty, product care, order changes, product compatibility, routine pairings, or FAQs.
 
 ## Source of truth
 
@@ -16,6 +16,7 @@ Before answering a customer-policy question, read the relevant shared data file:
 {baseDir}/../../data/policies/returns.md
 {baseDir}/../../data/policies/faq.md
 {baseDir}/../../data/policies/product-care.md
+{baseDir}/../../data/catalog/compatibility.md
 ```
 
 If the customer's question could involve more than one policy area, read every relevant policy data file before answering.
@@ -38,4 +39,4 @@ When the answer is not in the policy data:
 
 ## Do not invent
 
-Do not invent carrier names, tracking rules, cut-off times, weekend delivery, holiday delivery, country lists, same-day delivery, coupon codes, accepted payment methods, medical claims, repair promises, product compatibility, or any other policy detail not written in the policy data files.
+Do not invent carrier names, tracking rules, cut-off times, weekend delivery, holiday delivery, country lists, same-day delivery, coupon codes, accepted payment methods, medical claims, repair promises, product compatibility, or any other policy/detail not written in the policy and compatibility data files. Route medical/allergy/reaction compatibility questions to `sentiment-router` for urgent handoff.

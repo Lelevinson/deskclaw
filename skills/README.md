@@ -31,7 +31,9 @@ Example: `cart-actions` is the customer-facing skill. `shop_customer_lookup` is 
 ## Current Customer-Facing Skills
 
 - [`cart-actions/`](cart-actions/) — guides MCP-backed customer cart actions with preview, confirmation, execution, and audit logging.
-- [`policy-oracle/`](policy-oracle/) — answers shipping, returns, FAQ, warranty, and product-care policy questions from shared policy data.
+- [`order-status/`](order-status/) — looks up read-only order status and tracking details through identity-gated shop tools.
+- [`policy-oracle/`](policy-oracle/) — answers shipping, returns, FAQ, warranty, product-care, and compatibility questions from shared data.
+- [`returns-actions/`](returns-actions/) — intakes return/exchange requests and reads return/refund request status without issuing money.
 - [`search-products/`](search-products/) — recommends products from the shared demo catalog.
 - [`sentiment-router/`](sentiment-router/) — classifies customer messages as `continue`, `handoff_recommended`, or `urgent_handoff`.
 
@@ -43,6 +45,12 @@ These are not OpenClaw skills. They are reusable tool operations that skills can
 |---|---|---|
 | `shop_customer_lookup` | `cart-actions`, future account-owned skills | Map `channel + externalUserId` to the linked customer account. |
 | `shop_catalog_search` | `cart-actions`, future shop actions | Resolve customer wording to a product id. |
+| `shop_orders_list_for_channel` | `order-status`, future returns actions | Read recent orders owned by the linked channel identity. |
+| `shop_order_get` | `order-status`, future returns actions | Read one linked customer order by id/order-number filter after identity lookup. |
+| `shop_return_preview` | `returns-actions` | Stage a return/exchange request before confirmation. |
+| `shop_return_confirm` | `returns-actions` | Submit a staged return/exchange request for human review. |
+| `shop_return_status` | `returns-actions` | Read return/refund request status for the linked customer. |
+| `shop_handoff_create` | `sentiment-router` | Create a durable handoff ticket for escalation/audit. |
 | `shop_cart_get` | `cart-actions` | Read the linked customer's current cart. |
 | `shop_cart_preview_add_item` | `cart-actions` | Validate and stage an add-to-cart action before confirmation. |
 | `shop_cart_confirm_add_item` | `cart-actions` | Commit a known pending add-to-cart action. |
@@ -57,16 +65,16 @@ These are not OpenClaw skills. They are reusable tool operations that skills can
 
 ## Planned Utilities (backlog)
 
-These are scoped but not yet built. The full reasoning, research basis, and ordering live in [`../docs/planning/skill-roadmap.md`](../docs/planning/skill-roadmap.md) §4; scope is owned by [`../ARCHITECTURE.md`](../ARCHITECTURE.md) §5. Build the top open item, one feature branch each. Build order: **~~cart-edit~~ (shipped) → tool-level eval harness (next) → order-status → returns-intake**; `handoff-ticket` and `product-compatibility` are independent.
+These are scoped but not yet built unless marked shipped. The full reasoning, research basis, and ordering live in [`../docs/planning/skill-roadmap.md`](../docs/planning/skill-roadmap.md) §4; scope is owned by [`../ARCHITECTURE.md`](../ARCHITECTURE.md) §5. Build the top open item, one feature branch each. Build order: **~~cart-edit~~ (shipped) → ~~tool-level eval harness~~ (shipped) → ~~order-status~~ (shipped) → ~~returns-intake~~ (shipped)**; `handoff-ticket`, `product-compatibility`, and the local demo UI/static storefront render are also shipped. Skill/agent model-in-the-loop scenarios remain manual for now.
 
 | Customer-facing utility | Type | Inner tools / data | Notes |
 |---|---|---|---|
 | ✅ Remove / update cart item | `cart-actions` extension | preview/confirm remove + update-quantity tools; extended `PendingAction.type` | **Shipped 2026-05-29.** No new data domain; reuses the identity → preview → confirm → audit pipeline. |
-| Order status lookup | new `order-status` skill | read-only `shop_orders_list_for_channel` / `shop_order_get`; new `data/shop/orders.json` | Highest-volume real query. Safe by construction — keyed on the resolved `customerId`, never a typed order number. New visible data domain. |
-| Return / exchange intake + refund status | new `returns-actions` skill (depends on orders) | `shop_return_preview` / `shop_return_confirm` / `shop_return_status`; new `data/shop/returns.json` (per-return `status`); `data/policies/returns.md` | Creates a return *request* then hands off; never auto-refunds. Includes a read-only "is my refund processed?" status check. |
-| Human handoff ticket | `sentiment-router` extension | `shop_handoff_create` (append-only record); optional identity | Durable escalation/audit record. Independent of orders. |
-| Product / ingredient-compatibility Q&A | `policy-oracle` extension | new `data/catalog/compatibility.md`; no tools | Answer only from data; escalate reaction/medical language to `sentiment-router`. |
-| Mock storefront demo | UI, not a skill | reads shared shop state (catalog, carts, orders, action logs) | Build after the `orders` domain exists; one read-only view, not per skill. |
+| ✅ Order status lookup | new `order-status` skill | read-only `shop_orders_list_for_channel` / `shop_order_get`; new `data/shop/orders.json` | **Shipped 2026-05-29.** Highest-volume real query. Safe by construction — keyed on the resolved `customerId`, never a typed order number. New visible data domain. |
+| ✅ Return / exchange intake + refund status | new `returns-actions` skill (depends on orders) | `shop_return_preview` / `shop_return_confirm` / `shop_return_status`; new `data/shop/returns.json` (per-return `status`); `data/policies/returns.md` | **Shipped 2026-05-30.** Creates a return *request* then hands off; never auto-refunds. Includes a read-only "is my refund processed?" status check. |
+| ✅ Human handoff ticket | `sentiment-router` extension | `shop_handoff_create` (append-only record); optional identity | **Shipped 2026-05-30.** Durable escalation/audit record. Independent of orders. |
+| ✅ Product / ingredient-compatibility Q&A | `policy-oracle` extension | new `data/catalog/compatibility.md`; no tools | **Shipped 2026-05-30.** Answer only from data; escalate reaction/medical language to `sentiment-router`. |
+| ✅ Local demo UI / storefront render | UI, not a skill | uses shared shop state (catalog, carts, orders, returns, handoffs, action logs) | **Shipped 2026-05-30.** Run the interactive demo with `npm run demo:server`; render a static snapshot with `npm run shop:storefront`. |
 
 ### Reviewed and deferred
 

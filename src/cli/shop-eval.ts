@@ -24,10 +24,16 @@ import {
   confirmLatestUpdateQuantityForChannel,
   confirmRemoveItemForChannel,
   confirmUpdateQuantityForChannel,
+  confirmReturnForChannel,
+  createHandoffTicket,
   getCartForChannel,
+  getOrderForChannel,
   listActionLogs,
+  listOrdersForChannel,
   lookupCustomerByChannel,
   previewAddItemForChannel,
+  getReturnStatusForChannel,
+  previewReturnForChannel,
   previewRemoveItemForChannel,
   previewUpdateQuantityForChannel,
   searchProducts
@@ -104,6 +110,20 @@ async function injectSecondCustomer(): Promise<void> {
       status: "linked",
       linkedAt: "2026-05-28T00:00:00.000Z"
     });
+    db.orders.push({
+      id: "order-eval-mallory-2001",
+      orderNumber: "DC-2001",
+      customerId: MALLORY_CUSTOMER,
+      placedAt: "2026-05-28T00:00:00.000Z",
+      status: "processing",
+      paymentStatus: "paid",
+      fulfillmentStatus: "processing",
+      currency: "NTD",
+      items: [{ productId: "cloud-cleanser", quantity: 1, priceNtd: 420 }],
+      subtotalNtd: 420,
+      shippingNtd: 60,
+      totalNtd: 480
+    });
   });
 }
 
@@ -171,6 +191,95 @@ async function main(): Promise<void> {
     assert(!cart.ok, "typing a customer id as the external channel id must not grant cart access");
     const preview = await previewAddItemForChannel(CH, LIN_CUSTOMER, "cloud-cleanser", 1);
     assert(!preview.ok, "typing a customer id as the external channel id must not stage a mutation");
+  });
+
+  await test("order list is gated by linked channel identity", async () => {
+    const unlinked = await listOrdersForChannel(CH, "not-linked", 5);
+    assert(!unlinked.ok, "unlinked identity must not read orders");
+
+    const orders = await listOrdersForChannel(CH, LIN, 5);
+    assert(orders.ok && orders.data && orders.data.length >= 2, orders.error ?? "linked customer should read seeded orders");
+    assert(
+      orders.data.every((order) => order.customerId === LIN_CUSTOMER),
+      "order list must only include orders owned by the linked customer"
+    );
+  });
+
+  await test("order get treats customer-provided order numbers as filters, not ownership proof", async () => {
+    await injectSecondCustomer();
+
+    const own = await getOrderForChannel(CH, LIN, "DC-1002");
+    assert(own.ok && own.data?.orderNumber === "DC-1002", own.error ?? "linked customer should read their own order");
+    assert(
+      own.data.items.some((item) => item.name === "Cloud Cleanser"),
+      "order view should enrich line items with product names"
+    );
+
+    const someoneElses = await getOrderForChannel(CH, LIN, "DC-2001");
+    assert(!someoneElses.ok, "typed order number must not expose another customer's order");
+  });
+
+  await test("return preview and confirm create a submitted request without refunding", async () => {
+    const preview = await previewReturnForChannel(CH, LIN, "DC-1002", "refund", "package arrived damaged");
+    assert(preview.ok && preview.data, preview.error ?? "return preview should succeed for linked order");
+    assert(
+      preview.data.returnRequest.status === "pending_confirmation",
+      "return preview must stage a pending confirmation, not submit immediately"
+    );
+
+    const statusBefore = await getReturnStatusForChannel(CH, LIN, "DC-1002");
+    assert(statusBefore.ok && statusBefore.data?.[0]?.status === "pending_confirmation", "pending return should be readable");
+
+    const confirm = await confirmReturnForChannel(CH, LIN, preview.data.returnRequest.id);
+    assert(confirm.ok && confirm.data?.returnRequest.status === "submitted", confirm.error ?? "return confirm should submit request");
+
+    const statusAfter = await getReturnStatusForChannel(CH, LIN, "DC-1002");
+    assert(statusAfter.ok && statusAfter.data?.[0]?.status === "submitted", "submitted return should be readable by status");
+
+    const logs = await listActionLogs(LIN_CUSTOMER, 20);
+    assert(
+      logs.data?.some((log) => log.type === "return.request" && log.status === "success"),
+      "submitted return request must write an audit log"
+    );
+  });
+
+  await test("return confirm rejects another linked customer", async () => {
+    await injectSecondCustomer();
+    const preview = await previewReturnForChannel(CH, LIN, "DC-1002", "refund", "package arrived damaged");
+    assert(preview.ok && preview.data, preview.error ?? "return preview should succeed");
+
+    const hijack = await confirmReturnForChannel(CH, MALLORY_EXTERNAL, preview.data.returnRequest.id);
+    assert(!hijack.ok, "a different customer must not confirm someone else's return request");
+
+    const owner = await confirmReturnForChannel(CH, LIN, preview.data.returnRequest.id);
+    assert(owner.ok && owner.data?.returnRequest.status === "submitted", owner.error ?? "owner should still confirm");
+  });
+
+  await test("return tools reject unlinked and cross-customer order access", async () => {
+    await injectSecondCustomer();
+    const unlinked = await previewReturnForChannel(CH, "not-linked", "DC-1002", "refund", "changed my mind");
+    assert(!unlinked.ok, "unlinked identity must not preview returns");
+
+    const crossCustomer = await previewReturnForChannel(CH, LIN, "DC-2001", "refund", "wrong customer order");
+    assert(!crossCustomer.ok, "typed order number must not preview another customer's return");
+  });
+
+  await test("handoff ticket creation appends an audit record", async () => {
+    const handoff = await createHandoffTicket(
+      "I want a human now",
+      "explicit human request",
+      "I’ll bring in a teammate to help from here.",
+      "standard",
+      CH,
+      LIN
+    );
+    assert(handoff.ok && handoff.data?.ticket.status === "open", handoff.error ?? "handoff ticket should be created");
+    assert(handoff.data.ticket.customerId === LIN_CUSTOMER, "linked handoff should include the customer id");
+    const logs = await listActionLogs(LIN_CUSTOMER, 20);
+    assert(
+      logs.data?.some((log) => log.type === "handoff.create" && log.status === "success"),
+      "handoff ticket must write an audit log"
+    );
   });
 
   await test("confirming another customer's pending action is rejected", async () => {

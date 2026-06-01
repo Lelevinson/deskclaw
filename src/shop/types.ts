@@ -57,6 +57,71 @@ export interface Cart {
   items: CartItem[];
 }
 
+export type OrderStatus = "processing" | "packed" | "shipped" | "delivered";
+
+export interface OrderItem {
+  productId: string;
+  quantity: number;
+  priceNtd: number;
+}
+
+export interface OrderTracking {
+  carrier: string;
+  trackingNumber: string;
+  trackingUrl: string;
+  status: string;
+  shippedAt?: string;
+  estimatedDelivery?: string;
+  deliveredAt?: string;
+}
+
+export type ReturnRequestType = "refund" | "exchange";
+export type ReturnStatus = "pending_confirmation" | "submitted" | "approved" | "rejected" | "processed";
+
+export interface ReturnRequest {
+  id: string;
+  customerId: string;
+  accountLinkId: string;
+  orderId: string;
+  orderNumber: string;
+  requestType: ReturnRequestType;
+  reason: string;
+  status: ReturnStatus;
+  summary: string;
+  requestedAt: string;
+  confirmedAt?: string;
+}
+
+export interface HandoffTicket {
+  id: string;
+  status: "open" | "closed";
+  priority: "standard" | "urgent";
+  reason: string;
+  customerMessage: string;
+  suggestedReply: string;
+  createdAt: string;
+  customerId?: string;
+  accountLinkId?: string;
+  channel?: string;
+  externalUserId?: string;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  customerId: string;
+  placedAt: string;
+  status: OrderStatus;
+  paymentStatus: "paid";
+  fulfillmentStatus: "processing" | "packed" | "fulfilled";
+  currency: "NTD";
+  items: OrderItem[];
+  subtotalNtd: number;
+  shippingNtd: number;
+  totalNtd: number;
+  tracking?: OrderTracking;
+}
+
 export type PendingActionType = "cart.add_item" | "cart.remove_item" | "cart.update_quantity";
 
 export interface PendingAction {
@@ -90,6 +155,9 @@ export interface ShopDatabase {
   products: Product[];
   customers: Customer[];
   accountLinks: AccountLink[];
+  orders: Order[];
+  returns: ReturnRequest[];
+  handoffTickets: HandoffTicket[];
   carts: Cart[];
   pendingActions: PendingAction[];
   actionLogs: ActionLog[];
@@ -108,4 +176,51 @@ export interface CartView {
   customerId: string;
   items: CartLine[];
   totalNtd: number;
+}
+
+export interface OrderLine {
+  productId: string;
+  name: string;
+  priceNtd: number;
+  quantity: number;
+  subtotalNtd: number;
+}
+
+export interface OrderView {
+  id: string;
+  orderNumber: string;
+  customerId: string;
+  placedAt: string;
+  status: OrderStatus;
+  paymentStatus: "paid";
+  fulfillmentStatus: "processing" | "packed" | "fulfilled";
+  currency: "NTD";
+  items: OrderLine[];
+  subtotalNtd: number;
+  shippingNtd: number;
+  totalNtd: number;
+  tracking?: OrderTracking;
+}
+
+export interface ReturnRequestView {
+  id: string;
+  customerId: string;
+  orderId: string;
+  orderNumber: string;
+  requestType: ReturnRequestType;
+  reason: string;
+  status: ReturnStatus;
+  summary: string;
+  requestedAt: string;
+  confirmedAt?: string;
+}
+
+export interface HandoffTicketView {
+  id: string;
+  status: "open" | "closed";
+  priority: "standard" | "urgent";
+  reason: string;
+  suggestedReply: string;
+  createdAt: string;
+  customerId?: string;
 }
