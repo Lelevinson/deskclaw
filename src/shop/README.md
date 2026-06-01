@@ -39,8 +39,11 @@ data/shop/                       # committed shop runtime baseline state
 src/shop/                        # shared shop logic and JSON store
 src/mcp/shop-server.ts           # MCP tool server over stdio
 src/cli/reset-shop-db.ts         # reset .local/shop-db.json from baseline data
+src/cli/shop-eval.ts             # deterministic tool-level eval harness (npm run shop:eval)
 skills/cart-actions/SKILL.md     # agent instructions for cart actions
+skills/order-status/SKILL.md     # agent instructions for read-only order/tracking lookups
 skills-lab/scenarios/cart-actions-tests.md
+skills-lab/scenarios/order-status-tests.md
 ```
 
 Runtime data is assembled from `data/` files and written to `.local/shop-db.json`, which is gitignored. Do not commit runtime cart state or action logs.
@@ -77,9 +80,13 @@ The MCP server exposes typed tools only:
 | `shop_cart_preview_add_item` | Validate and stage an add-to-cart action for a linked channel identity. |
 | `shop_cart_confirm_add_item` | Commit a staged add-to-cart action for the same linked channel identity after explicit confirmation. |
 | `shop_cart_confirm_latest_add_item` | Commit the latest matching staged add-to-cart action for the same linked channel identity after explicit confirmation. |
+| `shop_cart_preview_remove_item` / `shop_cart_preview_update_quantity` | Validate and stage a remove or quantity-change cart action for a linked channel identity. |
+| `shop_cart_confirm_remove_item` / `shop_cart_confirm_update_quantity` (+ `_latest_` variants) | Commit a staged remove or quantity-change action for the same linked channel identity after explicit confirmation. |
+| `shop_orders_list_for_channel` | List order summaries for a linked channel identity; returns only that customer's own orders (read-only). |
+| `shop_order_get` | Read one order's full detail (status, items, tracking) only if it belongs to the linked customer; an unknown or non-owned order id is refused identically, so the order id is never proof of ownership (read-only). |
 | `shop_action_log_list` | Inspect recent action logs for demos and debugging. |
 
-Do not expose raw SQL, generic database-write tools, or customer-id-only mutating tools to the agent.
+Do not expose raw SQL, generic database-write tools, or customer-id-only mutating tools to the agent. Read tools are still identity-gated on the linked channel identity: `order-status` reads never accept a customer-typed order number or customer id as proof, and only ever return orders the linked account owns.
 
 ## 5. Confirmation Rule
 
@@ -103,7 +110,8 @@ The mock storefront should use the same shop concepts:
 - customers
 - account links
 - carts
+- orders
 - pending actions
 - action logs
 
-The website should show product catalog, customer cart, and action logs so reviewers can see that agent actions changed real local state.
+The website should show product catalog, customer cart, orders, and action logs so reviewers can see that agent actions changed real local state. Orders are the first read-only post-purchase domain the storefront can surface.

@@ -31,6 +31,7 @@ Example: `cart-actions` is the customer-facing skill. `shop_customer_lookup` is 
 ## Current Customer-Facing Skills
 
 - [`cart-actions/`](cart-actions/) — guides MCP-backed customer cart actions with preview, confirmation, execution, and audit logging.
+- [`order-status/`](order-status/) — answers "where's my order?" with read-only, identity-gated order status and tracking lookups over the linked customer's own orders.
 - [`policy-oracle/`](policy-oracle/) — answers shipping, returns, FAQ, warranty, and product-care policy questions from shared policy data.
 - [`search-products/`](search-products/) — recommends products from the shared demo catalog.
 - [`sentiment-router/`](sentiment-router/) — classifies customer messages as `continue`, `handoff_recommended`, or `urgent_handoff`.
@@ -53,16 +54,18 @@ These are not OpenClaw skills. They are reusable tool operations that skills can
 | `shop_cart_preview_update_quantity` | `cart-actions` | Validate and stage a change to an existing cart item's quantity before confirmation. |
 | `shop_cart_confirm_update_quantity` | `cart-actions` | Commit a known pending update-quantity action. |
 | `shop_cart_confirm_latest_update_quantity` | `cart-actions` | Commit the latest matching pending update-quantity action after customer confirmation. |
+| `shop_orders_list_for_channel` | `order-status` | List order summaries for the linked customer; returns only that customer's own orders. |
+| `shop_order_get` | `order-status` | Read one order's full detail (status, items, tracking) only if it belongs to the linked customer; unknown / non-owned ids are refused identically. |
 | `shop_action_log_list` | `cart-actions`, demos/debugging | Inspect what happened for verification. |
 
 ## Planned Utilities (backlog)
 
-These are scoped but not yet built. The full reasoning, research basis, and ordering live in [`../docs/planning/skill-roadmap.md`](../docs/planning/skill-roadmap.md) §4; scope is owned by [`../ARCHITECTURE.md`](../ARCHITECTURE.md) §5. Build the top open item, one feature branch each. Build order: **~~cart-edit~~ (shipped) → tool-level eval harness (next) → order-status → returns-intake**; `handoff-ticket` and `product-compatibility` are independent.
+These are scoped but not yet built. The full reasoning, research basis, and ordering live in [`../docs/planning/skill-roadmap.md`](../docs/planning/skill-roadmap.md) §4; scope is owned by [`../ARCHITECTURE.md`](../ARCHITECTURE.md) §5. Build the top open item, one feature branch each. Build order: **~~cart-edit~~ → ~~tool-level eval harness~~ → ~~order-status~~ (all shipped) → returns-intake (next)**; `handoff-ticket` and `product-compatibility` are independent.
 
 | Customer-facing utility | Type | Inner tools / data | Notes |
 |---|---|---|---|
 | ✅ Remove / update cart item | `cart-actions` extension | preview/confirm remove + update-quantity tools; extended `PendingAction.type` | **Shipped 2026-05-29.** No new data domain; reuses the identity → preview → confirm → audit pipeline. |
-| Order status lookup | new `order-status` skill | read-only `shop_orders_list_for_channel` / `shop_order_get`; new `data/shop/orders.json` | Highest-volume real query. Safe by construction — keyed on the resolved `customerId`, never a typed order number. New visible data domain. |
+| ✅ Order status lookup | new `order-status` skill | read-only `shop_orders_list_for_channel` / `shop_order_get`; new `data/shop/orders.json` | **Shipped 2026-06-01.** Highest-volume real query. Safe by construction — keyed on the resolved `customerId`, never a typed order number; unknown / non-owned order ids refused identically. New visible data domain now in place. |
 | Return / exchange intake + refund status | new `returns-actions` skill (depends on orders) | `shop_return_preview` / `shop_return_confirm` / `shop_return_status`; new `data/shop/returns.json` (per-return `status`); `data/policies/returns.md` | Creates a return *request* then hands off; never auto-refunds. Includes a read-only "is my refund processed?" status check. |
 | Human handoff ticket | `sentiment-router` extension | `shop_handoff_create` (append-only record); optional identity | Durable escalation/audit record. Independent of orders. |
 | Product / ingredient-compatibility Q&A | `policy-oracle` extension | new `data/catalog/compatibility.md`; no tools | Answer only from data; escalate reaction/medical language to `sentiment-router`. |

@@ -25,7 +25,9 @@ import {
   confirmRemoveItemForChannel,
   confirmUpdateQuantityForChannel,
   getCartForChannel,
+  getOrderForChannel,
   listActionLogs,
+  listOrdersForChannel,
   lookupCustomerByChannel,
   previewAddItemForChannel,
   previewRemoveItemForChannel,
@@ -51,6 +53,10 @@ const LIN_WHATSAPP_EXTERNAL = "+886900000001";
 const MALLORY_EXTERNAL = "eval-mallory";
 const MALLORY_CUSTOMER = "customer-eval-mallory";
 const MALLORY_LINK = "link-eval-mallory-simulated-chat";
+const MALLORY_ORDER = "order-eval-mallory-0001";
+
+// --- a seeded order owned by the demo customer (from the data/ baseline) ---
+const LIN_SHIPPED_ORDER = "order-2026-0002"; // shipped, carries tracking fields
 
 // --- tiny runner ---------------------------------------------------------
 interface TestResult {
@@ -103,6 +109,23 @@ async function injectSecondCustomer(): Promise<void> {
       externalUserId: MALLORY_EXTERNAL,
       status: "linked",
       linkedAt: "2026-05-28T00:00:00.000Z"
+    });
+  });
+}
+
+/** Inject a second linked customer who owns one order, to test cross-customer order reads. */
+async function injectSecondCustomerWithOrder(): Promise<void> {
+  await injectSecondCustomer();
+  await patchDb((db) => {
+    db.orders.push({
+      id: MALLORY_ORDER,
+      customerId: MALLORY_CUSTOMER,
+      status: "shipped",
+      placedAt: "2026-05-25T00:00:00.000Z",
+      updatedAt: "2026-05-26T00:00:00.000Z",
+      items: [{ productId: "cloud-cleanser", quantity: 1, unitPriceNtd: 420 }],
+      totalNtd: 420,
+      shipping: { carrier: "Black Cat Express", trackingNumber: "TW000000000001" }
     });
   });
 }
@@ -404,6 +427,90 @@ async function main(): Promise<void> {
     assert(
       failedLogs.data?.some((log) => log.type === "cart.add_item" && log.status === "failed"),
       "a failed confirm must write a failed audit log"
+    );
+  });
+
+  group("Order status (read-only, identity-gated)");
+
+  await test("unlinked channel identity cannot list or get orders", async () => {
+    const list = await listOrdersForChannel(CH, "unknown-user");
+    assert(!list.ok, "unknown channel identity must not list orders");
+    const get = await getOrderForChannel(CH, "unknown-user", LIN_SHIPPED_ORDER);
+    assert(!get.ok, "unknown channel identity must not read an order");
+  });
+
+  await test("revoked account link cannot read orders", async () => {
+    await patchDb((db) => {
+      const link = db.accountLinks.find((entry) => entry.id === LIN_WHATSAPP_LINK);
+      assert(link, "baseline must contain the whatsapp link to revoke");
+      link.status = "revoked";
+    });
+    const list = await listOrdersForChannel("whatsapp", LIN_WHATSAPP_EXTERNAL);
+    assert(!list.ok, "a revoked link must not list orders");
+    const get = await getOrderForChannel("whatsapp", LIN_WHATSAPP_EXTERNAL, LIN_SHIPPED_ORDER);
+    assert(!get.ok, "a revoked link must not read an order");
+    // The same customer's still-linked channel must keep working.
+    const stillLinked = await listOrdersForChannel(CH, LIN);
+    assert(stillLinked.ok, "a different, still-linked channel for the same customer must still read orders");
+  });
+
+  await test("a typed customer id is not accepted as ownership proof for order reads", async () => {
+    const list = await listOrdersForChannel(CH, LIN_CUSTOMER);
+    assert(!list.ok, "typing a customer id as the external channel id must not list orders");
+    const get = await getOrderForChannel(CH, LIN_CUSTOMER, LIN_SHIPPED_ORDER);
+    assert(!get.ok, "typing a customer id as the external channel id must not read an order");
+  });
+
+  await test("a linked customer sees only their own orders", async () => {
+    await injectSecondCustomerWithOrder();
+    const list = await listOrdersForChannel(CH, LIN);
+    assert(list.ok && list.data, list.error ?? "owner order list should succeed");
+    assert(
+      list.data.every((order) => order.id !== MALLORY_ORDER),
+      "a customer's order list must not include another customer's order"
+    );
+    assert(
+      list.data.length === 3 && list.data[0].id === "order-2026-0003",
+      "the demo customer should see their 3 seeded orders, newest first"
+    );
+  });
+
+  await test("an unknown order id is refused", async () => {
+    const get = await getOrderForChannel(CH, LIN, "order-does-not-exist");
+    assert(!get.ok, "an unknown order id must be refused");
+  });
+
+  await test("a customer-typed order number is not proof: another customer's order id is refused", async () => {
+    await injectSecondCustomerWithOrder();
+    // Lin supplies Mallory's real, existing order id. Identity is the channel
+    // binding, not the order number, so this must be refused...
+    const hijack = await getOrderForChannel(CH, LIN, MALLORY_ORDER);
+    assert(!hijack.ok, "a customer must not read another customer's order by quoting its id");
+    // ...and refused IDENTICALLY to a truly unknown id, so existence never leaks.
+    const unknown = await getOrderForChannel(CH, LIN, "order-does-not-exist");
+    assert(
+      hijack.error === unknown.error,
+      "a non-owned order id must return the same message as an unknown id (no existence leak)"
+    );
+    // Mallory herself can still read her own order.
+    const owner = await getOrderForChannel(CH, MALLORY_EXTERNAL, MALLORY_ORDER);
+    assert(owner.ok, owner.error ?? "the rightful owner should be able to read her own order");
+  });
+
+  await test("a linked customer lists their orders and gets full detail including tracking", async () => {
+    const list = await listOrdersForChannel(CH, LIN);
+    assert(list.ok && list.data && list.data.length > 0, "the demo customer should have seeded orders");
+    const get = await getOrderForChannel(CH, LIN, LIN_SHIPPED_ORDER);
+    assert(get.ok && get.data, get.error ?? "the owner should read their shipped order");
+    assert(get.data.status === "shipped", "the shipped order should report status 'shipped'");
+    assert(
+      Boolean(get.data.shipping?.trackingNumber) && Boolean(get.data.shipping?.carrier),
+      "a shipped order should expose carrier and tracking number to its owner"
+    );
+    // Names are joined from the catalog, not stored on the order line.
+    assert(
+      get.data.items[0]?.name === "Calm Barrier Cream" && get.data.items[0]?.subtotalNtd === 680,
+      "order lines should resolve the product name from the catalog and compute a subtotal"
     );
   });
 

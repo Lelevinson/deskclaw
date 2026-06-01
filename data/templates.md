@@ -81,6 +81,41 @@ When adding a new data file, use the final filename from the start, add its temp
 }
 ```
 
+## `shop/orders.json`
+
+Seeded order fixtures (there is no checkout in the prototype, so orders are not agent-created). Each order is owned by a `customerId`; `order-status` only ever returns orders owned by the resolved linked customer. Line items store the `productId`, `quantity`, and the **price paid at order time** (`unitPriceNtd`) — a historical order fact. The display name is joined from `catalog/products.json` at read time, so product names stay owned by the catalog, not duplicated here.
+
+```jsonc
+{
+  "version": 1,
+  "orders": [
+    {
+      "id": "order-2026-0001", // stable order id; NOT proof of ownership on its own
+      "customerId": "customer-stable-id",
+      "status": "shipped", // placed | processing | shipped | out_for_delivery | delivered | cancelled
+      "placedAt": "2026-05-20T09:12:00.000Z",
+      "updatedAt": "2026-05-22T01:05:00.000Z",
+      "items": [
+        {
+          "productId": "stable-product-id",
+          "quantity": 1,
+          "unitPriceNtd": 420 // price paid per unit at order time, not the live catalog price
+        }
+      ],
+      "totalNtd": 420,
+      "shipping": {
+        // optional; a not-yet-shipped order may omit this block or individual fields
+        "carrier": "Black Cat Express",
+        "trackingNumber": "TW480012345678",
+        "estimatedDelivery": "2026-05-25",
+        "shippedAt": "2026-05-22T01:05:00.000Z",
+        "deliveredAt": "2026-05-25T03:40:00.000Z" // only once delivered
+      }
+    }
+  ]
+}
+```
+
 ## `shop/pending-actions.json`
 
 ```jsonc

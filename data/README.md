@@ -23,6 +23,7 @@ data/
     account-links.json
   shop/
     carts.json
+    orders.json
     pending-actions.json
     action-logs.json
 ```
@@ -48,5 +49,6 @@ The current skills need these data groups:
 | `search-products` | `catalog/products.json` |
 | `sentiment-router` | `routing/escalation-rules.md` |
 | `cart-actions` and shop tools | `catalog/products.json`, `customers/*.json`, `shop/*.json` |
+| `order-status` and order tools | `shop/orders.json`, `catalog/products.json` (line names joined at read time), `customers/*.json` |
 
 This is scalable enough for the MVP because data is split by domain instead of copied into each skill. It is not meant to be a production database. If future utilities need orders, addresses, returns, payments, tickets, or staff users, add a new domain folder here and update the owning skill/tool docs in the same change.

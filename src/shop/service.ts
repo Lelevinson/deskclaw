@@ -9,6 +9,10 @@ import type {
   CartView,
   Customer,
   LinkedCustomer,
+  Order,
+  OrderLine,
+  OrderSummary,
+  OrderView,
   PendingAction,
   Product,
   ShopDatabase
@@ -157,6 +161,41 @@ function buildCartView(db: ShopDatabase, cart: Cart): CartView {
     customerId: cart.customerId,
     items,
     totalNtd: items.reduce((sum, item) => sum + item.subtotalNtd, 0)
+  };
+}
+
+function buildOrderLine(db: ShopDatabase, item: Order["items"][number]): OrderLine {
+  const product = findProduct(db, item.productId);
+  return {
+    productId: item.productId,
+    // Names live in the catalog; fall back to the id if the product was retired.
+    name: product?.name ?? item.productId,
+    quantity: item.quantity,
+    unitPriceNtd: item.unitPriceNtd,
+    subtotalNtd: item.unitPriceNtd * item.quantity
+  };
+}
+
+function buildOrderSummary(order: Order): OrderSummary {
+  return {
+    id: order.id,
+    status: order.status,
+    placedAt: order.placedAt,
+    updatedAt: order.updatedAt,
+    itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
+    totalNtd: order.totalNtd
+  };
+}
+
+function buildOrderView(db: ShopDatabase, order: Order): OrderView {
+  return {
+    id: order.id,
+    status: order.status,
+    placedAt: order.placedAt,
+    updatedAt: order.updatedAt,
+    items: order.items.map((item) => buildOrderLine(db, item)),
+    totalNtd: order.totalNtd,
+    shipping: order.shipping
   };
 }
 
@@ -939,6 +978,52 @@ export async function confirmLatestUpdateQuantityForChannel(
   const result = confirmUpdateQuantityForLink(db, linkedData.accountLink, pending.id);
   await writeShopDb(db);
   return result;
+}
+
+export async function listOrdersForChannel(
+  channel: string,
+  externalUserId: string
+): Promise<ServiceResult<OrderSummary[]>> {
+  const db = await readShopDb();
+  const linked = resolveLinkedCustomer(db, channel, externalUserId);
+  if (!linked.ok || !linked.data) {
+    return { ok: false, error: linked.error };
+  }
+
+  const customerId = linked.data.customer.id;
+  const summaries = (db.orders ?? [])
+    // Identity is the channel binding -> customerId; only the linked customer's
+    // own orders are ever returned.
+    .filter((order) => order.customerId === customerId)
+    .sort((a, b) => Date.parse(b.placedAt) - Date.parse(a.placedAt))
+    .map(buildOrderSummary);
+
+  return { ok: true, data: summaries };
+}
+
+export async function getOrderForChannel(
+  channel: string,
+  externalUserId: string,
+  orderId: string
+): Promise<ServiceResult<OrderView>> {
+  const db = await readShopDb();
+  const linked = resolveLinkedCustomer(db, channel, externalUserId);
+  if (!linked.ok || !linked.data) {
+    return { ok: false, error: linked.error };
+  }
+
+  const customerId = linked.data.customer.id;
+  const order = (db.orders ?? []).find(
+    (entry) => entry.id === orderId && entry.customerId === customerId
+  );
+
+  // A non-owned order and a truly unknown id return the SAME message, so the
+  // order id leaks nothing about other customers and is never itself proof.
+  if (!order) {
+    return { ok: false, error: "No order with that id was found for your account." };
+  }
+
+  return { ok: true, data: buildOrderView(db, order) };
 }
 
 export async function listActionLogs(

@@ -10,7 +10,9 @@ import {
   confirmRemoveItemForChannel,
   confirmUpdateQuantityForChannel,
   getCartForChannel,
+  getOrderForChannel,
   listActionLogs,
+  listOrdersForChannel,
   lookupCustomerByChannel,
   previewAddItemForChannel,
   previewRemoveItemForChannel,
@@ -214,6 +216,35 @@ server.registerTool(
   },
   async ({ channel, externalUserId, productId, quantity }) =>
     jsonText(await confirmLatestUpdateQuantityForChannel(channel, externalUserId, productId, quantity))
+);
+
+server.registerTool(
+  "shop_orders_list_for_channel",
+  {
+    title: "List Orders For Channel",
+    description:
+      "List order summaries for the customer account linked to the channel identity. Read-only; returns only the linked customer's own orders. Never accept a customer-typed order number or customer id as proof of identity.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel.")
+    })
+  },
+  async ({ channel, externalUserId }) => jsonText(await listOrdersForChannel(channel, externalUserId))
+);
+
+server.registerTool(
+  "shop_order_get",
+  {
+    title: "Get Order Detail",
+    description:
+      "Read full detail (status, items, tracking) for one order, but only if it belongs to the customer account linked to the channel identity. An unknown or non-owned order id returns the same not-found result; the order id is never itself proof of ownership.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel."),
+      orderId: z.string().min(1).describe("The order id to look up, scoped to the linked customer.")
+    })
+  },
+  async ({ channel, externalUserId, orderId }) => jsonText(await getOrderForChannel(channel, externalUserId, orderId))
 );
 
 server.registerTool(
