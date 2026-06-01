@@ -35,7 +35,7 @@ Example: `cart-actions` is the customer-facing skill. `shop_customer_lookup` is 
 - [`returns-actions/`](returns-actions/) — intakes a return/exchange **request** against the linked customer's own delivered order via preview → confirm → audit (never issues a refund — hands the money movement to a human), and answers read-only refund/return-status questions ("is my refund processed yet?").
 - [`policy-oracle/`](policy-oracle/) — answers shipping, returns, FAQ, warranty, and product-care policy questions from shared policy data.
 - [`search-products/`](search-products/) — recommends products from the shared demo catalog.
-- [`sentiment-router/`](sentiment-router/) — classifies customer messages as `continue`, `handoff_recommended`, or `urgent_handoff`.
+- [`sentiment-router/`](sentiment-router/) — classifies customer messages as `continue`, `handoff_recommended`, or `urgent_handoff`, and on either handoff signal persists a durable escalation record (optional identity, append-only) for staff to act on.
 
 ## Current Inner Tools
 
@@ -61,18 +61,20 @@ These are not OpenClaw skills. They are reusable tool operations that skills can
 | `shop_return_confirm` | `returns-actions` | Commit a staged return request, creating a record in the `requested` state for human review. Never issues a refund or exchange. |
 | `shop_returns_list_for_channel` | `returns-actions` | List the linked customer's own return/exchange requests with their status. |
 | `shop_return_get` | `returns-actions` | Read one return's status only if it belongs to the linked customer; unknown / non-owned ids are refused identically. |
+| `shop_handoff_create` | `sentiment-router` | Append a durable escalation record on a `handoff_recommended` / `urgent_handoff` route. Optional identity (links a `customerId` when resolvable, records the raw channel identity otherwise); append-only, no preview/confirm, writes an audit log. |
+| `shop_handoff_list` | staff triage, demos/debugging | List escalation records for audit (optional `customerId` filter). Staff/ops-only, not a customer-facing read. |
 | `shop_action_log_list` | `cart-actions`, demos/debugging | Inspect what happened for verification. |
 
 ## Planned Utilities (backlog)
 
-These are scoped but not yet built. The full reasoning, research basis, and ordering live in [`../docs/planning/skill-roadmap.md`](../docs/planning/skill-roadmap.md) §4; scope is owned by [`../ARCHITECTURE.md`](../ARCHITECTURE.md) §5. Build the top open item, one feature branch each. Build order: **~~cart-edit~~ → ~~tool-level eval harness~~ → ~~order-status~~ → ~~returns-intake~~ (all shipped)**; the remaining open items are `handoff-ticket` and `product-compatibility`, which are independent.
+These are scoped but not yet built. The full reasoning, research basis, and ordering live in [`../docs/planning/skill-roadmap.md`](../docs/planning/skill-roadmap.md) §4; scope is owned by [`../ARCHITECTURE.md`](../ARCHITECTURE.md) §5. Build the top open item, one feature branch each. Build order: **~~cart-edit~~ → ~~tool-level eval harness~~ → ~~order-status~~ → ~~returns-intake~~ → ~~handoff-ticket~~ (all shipped)**; the remaining open item is `product-compatibility`.
 
 | Customer-facing utility | Type | Inner tools / data | Notes |
 |---|---|---|---|
 | ✅ Remove / update cart item | `cart-actions` extension | preview/confirm remove + update-quantity tools; extended `PendingAction.type` | **Shipped 2026-05-29.** No new data domain; reuses the identity → preview → confirm → audit pipeline. |
 | ✅ Order status lookup | new `order-status` skill | read-only `shop_orders_list_for_channel` / `shop_order_get`; new `data/shop/orders.json` | **Shipped 2026-06-01.** Highest-volume real query. Safe by construction — keyed on the resolved `customerId`, never a typed order number; unknown / non-owned order ids refused identically. New visible data domain now in place. |
 | ✅ Return / exchange intake + refund status | new `returns-actions` skill (depends on orders) | `shop_return_preview` / `shop_return_confirm` (request only); read-only `shop_returns_list_for_channel` / `shop_return_get`; new `data/shop/returns.json` (per-return `status`) | **Shipped 2026-06-01.** Creates a return *request* in the `requested` state then hands off the money movement; never auto-refunds. Opened only against a **delivered** order the resolved customer owns; unknown / non-owned order & return ids refused identically. Includes the read-only "is my refund processed?" status check. |
-| Human handoff ticket | `sentiment-router` extension | `shop_handoff_create` (append-only record); optional identity | Durable escalation/audit record. Independent of orders. |
+| ✅ Human handoff ticket | `sentiment-router` extension | `shop_handoff_create` (append-only) + `shop_handoff_list` (ops read); new `data/shop/handoffs.json` | **Shipped 2026-06-01.** Durable escalation/audit record with optional identity (an unlinked/revoked sender is still escalatable). New `handoffs` domain over an action-log type (handoffs carry a status lifecycle); `continue` records nothing. Staff/ops-only — not customer-visible, so no storefront UI obligation. Independent of orders. |
 | Product / ingredient-compatibility Q&A | `policy-oracle` extension | new `data/catalog/compatibility.md`; no tools | Answer only from data; escalate reaction/medical language to `sentiment-router`. |
 | Mock storefront demo | UI, not a skill | reads shared shop state (catalog, carts, orders, action logs) | Build after the `orders` domain exists; one read-only view, not per skill. |
 

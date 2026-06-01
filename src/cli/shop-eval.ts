@@ -4,7 +4,9 @@
  * Deterministic, no model in the loop: it drives the `src/shop` service
  * functions directly and asserts the safety-critical guarantees the roadmap
  * names (identity gating, ownership proof, preview->confirm, expiry, refusals,
- * audit logging) across all three PendingAction types.
+ * audit logging) across all three cart PendingAction types, the read-only
+ * order-status and returns-intake flows, and the append-only handoff records
+ * (which deliberately depart: optional identity, no preview/confirm).
  *
  * Each test resets the DB from the `data/` baseline first, so tests are
  * order-independent. The harness runs against a temp sandbox DB (see below), so
@@ -25,10 +27,12 @@ import {
   confirmLatestUpdateQuantityForChannel,
   confirmRemoveItemForChannel,
   confirmUpdateQuantityForChannel,
+  createHandoff,
   getCartForChannel,
   getOrderForChannel,
   getReturnForChannel,
   listActionLogs,
+  listHandoffs,
   listOrdersForChannel,
   listReturnsForChannel,
   lookupCustomerByChannel,
@@ -64,6 +68,7 @@ const MALLORY_RETURN = "return-eval-mallory-0001";
 const LIN_SHIPPED_ORDER = "order-2026-0002"; // shipped, carries tracking fields
 const LIN_DELIVERED_ORDER = "order-2026-0001"; // delivered -> eligible for a return
 const LIN_SEEDED_RETURN = "return-2026-0001"; // refunded, against the delivered order
+const LIN_SEEDED_HANDOFF = "handoff-2026-0001"; // resolved, owned by the demo customer
 
 // --- tiny runner ---------------------------------------------------------
 interface TestResult {
@@ -172,6 +177,13 @@ async function injectSecondCustomerWithReturn(): Promise<void> {
 async function returnCount(): Promise<number> {
   const list = await listReturnsForChannel(CH, LIN);
   assert(list.ok && list.data, "return list read should succeed");
+  return list.data.length;
+}
+
+/** Count the escalation records currently in the DB (optionally for one customer). */
+async function handoffCount(customerId?: string): Promise<number> {
+  const list = await listHandoffs(customerId, 100);
+  assert(list.ok && list.data, "handoff list read should succeed");
   return list.data.length;
 }
 
@@ -778,6 +790,149 @@ async function main(): Promise<void> {
     assert(
       confirm.ok && confirm.data?.returnRequest.status === "requested",
       confirm.error ?? "confirm must create a request even when the loaded DB lacked a returns array"
+    );
+  });
+
+  group("Handoff escalation records (append-only; optional identity, never blocks)");
+
+  await test("a handoff is recorded for a LINKED sender, with customerId and the classification captured", async () => {
+    const before = await handoffCount();
+    const created = await createHandoff(
+      CH,
+      LIN,
+      "handoff_recommended",
+      "refund_dispute",
+      "Customer is upset a refund has not arrived.",
+      "Lin is chasing a delayed refund and asked for a human."
+    );
+    assert(created.ok && created.data, created.error ?? "a linked-sender escalation should be recorded");
+    assert(created.data.customerId === LIN_CUSTOMER, "a linked sender's handoff must link the resolved customerId");
+    assert(created.data.classification === "handoff_recommended", "the classification must be captured");
+    assert(
+      created.data.category === "refund_dispute" &&
+        created.data.reason.length > 0 &&
+        created.data.summary.length > 0,
+      "the category, reason, and customer-safe summary must be captured"
+    );
+    assert(created.data.status === "open", "the agent must only ever create a handoff in the 'open' state");
+    assert((await handoffCount()) === before + 1, "exactly one new handoff record must be created");
+  });
+
+  await test("a handoff is recorded for an UNLINKED sender, with no customerId (identity never blocks)", async () => {
+    const before = await handoffCount();
+    const created = await createHandoff(
+      CH,
+      "unknown-user",
+      "urgent_handoff",
+      "safety_reaction",
+      "Customer reports a skin reaction.",
+      "An unlinked sender reports burning skin after use — needs urgent human review."
+    );
+    assert(created.ok && created.data, created.error ?? "an unlinked sender must still be escalatable");
+    assert(created.data.customerId === undefined, "an unlinked sender's handoff must NOT carry a customerId");
+    assert(
+      created.data.channel === CH && created.data.externalUserId === "unknown-user",
+      "the raw channel + externalUserId must be recorded so a human can reach the unlinked sender"
+    );
+    assert(created.data.classification === "urgent_handoff", "the classification must be captured");
+    assert((await handoffCount()) === before + 1, "an unlinked escalation must still create a record");
+  });
+
+  await test("a REVOKED link still records an escalation, but with no customerId", async () => {
+    await patchDb((db) => {
+      const link = db.accountLinks.find((entry) => entry.id === LIN_WHATSAPP_LINK);
+      assert(link, "baseline must contain the whatsapp link to revoke");
+      link.status = "revoked";
+    });
+    const created = await createHandoff(
+      "whatsapp",
+      LIN_WHATSAPP_EXTERNAL,
+      "handoff_recommended",
+      "human_requested",
+      "Customer explicitly asked for a person.",
+      "A sender on a revoked link asked for a human."
+    );
+    assert(created.ok && created.data, created.error ?? "a revoked-link sender must still be escalatable");
+    assert(
+      created.data.customerId === undefined,
+      "a revoked link must not attribute the escalation to a customer, but must not block it either"
+    );
+  });
+
+  await test("a handoff records a success audit log", async () => {
+    const created = await createHandoff(CH, LIN, "urgent_handoff", "chargeback_threat", "Threatened a chargeback.", "Lin threatened a chargeback if not resolved today.");
+    assert(created.ok, created.error ?? "the escalation should be recorded");
+    const logs = await listActionLogs(LIN_CUSTOMER, 20);
+    assert(
+      logs.data?.some((log) => log.type === "handoff.create" && log.status === "success"),
+      "a recorded handoff must write a success audit log"
+    );
+  });
+
+  await test("handoff_create is append-only: two creates make two records and touch nothing else", async () => {
+    await seedCartItem("cloud-cleanser", 1);
+    const before = await handoffCount();
+    const first = await createHandoff(CH, LIN, "handoff_recommended", "complaint", "Angry about a wrong item.", "Lin received the wrong item and is upset.");
+    const second = await createHandoff(CH, LIN, "handoff_recommended", "complaint", "Still upset.", "Lin is still upset about the wrong item.");
+    assert(first.ok && second.ok, "both escalations should be recorded (no dedup, no preview/confirm)");
+    assert(first.data?.id !== second.data?.id, "each create must produce a distinct record");
+    assert((await handoffCount()) === before + 2, "two creates must produce two records (append-only, no preview)");
+    // No money/account mutation: cart, orders, returns, and pending actions are untouched.
+    assert((await cartItemCount()) === 1, "recording a handoff must not touch the cart");
+    const orders = await listOrdersForChannel(CH, LIN);
+    assert(orders.ok && orders.data?.length === 3, "recording a handoff must not change orders");
+    assert((await returnCount()) === 1, "recording a handoff must not change returns");
+  });
+
+  await test("continue records nothing: an invalid classification is refused", async () => {
+    const before = await handoffCount();
+    const calm = await createHandoff(CH, LIN, "continue", "calm", "Just a question.", "Calm shipping question.");
+    assert(!calm.ok, "'continue' must not be recordable as a handoff");
+    const bogus = await createHandoff(CH, LIN, "escalate-now", "calm", "x", "y");
+    assert(!bogus.ok, "an unknown classification must be refused");
+    assert((await handoffCount()) === before, "a refused classification must not create any record");
+  });
+
+  await test("shop_handoff_list returns recorded handoffs and filters by customerId", async () => {
+    // The baseline seeds one resolved handoff for the demo customer.
+    const seeded = await listHandoffs(undefined, 100);
+    assert(seeded.ok && seeded.data?.some((h) => h.id === LIN_SEEDED_HANDOFF), "the seeded handoff should be listed");
+
+    await createHandoff(CH, LIN, "handoff_recommended", "human_requested", "Asked for a person.", "Lin asked for a human.");
+    await createHandoff(CH, "unknown-user", "urgent_handoff", "safety_reaction", "Skin reaction.", "Unlinked sender reports a reaction.");
+
+    const all = await listHandoffs(undefined, 100);
+    assert(all.ok && all.data && all.data.length === 3, "all three records (1 seeded + 2 created) should be listed");
+
+    const mineOnly = await listHandoffs(LIN_CUSTOMER, 100);
+    assert(
+      mineOnly.ok && mineOnly.data?.every((h) => h.customerId === LIN_CUSTOMER),
+      "a customerId filter must return only that customer's handoffs"
+    );
+    assert(
+      mineOnly.data?.length === 2,
+      "the demo customer should have the seeded handoff plus the one created for the linked sender"
+    );
+    // The unlinked escalation has no customerId, so it is never attributed to a customer.
+    assert(
+      all.data.some((h) => h.customerId === undefined),
+      "the unlinked escalation must remain unattributed (no customerId)"
+    );
+  });
+
+  await test("a persisted DB predating the handoffs field can still record an escalation", async () => {
+    // Simulate a .local/shop-db.json written before this feature: drop the
+    // `handoffs` key entirely, then confirm an escalation still records (the
+    // store backfills missing arrays on read, so the push path never throws).
+    await patchDb((db) => {
+      delete (db as Partial<ShopDatabase>).handoffs;
+    });
+    const list = await listHandoffs(undefined, 100);
+    assert(list.ok && list.data?.length === 0, "a DB without a handoffs key should read as zero handoffs, not throw");
+    const created = await createHandoff(CH, LIN, "handoff_recommended", "complaint", "Upset.", "Lin is upset.");
+    assert(
+      created.ok && created.data?.status === "open",
+      created.error ?? "an escalation must record even when the loaded DB lacked a handoffs array"
     );
   });
 

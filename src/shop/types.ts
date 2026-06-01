@@ -154,6 +154,39 @@ export interface ReturnRequest {
   statusDetail?: string;
 }
 
+// Escalation classification, reused verbatim from data/routing/escalation-rules.md
+// (ARCHITECTURE §6 owns the definitions). `continue` is intentionally absent: a
+// calm conversation produces no durable handoff record.
+export type HandoffClassification = "handoff_recommended" | "urgent_handoff";
+
+// A handoff is created by the agent only ever in "open"; every later state is set
+// by a human reviewer / the seeded fixtures (the agent classifies and records, it
+// does not work the escalation queue itself).
+export type HandoffStatus = "open" | "acknowledged" | "in_progress" | "resolved" | "closed";
+
+// A durable escalation/audit record for a sentiment-router handoff. Identity is
+// OPTIONAL: an escalation must be recordable for an unlinked/revoked sender too,
+// so `customerId` is set only when resolveLinkedCustomer succeeds; the raw
+// channel + externalUserId are always recorded so a human can reach the sender.
+export interface HandoffRecord {
+  id: string;
+  classification: HandoffClassification;
+  // Short triage label, e.g. "refund_dispute" / "safety_reaction" / "human_requested".
+  category: string;
+  // One short internal reason (the sentiment-router "Reason:" line).
+  reason: string;
+  // Short customer-safe summary of the situation for the human picking it up.
+  summary: string;
+  channel: string;
+  externalUserId: string;
+  customerId?: string;
+  status: HandoffStatus;
+  createdAt: string;
+  updatedAt: string;
+  // Optional human-authored note, e.g. "Resolved by Mei — refund issued, customer happy".
+  statusDetail?: string;
+}
+
 export interface ActionLog {
   id: string;
   type: string;
@@ -172,6 +205,7 @@ export interface ShopDatabase {
   carts: Cart[];
   orders: Order[];
   returns: ReturnRequest[];
+  handoffs: HandoffRecord[];
   pendingActions: PendingAction[];
   actionLogs: ActionLog[];
 }

@@ -139,6 +139,32 @@ Seeded return/exchange request records. A return is opened against a **delivered
 }
 ```
 
+## `shop/handoffs.json`
+
+Seeded escalation/handoff records. `sentiment-router` appends one (via `shop_handoff_create`) whenever it routes to `handoff_recommended` or `urgent_handoff`; `continue` records nothing. **Identity is optional**: `customerId` is present only when the sender is a linked customer — an unlinked or revoked sender is still recorded, with just the raw `channel` + `externalUserId`. The agent only ever creates a record in the `open` state; every later status (and the seeded fixtures) is set by a human reviewer. This is a **staff/ops-only** domain (not customer-visible), so the read tool `shop_handoff_list` is an ops read with an optional `customerId` filter, not an identity-gated own-only customer read.
+
+```jsonc
+{
+  "version": 1,
+  "handoffs": [
+    {
+      "id": "handoff-2026-0001", // stable record id; NOT proof of ownership on its own
+      "classification": "handoff_recommended", // handoff_recommended | urgent_handoff (from routing/escalation-rules.md; never "continue")
+      "category": "refund_dispute", // short triage label, e.g. refund_dispute | safety_reaction | human_requested | chargeback_threat
+      "reason": "One short internal reason for the escalation (the sentiment-router Reason: line).",
+      "summary": "Short customer-safe summary of the situation for the human picking it up.",
+      "channel": "simulated-chat", // always recorded
+      "externalUserId": "demo-lin", // always recorded so a human can reach the sender
+      "customerId": "customer-demo-lin", // OPTIONAL — present only when the sender is a linked customer
+      "status": "open", // open | acknowledged | in_progress | resolved | closed (agent only ever creates "open")
+      "createdAt": "2026-05-12T01:15:00.000Z",
+      "updatedAt": "2026-05-14T02:35:00.000Z",
+      "statusDetail": "Optional human-authored note, e.g. who resolved it and how."
+    }
+  ]
+}
+```
+
 ## `shop/pending-actions.json`
 
 ```jsonc
@@ -181,6 +207,8 @@ Seeded return/exchange request records. A return is opened against a **delivered
 ```
 
 ## `shop/action-logs.json`
+
+`type` is the action that happened, e.g. `cart.add_item`, `cart.add_item.preview`, `return.create`, or `handoff.create` (escalations also write an audit log here, in addition to the durable record in `shop/handoffs.json`). For a `handoff.create` entry, `customerId` is present only when the escalated sender was a linked customer.
 
 ```jsonc
 {

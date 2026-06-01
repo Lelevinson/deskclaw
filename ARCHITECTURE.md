@@ -29,10 +29,10 @@ DeskClaw is a local-first conversational commerce agent prototype for small D2C 
 
 **Implemented**
 
-- Repo-managed OpenClaw skills under [`skills/`](skills/): `policy-oracle`, `search-products`, `sentiment-router`, `cart-actions` (add / remove / change-quantity, all gated by the identity → preview → confirm → audit pipeline), `order-status` (read-only, identity-gated order/tracking lookup), `returns-actions` (identity-gated return/exchange **request** intake via the same preview → confirm → audit pipeline — never auto-issues a refund — plus a read-only refund/return-status check)
-- Shared business data under [`data/`](data/): catalog, policies, routing rules, customers, account links, shop runtime baseline state, seeded orders, and seeded returns
+- Repo-managed OpenClaw skills under [`skills/`](skills/): `policy-oracle`, `search-products`, `sentiment-router` (classifies `continue` / `handoff_recommended` / `urgent_handoff`, and on either handoff signal persists a durable escalation record via `shop_handoff_create`), `cart-actions` (add / remove / change-quantity, all gated by the identity → preview → confirm → audit pipeline), `order-status` (read-only, identity-gated order/tracking lookup), `returns-actions` (identity-gated return/exchange **request** intake via the same preview → confirm → audit pipeline — never auto-issues a refund — plus a read-only refund/return-status check)
+- Shared business data under [`data/`](data/): catalog, policies, routing rules, customers, account links, shop runtime baseline state, seeded orders, seeded returns, and seeded handoff/escalation records
 - Shop MCP server under `src/mcp/shop-server.ts` and shared shop logic under `src/shop/`
-- **Tool-level eval harness** under `src/cli/shop-eval.ts` (`npm run shop:eval`): deterministic, no-model tests over the `src/shop` service functions, asserting the safety-critical guarantees (identity gating, ownership proof, preview→confirm, expiry, refusals, audit logging) across all three cart action types, plus the read-only order-status reads (identity-gated, own-orders-only, unknown / non-owned order ids refused without leaking existence) and the returns-intake flow (identity-gated; a return can only be opened against a delivered order the resolved customer owns; preview→confirm creates a return *request* — never a refund/money mutation; no double-confirm; own-returns-only status reads). Run from a per-test `data/` reset; named PASS/FAIL with a non-zero exit on failure.
+- **Tool-level eval harness** under `src/cli/shop-eval.ts` (`npm run shop:eval`): deterministic, no-model tests over the `src/shop` service functions, asserting the safety-critical guarantees (identity gating, ownership proof, preview→confirm, expiry, refusals, audit logging) across all three cart action types, plus the read-only order-status reads (identity-gated, own-orders-only, unknown / non-owned order ids refused without leaking existence) and the returns-intake flow (identity-gated; a return can only be opened against a delivered order the resolved customer owns; preview→confirm creates a return *request* — never a refund/money mutation; no double-confirm; own-returns-only status reads), plus the handoff/escalation records (append-only with **optional** identity — a linked sender attaches a `customerId`, an unlinked/revoked sender is still recorded; no preview/confirm; `continue` records nothing; writes an audit log). Run from a per-test `data/` reset; named PASS/FAIL with a non-zero exit on failure.
 - Scripted test scenarios under [`skills-lab/scenarios/`](skills-lab/scenarios/)
 - Devcontainer + Ollama wiring + Codex provider + repo-skill loading via `skills.load.extraDirs`
 
@@ -42,7 +42,7 @@ DeskClaw is a local-first conversational commerce agent prototype for small D2C 
 - CI, linting, deployment
 - Mock e-commerce website UI
 
-**Planned next (in scope, not yet built)** — scoped in [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §4; build order: ~~cart-edit~~ (shipped 2026-05-29) → ~~tool-level eval harness~~ (shipped 2026-05-29) → ~~order-status~~ (shipped 2026-06-01) → ~~returns-intake~~ (shipped 2026-06-01), with **handoff-ticket** and **product-compatibility Q&A** as the remaining independent items. The `orders` and `returns` data domains are now in place; `orders` remains the prerequisite for the mock storefront.
+**Planned next (in scope, not yet built)** — scoped in [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §4; build order: ~~cart-edit~~ (shipped 2026-05-29) → ~~tool-level eval harness~~ (shipped 2026-05-29) → ~~order-status~~ (shipped 2026-06-01) → ~~returns-intake~~ (shipped 2026-06-01) → ~~handoff-ticket~~ (shipped 2026-06-01), with **product-compatibility Q&A** as the remaining independent item. The `orders`, `returns`, and `handoffs` data domains are now in place; `orders` remains the prerequisite for the mock storefront.
 
 ## 4. Repository layout
 
@@ -75,7 +75,7 @@ data/
   policies/{faq,product-care,returns,shipping}.md
   routing/escalation-rules.md
   customers/{customers,account-links}.json
-  shop/{carts,orders,returns,pending-actions,action-logs}.json
+  shop/{carts,orders,returns,handoffs,pending-actions,action-logs}.json
 
 skills-lab/                   # evaluation only, not a skill source
   README.md                   # how to run + pass/fail criteria
@@ -97,7 +97,7 @@ Decided in the 2026-05-29 roadmap session. New data domains noted because they t
 - ~~**Tool-level evaluation harness** — deterministic tests over `src/shop` service functions (identity gating, preview/confirm, audit).~~ **Shipped 2026-05-29** (`npm run shop:eval`); closed the "Not implemented" eval gap above for the tool layer.
 - ~~**Order status lookup** — read-only, identity-gated. Introduces the **`orders`** data domain (the first new *visible* data domain).~~ **Shipped 2026-06-01** (`shop_orders_list_for_channel` / `shop_order_get`, `data/shop/orders.json`); the `orders` domain is now in place.
 - ~~**Return / exchange intake + status** — captures a return *request* and hands off the refund/exchange (never auto-issues money), plus a read-only refund/return-status check ("is my refund processed?"). Depends on the `orders` domain; adds a **`returns`** sub-domain.~~ **Shipped 2026-06-01** (`shop_return_preview` / `shop_return_confirm` create a return *request* in the `requested` state only; `shop_returns_list_for_channel` / `shop_return_get` are read-only own-returns-only status checks; new `data/shop/returns.json`). The `returns` sub-domain is now in place.
-- **Handoff ticket records** — durable escalation/audit records for `sentiment-router` handoffs.
+- ~~**Handoff ticket records** — durable escalation/audit records for `sentiment-router` handoffs.~~ **Shipped 2026-06-01** (`shop_handoff_create` / `shop_handoff_list`, new `data/shop/handoffs.json`). Append-only with **optional** identity (an unlinked/revoked sender can still be escalated; a `customerId` is linked only when resolvable); no preview/confirm; `continue` records nothing; writes an audit log. The `handoffs` domain is **staff/ops-only**, not customer-visible (see §6), so it adds no storefront UI obligation.
 - **Product / ingredient-compatibility Q&A** — extends `policy-oracle` from a brand-authored compatibility data file; answer-only-from-data, escalate reaction/medical language.
 
 ### Deferred (out of scope)
@@ -124,7 +124,8 @@ Explicitly **not** part of the prototype.
 - **Skill/tool split:** Customer-facing behaviors live as skills under `skills/`. Reusable typed operations, such as account identity lookup or cart mutation, live as inner tools under `src/`. Shared facts and local runtime baseline data live under `data/`.
 - **Shop writes:** The agent must use typed MCP tools, not raw database access. Mutating actions require a linked channel identity, preview, explicit customer confirmation, execution, and audit logging.
 - **Shared data ownership:** Product, policy, routing, customer, account-link, and shop state facts live under `data/`. Skills point to these files instead of copying them.
-- **Escalation signals:** Defined in `data/routing/escalation-rules.md`. `handoff_recommended` = frustration, repeated failures, explicit human request. `urgent_handoff` = safety, legal, chargeback, social media threats.
+- **Escalation signals:** Defined in `data/routing/escalation-rules.md`. `handoff_recommended` = frustration, repeated failures, explicit human request. `urgent_handoff` = safety, legal, chargeback, social media threats. `sentiment-router` records a durable escalation against these signals via `shop_handoff_create` (it does not redefine the taxonomy); the record carries the `classification` verbatim.
+- **Handoffs are a staff/ops-only data domain:** The `handoffs` domain is an internal triage/audit artifact, not something a customer queries about themselves. `shop_handoff_list` is therefore an ops read (optional `customerId` filter, like `shop_action_log_list`), not an identity-gated own-only customer read. Consequently `handoffs` does **not** count as a new *customer-visible* data domain, so — unlike `orders` and `returns` — it triggers no storefront UI work under "Skill ↔ UI integration order" below.
 - **Demo interface:** OpenClaw TUI only. No custom web UI for the first prototype.
 - **Demo brand:** Intentionally a Taiwan-based skincare brand (NT$ pricing, skincare catalog). This is the course project's chosen domain, not a placeholder.
 - **Skill ↔ UI integration order:** Build customer skills against the shared shop backend and `data/` first, and test them in the TUI (one feature branch per customer capability, spanning whatever skill/tool/data layers it needs). The mock storefront comes later as a single read-only view over the same shop state (catalog, carts, action logs) — it is wired to the shared state, not to individual skills. A new skill needs new UI work only when it introduces a new **visible data domain** (for example orders or returns), not once per skill.

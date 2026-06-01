@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "handoffs": [
+    {
+      "id": "handoff-2026-0001",
+      "classification": "handoff_recommended",
+      "category": "refund_dispute",
+      "reason": "Customer frustrated that a refund for a cracked cleanser had not arrived.",
+      "summary": "Lin chased a delayed refund on a damaged cleanser and asked for a human.",
+      "channel": "simulated-chat",
+      "externalUserId": "demo-lin",
+      "customerId": "customer-demo-lin",
+      "status": "resolved",
+      "createdAt": "2026-05-12T01:15:00.000Z",
+      "updatedAt": "2026-05-14T02:35:00.000Z",
+      "statusDetail": "Resolved by Mei — confirmed the NT$420 refund processed; customer satisfied."
+    }
+  ]
+}

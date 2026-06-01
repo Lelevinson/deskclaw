@@ -9,6 +9,8 @@ import type {
   CartPendingActionType,
   CartView,
   Customer,
+  HandoffClassification,
+  HandoffRecord,
   LinkedCustomer,
   Order,
   OrderLine,
@@ -1303,6 +1305,107 @@ export async function getReturnForChannel(
   }
 
   return { ok: true, data: found };
+}
+
+function isHandoffClassification(value: string): value is HandoffClassification {
+  return value === "handoff_recommended" || value === "urgent_handoff";
+}
+
+// Record a durable escalation for a sentiment-router handoff. KEY DEPARTURE from
+// the cart/orders/returns flows: identity is OPTIONAL and must never block an
+// escalation. We resolve the linked customer *softly* — attaching `customerId`
+// when the sender is linked, but still recording the escalation (with only the
+// raw channel + externalUserId) for an unlinked/revoked sender. It is append-only:
+// no preview/confirm pipeline (an escalation is the agent's judgment, not a
+// customer-authorized account mutation), but it still writes an audit log.
+export async function createHandoff(
+  channel: string,
+  externalUserId: string,
+  classification: string,
+  category: string,
+  reason: string,
+  summary: string
+): Promise<ServiceResult<HandoffRecord>> {
+  if (!isHandoffClassification(classification)) {
+    // `continue` (and anything else) records nothing — only the two handoff
+    // signals defined in data/routing/escalation-rules.md produce a record.
+    return {
+      ok: false,
+      error: "Classification must be either 'handoff_recommended' or 'urgent_handoff'."
+    };
+  }
+
+  const trimmedChannel = channel.trim();
+  const trimmedExternalUserId = externalUserId.trim();
+  const trimmedCategory = category.trim();
+  const trimmedReason = reason.trim();
+  const trimmedSummary = summary.trim();
+  if (!trimmedChannel || !trimmedExternalUserId) {
+    return { ok: false, error: "A channel and external user id are required to record an escalation." };
+  }
+  if (!trimmedCategory || !trimmedReason || !trimmedSummary) {
+    return { ok: false, error: "A category, reason, and customer-safe summary are required." };
+  }
+
+  const db = await readShopDb();
+  // Soft identity: a successful resolve links the customer; a failure does NOT
+  // block the escalation — we never trust a typed customer id, only the binding.
+  const linked = resolveLinkedCustomer(db, trimmedChannel, trimmedExternalUserId);
+  const customerId = linked.ok && linked.data ? linked.data.customer.id : undefined;
+  // Omit customerId entirely for an unlinked/revoked sender — the escalation is
+  // still recorded, it just isn't attributed to a known account. Computed once so
+  // the record and its audit log can never disagree on attribution.
+  const customerIdField = customerId ? { customerId } : {};
+
+  const now = nowIso();
+  const handoff: HandoffRecord = {
+    id: `handoff_${randomUUID()}`,
+    classification,
+    category: trimmedCategory,
+    reason: trimmedReason,
+    summary: trimmedSummary,
+    channel: trimmedChannel,
+    externalUserId: trimmedExternalUserId,
+    ...customerIdField,
+    status: "open",
+    createdAt: now,
+    updatedAt: now
+  };
+  db.handoffs.push(handoff);
+
+  addLog(db, {
+    type: "handoff.create",
+    status: "success",
+    ...customerIdField,
+    summary: `Escalation (${classification}): ${trimmedSummary}`,
+    metadata: {
+      handoffId: handoff.id,
+      classification,
+      category: trimmedCategory,
+      channel: trimmedChannel,
+      externalUserId: trimmedExternalUserId,
+      linked: Boolean(customerId)
+    }
+  });
+
+  await writeShopDb(db);
+  return { ok: true, data: handoff };
+}
+
+// Ops/audit/demo read over escalation records. Unlike the order/returns reads,
+// handoffs are a STAFF/OPS-ONLY domain (ARCHITECTURE §6), so this mirrors
+// listActionLogs (optional customerId filter, not an identity-gated own-only
+// read) rather than the customer-facing list reads.
+export async function listHandoffs(
+  customerId?: string,
+  limit = 20
+): Promise<ServiceResult<HandoffRecord[]>> {
+  const db = await readShopDb();
+  const handoffs = (db.handoffs ?? [])
+    .filter((handoff) => !customerId || handoff.customerId === customerId)
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+    .slice(0, Math.max(1, Math.min(limit, 100)));
+  return { ok: true, data: handoffs };
 }
 
 export async function listActionLogs(

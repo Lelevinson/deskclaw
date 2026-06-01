@@ -10,6 +10,15 @@ Reason: <one short reason>
 Suggested reply: <brief customer-facing response>
 ```
 
+## Persisting the escalation (applies to every test below)
+
+Besides the visible `Route / Reason / Suggested reply` output, the skill now persists a durable escalation record:
+
+- For a `handoff_recommended` or `urgent_handoff` route, the agent should call `shop_handoff_create` once, passing the sender's channel + `externalUserId`, the `classification` (the route), a short `category`, the `reason`, and a customer-safe `summary`. Identity is optional — it should record even for an unlinked sender (no `customerId` attached), and must never block or delay the reply.
+- For a `continue` route, the agent should record **nothing**.
+
+To verify after a run, read back the records with `shop_handoff_list` (and the audit entry with `shop_action_log_list`): a handoff test should add exactly one `open` record with the right `classification`; a `continue` test should add none.
+
 ## Test 1: Calm policy question
 
 **Customer message:**
