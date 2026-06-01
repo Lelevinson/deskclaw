@@ -75,6 +75,41 @@ export interface PendingAction {
   completedAt?: string;
 }
 
+export type OrderStatus =
+  | "placed"
+  | "processing"
+  | "shipped"
+  | "out_for_delivery"
+  | "delivered"
+  | "cancelled";
+
+export interface OrderItem {
+  productId: string;
+  quantity: number;
+  // Price paid per unit at order time. A historical order fact, not the live
+  // catalog price — kept on the order so it stays accurate if the catalog changes.
+  unitPriceNtd: number;
+}
+
+export interface OrderShipping {
+  carrier?: string;
+  trackingNumber?: string;
+  estimatedDelivery?: string;
+  shippedAt?: string;
+  deliveredAt?: string;
+}
+
+export interface Order {
+  id: string;
+  customerId: string;
+  status: OrderStatus;
+  placedAt: string;
+  updatedAt: string;
+  items: OrderItem[];
+  totalNtd: number;
+  shipping?: OrderShipping;
+}
+
 export interface ActionLog {
   id: string;
   type: string;
@@ -91,6 +126,7 @@ export interface ShopDatabase {
   customers: Customer[];
   accountLinks: AccountLink[];
   carts: Cart[];
+  orders: Order[];
   pendingActions: PendingAction[];
   actionLogs: ActionLog[];
 }
@@ -108,4 +144,33 @@ export interface CartView {
   customerId: string;
   items: CartLine[];
   totalNtd: number;
+}
+
+export interface OrderLine {
+  productId: string;
+  // Resolved from the catalog at read time; falls back to the productId if the
+  // product is no longer in the catalog.
+  name: string;
+  quantity: number;
+  unitPriceNtd: number;
+  subtotalNtd: number;
+}
+
+export interface OrderSummary {
+  id: string;
+  status: OrderStatus;
+  placedAt: string;
+  updatedAt: string;
+  itemCount: number;
+  totalNtd: number;
+}
+
+export interface OrderView {
+  id: string;
+  status: OrderStatus;
+  placedAt: string;
+  updatedAt: string;
+  items: OrderLine[];
+  totalNtd: number;
+  shipping?: OrderShipping;
 }

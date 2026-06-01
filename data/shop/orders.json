@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "orders": [
+    {
+      "id": "order-2026-0001",
+      "customerId": "customer-demo-lin",
+      "status": "delivered",
+      "placedAt": "2026-05-04T09:12:00.000Z",
+      "updatedAt": "2026-05-08T03:40:00.000Z",
+      "items": [
+        { "productId": "cloud-cleanser", "quantity": 1, "unitPriceNtd": 420 },
+        { "productId": "sunny-shield-spf50", "quantity": 1, "unitPriceNtd": 520 }
+      ],
+      "totalNtd": 940,
+      "shipping": {
+        "carrier": "Black Cat Express",
+        "trackingNumber": "TW480012345678",
+        "estimatedDelivery": "2026-05-08",
+        "shippedAt": "2026-05-05T02:15:00.000Z",
+        "deliveredAt": "2026-05-08T03:40:00.000Z"
+      }
+    },
+    {
+      "id": "order-2026-0002",
+      "customerId": "customer-demo-lin",
+      "status": "shipped",
+      "placedAt": "2026-05-26T14:30:00.000Z",
+      "updatedAt": "2026-05-27T01:05:00.000Z",
+      "items": [
+        { "productId": "calm-barrier-cream", "quantity": 1, "unitPriceNtd": 680 }
+      ],
+      "totalNtd": 680,
+      "shipping": {
+        "carrier": "Black Cat Express",
+        "trackingNumber": "TW480098765432",
+        "estimatedDelivery": "2026-06-02",
+        "shippedAt": "2026-05-27T01:05:00.000Z"
+      }
+    },
+    {
+      "id": "order-2026-0003",
+      "customerId": "customer-demo-lin",
+      "status": "processing",
+      "placedAt": "2026-05-30T22:48:00.000Z",
+      "updatedAt": "2026-05-30T22:48:00.000Z",
+      "items": [
+        { "productId": "clear-day-gel", "quantity": 2, "unitPriceNtd": 560 }
+      ],
+      "totalNtd": 1120
+    }
+  ]
+}

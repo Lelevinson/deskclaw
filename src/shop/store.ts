@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { AccountLink, ActionLog, Cart, Customer, PendingAction, ProductCatalog, ShopDatabase } from "./types.js";
+import type { AccountLink, ActionLog, Cart, Customer, Order, PendingAction, ProductCatalog, ShopDatabase } from "./types.js";
 
 const DEFAULT_DATA_DIR = path.resolve(process.cwd(), "data");
 const DEFAULT_DB_PATH = path.resolve(process.cwd(), ".local/shop-db.json");
@@ -32,6 +32,7 @@ async function readInitialDatabase(): Promise<ShopDatabase> {
     path.join(dataDir, "customers/account-links.json")
   );
   const cartState = await readJsonFile<{ carts: Cart[] }>(path.join(dataDir, "shop/carts.json"));
+  const orderState = await readJsonFile<{ orders: Order[] }>(path.join(dataDir, "shop/orders.json"));
   const pendingActionState = await readJsonFile<{ pendingActions: PendingAction[] }>(
     path.join(dataDir, "shop/pending-actions.json")
   );
@@ -43,6 +44,7 @@ async function readInitialDatabase(): Promise<ShopDatabase> {
     customers: customerData.customers,
     accountLinks: accountLinkData.accountLinks,
     carts: cartState.carts,
+    orders: orderState.orders,
     pendingActions: pendingActionState.pendingActions,
     actionLogs: actionLogState.actionLogs
   };
