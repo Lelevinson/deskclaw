@@ -110,6 +110,7 @@ If a skill behaves wrong, treat it as a prompt/skill-wording issue first — `/n
   openclaw plugins enable whatsapp
   ```
   Restart the gateway after enabling.
+- **WhatsApp identity wiring for gated skills:** connecting WhatsApp is a channel/config step (above), but the identity-gated skills (`cart-actions`, `order-status`, `returns-actions`) resolve the customer via `channel + externalUserId → accountLink`. Over WhatsApp the `externalUserId` is the sender's **phone number**, so bind it to the demo customer by adding/adjusting an `account-links` row in [`../../data/customers/account-links.json`](../../data/customers/account-links.json) (`"channel": "whatsapp"`, `"externalUserId": "+886…"`, `"status": "linked"`), then `npm run shop:reset`. The identity-free skills (`policy-oracle`, `search-products`, `sentiment-router`) work over WhatsApp with no wiring. This is a demo channel/config path, not the deferred "build our own WhatsApp integration" (ARCHITECTURE §5).
 - **Full reset:** `openclaw reset` then `rm -rf /home/node/.openclaw/* /home/node/.openclaw/.[!.]*`
 
 ## 9. Context7 MCP for Codex
