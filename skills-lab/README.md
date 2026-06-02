@@ -15,10 +15,15 @@ skills-lab/
   README.md
   scenarios/
     policy-oracle-tests.md
+    product-compatibility-tests.md
     search-products-tests.md
     sentiment-router-tests.md
     cart-actions-tests.md
+    order-status-tests.md
+    returns-actions-tests.md
 ```
+
+The `product-compatibility-tests.md` scenarios exercise the `policy-oracle` skill (compatibility/routine answers from `data/catalog/compatibility.md`), so they need no separate skill registration.
 
 Do not add a `skills/` folder here. If a skill changes, edit [`../skills/`](../skills/) and update the matching scenario only when the expected behavior changes.
 

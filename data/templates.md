@@ -29,6 +29,32 @@ When adding a new data file, use the final filename from the start, add its temp
 }
 ```
 
+## `catalog/compatibility.md`
+
+Brand-authored, customer-safe routine and product-compatibility guidance for DeskClaw's own products, answered by `policy-oracle`. References products by the `id` / `name` in `products.json` — it never duplicates prices, stock, or descriptions, which the catalog owns. Routine *sequencing and pairing* only: no medical, allergy, reaction, pregnancy, or skin-condition advice, no ingredient chemistry, and nothing about products DeskClaw does not sell. The `Missing / Unsupported Details` section lists what the agent must refuse or escalate.
+
+```markdown
+# Product Compatibility and Routine Guidance
+
+## Routine order
+
+AM / PM step ordering for the catalog's products (cleanser → toner → moisturizer → sunscreen/oil).
+
+## Safe pairings
+
+Products that work well together or at different times of day, referenced by name + id.
+
+## Use with care and avoid combining
+
+Sequencing cautions (e.g. a PM-only exfoliant; do not stack two strong steps the same night).
+
+## Missing / Unsupported Details
+
+What to refuse or escalate: medical/allergy/reaction/pregnancy/skin-condition questions
+(escalate to sentiment-router urgent_handoff), ingredient chemistry, and any product not in
+products.json (e.g. retinol, other brands).
+```
+
 ## `customers/customers.json`
 
 ```jsonc
