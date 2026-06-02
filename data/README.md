@@ -11,6 +11,7 @@ data/
   templates.md                 # commented shape examples for data files
   catalog/
     products.json              # product facts shared by recommendation + shop tools
+    compatibility.md           # brand-authored routine / product-compatibility guidance
   policies/
     faq.md
     product-care.md
@@ -47,7 +48,7 @@ The current skills need these data groups:
 
 | Skill / tool area | Data used |
 |---|---|
-| `policy-oracle` | `policies/*.md` |
+| `policy-oracle` | `policies/*.md`, `catalog/compatibility.md` (product/routine compatibility) |
 | `search-products` | `catalog/products.json` |
 | `sentiment-router` | `routing/escalation-rules.md` |
 | `cart-actions` and shop tools | `catalog/products.json`, `customers/*.json`, `shop/*.json` |

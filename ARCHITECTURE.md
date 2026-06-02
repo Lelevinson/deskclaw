@@ -29,8 +29,8 @@ DeskClaw is a local-first conversational commerce agent prototype for small D2C 
 
 **Implemented**
 
-- Repo-managed OpenClaw skills under [`skills/`](skills/): `policy-oracle`, `search-products`, `sentiment-router` (classifies `continue` / `handoff_recommended` / `urgent_handoff`, and on either handoff signal persists a durable escalation record via `shop_handoff_create`), `cart-actions` (add / remove / change-quantity, all gated by the identity → preview → confirm → audit pipeline), `order-status` (read-only, identity-gated order/tracking lookup), `returns-actions` (identity-gated return/exchange **request** intake via the same preview → confirm → audit pipeline — never auto-issues a refund — plus a read-only refund/return-status check)
-- Shared business data under [`data/`](data/): catalog, policies, routing rules, customers, account links, shop runtime baseline state, seeded orders, seeded returns, and seeded handoff/escalation records
+- Repo-managed OpenClaw skills under [`skills/`](skills/): `policy-oracle` (shipping / returns / FAQ / warranty / product-care answers, plus product-compatibility and routine-ordering answers from a brand-authored data file — answer-only-from-data, escalating any medical/allergy/reaction/skin-condition question to `sentiment-router`), `search-products`, `sentiment-router` (classifies `continue` / `handoff_recommended` / `urgent_handoff`, and on either handoff signal persists a durable escalation record via `shop_handoff_create`), `cart-actions` (add / remove / change-quantity, all gated by the identity → preview → confirm → audit pipeline), `order-status` (read-only, identity-gated order/tracking lookup), `returns-actions` (identity-gated return/exchange **request** intake via the same preview → confirm → audit pipeline — never auto-issues a refund — plus a read-only refund/return-status check)
+- Shared business data under [`data/`](data/): catalog (products + brand-authored product/routine compatibility guidance), policies, routing rules, customers, account links, shop runtime baseline state, seeded orders, seeded returns, and seeded handoff/escalation records
 - Shop MCP server under `src/mcp/shop-server.ts` and shared shop logic under `src/shop/`
 - **Tool-level eval harness** under `src/cli/shop-eval.ts` (`npm run shop:eval`): deterministic, no-model tests over the `src/shop` service functions, asserting the safety-critical guarantees (identity gating, ownership proof, preview→confirm, expiry, refusals, audit logging) across all three cart action types, plus the read-only order-status reads (identity-gated, own-orders-only, unknown / non-owned order ids refused without leaking existence) and the returns-intake flow (identity-gated; a return can only be opened against a delivered order the resolved customer owns; preview→confirm creates a return *request* — never a refund/money mutation; no double-confirm; own-returns-only status reads), plus the handoff/escalation records (append-only with **optional** identity — a linked sender attaches a `customerId`, an unlinked/revoked sender is still recorded; no preview/confirm; `continue` records nothing; writes an audit log). Run from a per-test `data/` reset; named PASS/FAIL with a non-zero exit on failure.
 - Scripted test scenarios under [`skills-lab/scenarios/`](skills-lab/scenarios/)
@@ -42,7 +42,7 @@ DeskClaw is a local-first conversational commerce agent prototype for small D2C 
 - CI, linting, deployment
 - Mock e-commerce website UI
 
-**Planned next (in scope, not yet built)** — scoped in [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §4; build order: ~~cart-edit~~ (shipped 2026-05-29) → ~~tool-level eval harness~~ (shipped 2026-05-29) → ~~order-status~~ (shipped 2026-06-01) → ~~returns-intake~~ (shipped 2026-06-01) → ~~handoff-ticket~~ (shipped 2026-06-01), with **product-compatibility Q&A** as the remaining independent item. The `orders`, `returns`, and `handoffs` data domains are now in place; `orders` remains the prerequisite for the mock storefront.
+**MVP skill backlog complete** — scoped in [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §4; build order: ~~cart-edit~~ (shipped 2026-05-29) → ~~tool-level eval harness~~ (shipped 2026-05-29) → ~~order-status~~ (shipped 2026-06-01) → ~~returns-intake~~ (shipped 2026-06-01) → ~~handoff-ticket~~ (shipped 2026-06-01) → ~~product-compatibility Q&A~~ (shipped 2026-06-02). The `orders`, `returns`, and `handoffs` data domains are in place; `orders` remains the prerequisite for the mock storefront. The only remaining MVP item is the deferred **mock storefront UI** (§6 "Skill ↔ UI integration order"); all customer skills are built.
 
 ## 4. Repository layout
 
@@ -72,6 +72,7 @@ data/
   README.md                   # data ownership rules
   templates.md                # commented shape examples for data files
   catalog/products.json       # product facts shared by skills + tools
+  catalog/compatibility.md    # brand-authored product/routine compatibility guidance (policy-oracle)
   policies/{faq,product-care,returns,shipping}.md
   routing/escalation-rules.md
   customers/{customers,account-links}.json
@@ -80,7 +81,7 @@ data/
 skills-lab/                   # evaluation only, not a skill source
   README.md                   # how to run + pass/fail criteria
   scenarios/
-    {policy-oracle,search-products,sentiment-router,cart-actions,returns-actions}-tests.md
+    {policy-oracle,product-compatibility,search-products,sentiment-router,cart-actions,order-status,returns-actions}-tests.md
 ```
 
 This is the tracked repo layout, not generated runtime state. Personal OpenClaw runtime data stays in `/home/node/.openclaw` and is not committed.
@@ -89,16 +90,16 @@ This is the tracked repo layout, not generated runtime state. Personal OpenClaw 
 
 This section owns the boundary of what may be built. The detailed, ordered backlog lives in [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §4; this section records only what is in scope and what is fenced out. Adding anything from the deferred list requires updating this file first.
 
-### In scope (planned, not yet built)
+### In scope — all shipped
 
-Decided in the 2026-05-29 roadmap session. New data domains noted because they trigger storefront UI work (§6).
+Decided in the 2026-05-29 roadmap session and now fully built (the MVP skill backlog is complete; only the deferred storefront UI in §6 remains). New data domains noted because they trigger storefront UI work (§6).
 
 - ~~**Cart edits** — remove item / change quantity. Extends `cart-actions`; no new data domain.~~ **Shipped 2026-05-29.**
 - ~~**Tool-level evaluation harness** — deterministic tests over `src/shop` service functions (identity gating, preview/confirm, audit).~~ **Shipped 2026-05-29** (`npm run shop:eval`); closed the "Not implemented" eval gap above for the tool layer.
 - ~~**Order status lookup** — read-only, identity-gated. Introduces the **`orders`** data domain (the first new *visible* data domain).~~ **Shipped 2026-06-01** (`shop_orders_list_for_channel` / `shop_order_get`, `data/shop/orders.json`); the `orders` domain is now in place.
 - ~~**Return / exchange intake + status** — captures a return *request* and hands off the refund/exchange (never auto-issues money), plus a read-only refund/return-status check ("is my refund processed?"). Depends on the `orders` domain; adds a **`returns`** sub-domain.~~ **Shipped 2026-06-01** (`shop_return_preview` / `shop_return_confirm` create a return *request* in the `requested` state only; `shop_returns_list_for_channel` / `shop_return_get` are read-only own-returns-only status checks; new `data/shop/returns.json`). The `returns` sub-domain is now in place.
 - ~~**Handoff ticket records** — durable escalation/audit records for `sentiment-router` handoffs.~~ **Shipped 2026-06-01** (`shop_handoff_create` / `shop_handoff_list`, new `data/shop/handoffs.json`). Append-only with **optional** identity (an unlinked/revoked sender can still be escalated; a `customerId` is linked only when resolvable); no preview/confirm; `continue` records nothing; writes an audit log. The `handoffs` domain is **staff/ops-only**, not customer-visible (see §6), so it adds no storefront UI obligation.
-- **Product / ingredient-compatibility Q&A** — extends `policy-oracle` from a brand-authored compatibility data file; answer-only-from-data, escalate reaction/medical language.
+- ~~**Product / ingredient-compatibility Q&A** — extends `policy-oracle` from a brand-authored compatibility data file; answer-only-from-data, escalate reaction/medical language.~~ **Shipped 2026-06-02** (new `data/catalog/compatibility.md`, no tools). `policy-oracle` answers "can I use X with Y?" / "what order do I apply these?" only from that file, refuses products DeskClaw does not sell, and escalates any medical/allergy/reaction/pregnancy/skin-condition question to `sentiment-router` (`urgent_handoff`) rather than answering it. This **closes the MVP skill backlog** — only the deferred storefront UI (§6) remains.
 
 ### Deferred (out of scope)
 

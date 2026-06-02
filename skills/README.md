@@ -33,7 +33,7 @@ Example: `cart-actions` is the customer-facing skill. `shop_customer_lookup` is 
 - [`cart-actions/`](cart-actions/) — guides MCP-backed customer cart actions with preview, confirmation, execution, and audit logging.
 - [`order-status/`](order-status/) — answers "where's my order?" with read-only, identity-gated order status and tracking lookups over the linked customer's own orders.
 - [`returns-actions/`](returns-actions/) — intakes a return/exchange **request** against the linked customer's own delivered order via preview → confirm → audit (never issues a refund — hands the money movement to a human), and answers read-only refund/return-status questions ("is my refund processed yet?").
-- [`policy-oracle/`](policy-oracle/) — answers shipping, returns, FAQ, warranty, and product-care policy questions from shared policy data.
+- [`policy-oracle/`](policy-oracle/) — answers shipping, returns, FAQ, warranty, and product-care policy questions from shared policy data, plus product-compatibility and routine-ordering questions ("can I use X with Y?", "what order do I apply these?") from the brand-authored `data/catalog/compatibility.md`; it answers only from that data, refuses products DeskClaw does not sell, and escalates any medical/allergy/reaction/skin-condition question to `sentiment-router`.
 - [`search-products/`](search-products/) — recommends products from the shared demo catalog.
 - [`sentiment-router/`](sentiment-router/) — classifies customer messages as `continue`, `handoff_recommended`, or `urgent_handoff`, and on either handoff signal persists a durable escalation record (optional identity, append-only) for staff to act on.
 
@@ -67,7 +67,7 @@ These are not OpenClaw skills. They are reusable tool operations that skills can
 
 ## Planned Utilities (backlog)
 
-These are scoped but not yet built. The full reasoning, research basis, and ordering live in [`../docs/planning/skill-roadmap.md`](../docs/planning/skill-roadmap.md) §4; scope is owned by [`../ARCHITECTURE.md`](../ARCHITECTURE.md) §5. Build the top open item, one feature branch each. Build order: **~~cart-edit~~ → ~~tool-level eval harness~~ → ~~order-status~~ → ~~returns-intake~~ → ~~handoff-ticket~~ (all shipped)**; the remaining open item is `product-compatibility`.
+The full reasoning, research basis, and ordering live in [`../docs/planning/skill-roadmap.md`](../docs/planning/skill-roadmap.md) §4; scope is owned by [`../ARCHITECTURE.md`](../ARCHITECTURE.md) §5. Build order: **~~cart-edit~~ → ~~tool-level eval harness~~ → ~~order-status~~ → ~~returns-intake~~ → ~~handoff-ticket~~ → ~~product-compatibility~~ (all shipped)**. The MVP skill backlog is complete; the only remaining MVP item is the deferred mock storefront UI (a read-only view, not a skill).
 
 | Customer-facing utility | Type | Inner tools / data | Notes |
 |---|---|---|---|
@@ -75,7 +75,7 @@ These are scoped but not yet built. The full reasoning, research basis, and orde
 | ✅ Order status lookup | new `order-status` skill | read-only `shop_orders_list_for_channel` / `shop_order_get`; new `data/shop/orders.json` | **Shipped 2026-06-01.** Highest-volume real query. Safe by construction — keyed on the resolved `customerId`, never a typed order number; unknown / non-owned order ids refused identically. New visible data domain now in place. |
 | ✅ Return / exchange intake + refund status | new `returns-actions` skill (depends on orders) | `shop_return_preview` / `shop_return_confirm` (request only); read-only `shop_returns_list_for_channel` / `shop_return_get`; new `data/shop/returns.json` (per-return `status`) | **Shipped 2026-06-01.** Creates a return *request* in the `requested` state then hands off the money movement; never auto-refunds. Opened only against a **delivered** order the resolved customer owns; unknown / non-owned order & return ids refused identically. Includes the read-only "is my refund processed?" status check. |
 | ✅ Human handoff ticket | `sentiment-router` extension | `shop_handoff_create` (append-only) + `shop_handoff_list` (ops read); new `data/shop/handoffs.json` | **Shipped 2026-06-01.** Durable escalation/audit record with optional identity (an unlinked/revoked sender is still escalatable). New `handoffs` domain over an action-log type (handoffs carry a status lifecycle); `continue` records nothing. Staff/ops-only — not customer-visible, so no storefront UI obligation. Independent of orders. |
-| Product / ingredient-compatibility Q&A | `policy-oracle` extension | new `data/catalog/compatibility.md`; no tools | Answer only from data; escalate reaction/medical language to `sentiment-router`. |
+| ✅ Product / ingredient-compatibility Q&A | `policy-oracle` extension | new `data/catalog/compatibility.md`; no tools | **Shipped 2026-06-02.** Answers "can I use X with Y?" / routine-order questions only from the brand-authored data file; refuses products DeskClaw does not sell (e.g. retinol); escalates any medical/allergy/reaction/skin-condition question to `sentiment-router` (`urgent_handoff`). Data-only — no tools, no pipeline. Closes the MVP skill backlog. |
 | Mock storefront demo | UI, not a skill | reads shared shop state (catalog, carts, orders, action logs) | Build after the `orders` domain exists; one read-only view, not per skill. |
 
 ### Reviewed and deferred
