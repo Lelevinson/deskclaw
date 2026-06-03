@@ -105,9 +105,37 @@ real code path. Orders are the **demo customer's own** only.
 `getOrder(id)` returns `null` for an unknown **or** a non-owned id — the service's
 `findOwnedOrder` makes the two indistinguishable — and the route then renders the
 neutral `not-found` (no id echo, no existence leak; identical refusal to the
-skills, DESIGN.md §5.7). The wireframe's "Request a return" CTA on a delivered
-order stays **inert + muted** until the Returns surface ships (Phase 5), the same
-honest not-yet-built affordance the nav uses — never a dead link.
+skills, DESIGN.md §5.7).
+
+## Returns — read-only, own-returns-only (Phase 5)
+
+Returns list + return detail (surface 6, DESIGN.md §5.6) are **reads**, mirroring
+Orders. Both go through the same reuse-layer seam: [`lib/shop/index.ts`](lib/shop/index.ts)'s
+`getReturns()` / `getReturn(id)` call the chat tools' own `listReturnsForChannel` /
+`getReturnForChannel` in `src/shop`, so identity gating and ownership are the one
+real code path. Returns are the **demo customer's own** only; `getReturn(id)`
+returns `null` for an unknown **or** non-owned id (`getReturnForChannel` gives both
+the same "not found") → neutral `not-found`, no existence leak — identical refusal
+to Orders and the skills.
+
+A `ReturnRequest` is **order-level** — it carries no line items — so the §5.6
+wireframe's "Item: … ×1" line is intentionally **not** rendered (the UI never
+invents data the service doesn't expose). The detail shows the linked order, the
+opened date, the reason, the resolution type, and the read-only status, plus any
+human-authored status note (e.g. "Refunded NT$420 …") as a recorded **fact** —
+never a money/refund **action**.
+
+**The delivered-order "Request a return" CTA (scope decision).** The §5.5 wireframe
+points that CTA at a returns *intake*. Opening a return is a `preview→confirm`
+**write**, and the storefront's invariant is that the **cart is its only mutation**
+(DESIGN §4/§7); Phase 5 is scoped **read-only** (roadmap §6). Building an intake
+would exceed that scope and contradict the invariant — which requires an
+`ARCHITECTURE.md` §5 update **first** (roadmap §9). So the CTA stays **inert**: the
+honest path is that a return *request* is opened through the **assistant** (chat
+`returns-actions`, which creates a `requested` record — never an auto-refund,
+ARCHITECTURE §5), while the storefront shows returns read-only. The button now
+links to the live `/returns` list rather than being a muted not-yet-built
+affordance.
 
 ## Scalability rule
 
@@ -126,6 +154,8 @@ app/                      # App Router pages (server components read via lib/sho
   cart/page.tsx           # cart (surface 4) — reads getCart(), mutates via actions
   orders/page.tsx         # order history (surface 5) — reads getOrders(), own-only
   orders/[id]/page.tsx    # order detail / tracking — getOrder(id), neutral 404
+  returns/page.tsx        # returns list (surface 6) — reads getReturns(), own-only
+  returns/[id]/page.tsx   # return detail — getReturn(id), read-only, neutral 404
   not-found.tsx           # neutral 404 (no id/existence leak)
 components/
   shell/                  # AppShell (header/nav/footer + "Shopping as"), Logo
@@ -143,6 +173,7 @@ DESIGN.md, mockups/, tools/   # design-phase artifacts (see DESIGN §appendix)
 No checkout / payments / auth / address mutation / staff view. The cart is the
 only mutation and must still write the audit log — **shipped in Phase 3** (see
 "Cart mutations" above): Add-to-cart, qty update, and remove are live and audited.
-Orders (Phase 4) are **read-only** own-orders-only views over seeded fixtures.
-Adding anything beyond the decided scope requires an `ARCHITECTURE.md` §5 update
-first.
+Orders (Phase 4) and Returns (Phase 5) are **read-only** own-only views over seeded
+fixtures — a return is *requested* through the assistant, never opened or refunded
+from the storefront. Adding anything beyond the decided scope requires an
+`ARCHITECTURE.md` §5 update first.

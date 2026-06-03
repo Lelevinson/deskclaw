@@ -126,17 +126,32 @@ export default async function OrderDetailPage({
         </div>
       </div>
 
-      {/* Returns intake is Phase 5 (roadmap §6). On a delivered order the
-          wireframe (§5.5) shows a "Request a return" CTA → Returns; until that
-          surface ships it stays inert + muted (the same honest not-yet-built
-          affordance the nav uses), never a dead link. */}
+      {/* On a delivered order the wireframe (§5.5) shows a "Request a return" CTA
+          → Returns intake. Phase 5 ships Returns READ-ONLY (roadmap §6, DESIGN §4):
+          the cart is the storefront's only mutation (DESIGN §4/§7), so opening a
+          return — a preview→confirm write — stays out of the storefront's scope and
+          would need an ARCHITECTURE §5 update first. The honest affordance: the
+          request itself is made through the assistant (chat returns-actions, which
+          creates a `requested` record), while the storefront shows returns
+          read-only. So the request button stays inert, with a live link to view
+          existing returns. */}
       {order.status === "delivered" && (
         <div className="mt-6 flex flex-col items-start gap-2">
-          <Button variant="outline" disabled title="Coming soon in this demo">
+          <Button
+            variant="outline"
+            disabled
+            title="Returns are requested through the assistant in this demo"
+          >
             Request a return
           </Button>
           <p className="font-sans text-xs text-ink-muted">
-            Returns open in a later phase of this demo.
+            Ask the assistant to open a return for this order.{" "}
+            <Link
+              href="/returns"
+              className="text-gold-deep underline-offset-4 hover:underline"
+            >
+              View your returns →
+            </Link>
           </p>
         </div>
       )}

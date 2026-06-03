@@ -14,15 +14,23 @@ import {
   getCartForChannel,
   getOrderForChannel,
   getProductById,
+  getReturnForChannel,
   listOrdersForChannel,
   listProducts,
+  listReturnsForChannel,
   lookupCustomerByChannel,
 } from "@shop/service.js";
-import type { CartView, OrderSummary, OrderView, Product } from "@shop/types.js";
+import type {
+  CartView,
+  OrderSummary,
+  OrderView,
+  Product,
+  ReturnRequest,
+} from "@shop/types.js";
 
 import { DEMO_IDENTITY } from "./identity";
 
-export type { CartView, OrderSummary, OrderView, Product };
+export type { CartView, OrderSummary, OrderView, Product, ReturnRequest };
 
 // An empty cart for the demo customer — used when the service can't resolve one
 // (it never should, but reads must degrade quietly rather than throw in render).
@@ -100,6 +108,35 @@ export async function getOrder(orderId: string): Promise<OrderView | null> {
     DEMO_IDENTITY.channel,
     DEMO_IDENTITY.externalUserId,
     orderId,
+  );
+  return result.ok && result.data ? result.data : null;
+}
+
+// The demo customer's own returns (surface 6, DESIGN.md §5.6) — identity-gated,
+// own-returns-only via the same channel binding the chat skills use
+// (listReturnsForChannel resolves the link then filters to the customer's own
+// returns, newest first). Read-only: a return is a *request* record the chat
+// returns-actions skill creates; the storefront never opens or refunds one
+// (ARCHITECTURE §5; DESIGN §5.6). Degrades to an empty list rather than throwing
+// in render. Wrapped in cache() so a single render's reads dedupe (same reasoning
+// as getCart/getOrders).
+export const getReturns = cache(async (): Promise<ReturnRequest[]> => {
+  const result = await listReturnsForChannel(
+    DEMO_IDENTITY.channel,
+    DEMO_IDENTITY.externalUserId,
+  );
+  return result.ok && result.data ? result.data : [];
+});
+
+// One return for the return-detail view (surface 6). Returns null for an unknown
+// OR non-owned id so the route renders the neutral 404 — getReturnForChannel gives
+// the same "not found" for both, so the id never leaks existence or acts as proof
+// of ownership (DESIGN.md §5.6/§5.7, roadmap §3), identical to getOrder.
+export async function getReturn(returnId: string): Promise<ReturnRequest | null> {
+  const result = await getReturnForChannel(
+    DEMO_IDENTITY.channel,
+    DEMO_IDENTITY.externalUserId,
+    returnId,
   );
   return result.ok && result.data ? result.data : null;
 }

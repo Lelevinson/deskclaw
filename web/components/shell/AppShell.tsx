@@ -3,15 +3,15 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Logo } from "./Logo";
 
-// Planned storefront IA (DESIGN.md §5.1). "Shop", "Orders" (Phase 4), and "Cart"
-// (Phase 3) are live; the later-phase surfaces stay muted + inert so the nav reads
-// complete and honest without dead links/404s. The Cart label carries a live count
-// (DESIGN §5.1).
+// Planned storefront IA (DESIGN.md §5.1). "Shop", "Orders" (Phase 4), "Returns"
+// (Phase 5), and "Cart" (Phase 3) are live; any remaining later-phase surface stays
+// muted + inert so the nav reads complete and honest without dead links/404s. The
+// Cart label carries a live count (DESIGN §5.1).
 const NAV: { label: string; href?: string }[] = [
   { label: "Shop", href: "/" },
   { label: "Routines" },
   { label: "Orders", href: "/orders" },
-  { label: "Returns" },
+  { label: "Returns", href: "/returns" },
   { label: "Cart", href: "/cart" },
 ];
 
