@@ -38,14 +38,16 @@ DeskClaw is a local-first conversational commerce agent prototype for small D2C 
 - Devcontainer + Ollama wiring + Codex provider + repo-skill loading via `skills.load.extraDirs`
 - **Mock storefront web UI under [`web/`](web/) — COMPLETE (2026-06-03).** Interactive companion storefront on the existing `src/shop` backend (Next.js + TS + Tailwind + shadcn/ui), no checkout. All six roadmap phases merged: Design (PR #12), Foundation (PR #14), Cart (PR #16), Orders (PR #18/#19), Returns (PR #20), Polish (PR #21). Browse catalogue → build a cart → view own orders & returns; the cart is the only mutation and reuses the chat `preview→confirm` path so it still writes the audit log (the click is the consent); orders/returns are read-only own-only views over seeded fixtures with identical no-existence-leak refusals. Reuse-layer seam is `web/lib/shop/` (`import "server-only"`), the one real `src/shop` code path. See [`web/README.md`](web/README.md) and [`docs/planning/storefront-roadmap.md`](docs/planning/storefront-roadmap.md) §6.
 
+- **Agent-layer (model-in-the-loop) eval harness** under `src/cli/agent-eval.ts` (`npm run agent:eval`): drives the **real agent** through the running OpenClaw Gateway (one `openclaw agent --json` turn per scenario step) and asserts the behaviors the tool layer can't — skill routing, answer-only-from-data, escalation to a durable handoff record, and preview→confirm before a mutation — over a curated subset of the `skills-lab/` scenarios (cases in `src/cli/agent-eval-cases.ts`). Rule-based assertions (tool-call presence/absence, shared-store deltas, loose reply regexes), no LLM judge. Needs a running Gateway + configured model (this repo: `openai-codex/gpt-5.5` via the Codex login); SKIPS gracefully if the Gateway is unreachable. It is model-in-the-loop, so not perfectly deterministic, and it mutates the shared store (resets around cases). The safety-critical gating (identity/ownership/audit/refusals) stays covered deterministically by the tool-level `shop:eval`.
+
 **Not implemented**
 
-- Automated evaluation at the **skill/agent (model-in-the-loop) layer** — the `skills-lab/` scenario files still require manual TUI testing (the tool layer is covered by the eval harness above; deferred by [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §5)
+- **Full** automated coverage of the `skills-lab/` scenarios at the agent layer — `npm run agent:eval` (above) automates a curated model-in-the-loop subset; the remaining prose scenarios still get manual TUI testing, and the gated-skill happy paths inject the channel-asserted sender in-prompt rather than through a real channel adapter (skill-roadmap §5)
 - CI, linting, deployment
 
 The **mock storefront web UI** (formerly the one open MVP item) is now **COMPLETE** — see "Implemented" above and roadmap §6.
 
-**MVP complete** — the skill backlog is closed (scoped in [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §4; build order: ~~cart-edit~~ (shipped 2026-05-29) → ~~tool-level eval harness~~ (shipped 2026-05-29) → ~~order-status~~ (shipped 2026-06-01) → ~~returns-intake~~ (shipped 2026-06-01) → ~~handoff-ticket~~ (shipped 2026-06-01) → ~~product-compatibility Q&A~~ (shipped 2026-06-02)) and the **mock storefront UI** is built (all six phases merged 2026-06-03, roadmap §6). The `orders`, `returns`, and `handoffs` data domains are in place. **No in-scope MVP items remain**; further work would be from the deferred list below (requires updating this file first) or the still-open non-MVP gaps (skill/agent-layer eval, CI/linting/deploy).
+**MVP complete** — the skill backlog is closed (scoped in [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §4; build order: ~~cart-edit~~ (shipped 2026-05-29) → ~~tool-level eval harness~~ (shipped 2026-05-29) → ~~order-status~~ (shipped 2026-06-01) → ~~returns-intake~~ (shipped 2026-06-01) → ~~handoff-ticket~~ (shipped 2026-06-01) → ~~product-compatibility Q&A~~ (shipped 2026-06-02)) and the **mock storefront UI** is built (all six phases merged 2026-06-03, roadmap §6). The `orders`, `returns`, and `handoffs` data domains are in place. **No in-scope MVP items remain**; further work would be from the deferred list below (requires updating this file first) or the still-open non-MVP gaps (fuller agent-layer eval coverage + a real channel-adapter identity path, CI/linting/deploy).
 
 ## 4. Repository layout
 
@@ -70,6 +72,7 @@ src/
   mcp/shop-server.ts          # safe MCP tool surface for agent actions
   cli/reset-shop-db.ts        # reset local runtime DB from baseline data
   cli/shop-eval.ts            # tool-level eval harness (npm run shop:eval)
+  cli/agent-eval.ts           # agent-layer (model-in-the-loop) eval harness (npm run agent:eval)
 
 data/
   README.md                   # data ownership rules

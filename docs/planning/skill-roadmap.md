@@ -111,7 +111,7 @@ Considered and **not** added (avoid padding): reorder/replenishment (retention, 
 
 ## 5. Eval harness — recommendation
 
-**Status: tool layer SHIPPED 2026-05-29** (`src/cli/shop-eval.ts`, `npm run shop:eval`). The skill/agent layer below stays deferred / manual as recommended.
+**Status: tool layer SHIPPED 2026-05-29** (`src/cli/shop-eval.ts`, `npm run shop:eval`). **Agent layer: incremental harness SHIPPED 2026-06-03** (`src/cli/agent-eval.ts`, `npm run agent:eval`) — the "lighten it incrementally" follow-up below. It drives the real agent through the OpenClaw Gateway (`openclaw agent --json` per turn) and asserts the model-in-the-loop behaviors the tool layer can't (skill routing, answer-only-from-data, escalation→handoff record, preview→confirm) over a curated case subset (`src/cli/agent-eval-cases.ts`); rule-based assertions (tool-call presence, store deltas, loose regexes), no LLM judge; needs a running Gateway + model (this repo: `openai-codex/gpt-5.5` via the Codex login) and SKIPS gracefully without one. It is model-in-the-loop (not perfectly deterministic) and mutates the shared store (resets around cases). Gated-skill cases inject the channel-asserted sender in-prompt (no real channel adapter in a bare CLI turn); the safety-critical gating stays covered deterministically by `shop:eval`. **Still open:** full scenario coverage + a real channel-adapter identity path remain manual.
 
 **Build a tool-level harness now (backlog item 2), before the first new data domain. Defer full skill/agent scenario automation.**
 
