@@ -3,15 +3,15 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Logo } from "./Logo";
 
-// Planned storefront IA (DESIGN.md §5.1). Only "Shop" is live in Phase 2; the
-// later-phase surfaces are shown muted + inert so the nav reads complete and
-// honest without dead links/404s. Cart count is omitted (cart is Phase 3).
+// Planned storefront IA (DESIGN.md §5.1). "Shop" and (Phase 3) "Cart" are live;
+// the later-phase surfaces stay muted + inert so the nav reads complete and honest
+// without dead links/404s. The Cart label carries a live count (DESIGN §5.1).
 const NAV: { label: string; href?: string }[] = [
   { label: "Shop", href: "/" },
   { label: "Routines" },
   { label: "Orders" },
   { label: "Returns" },
-  { label: "Cart" },
+  { label: "Cart", href: "/cart" },
 ];
 
 function ShoppingAsBar({ customerName }: { customerName: string }) {
@@ -26,7 +26,7 @@ function ShoppingAsBar({ customerName }: { customerName: string }) {
   );
 }
 
-function Header() {
+function Header({ cartCount }: { cartCount: number }) {
   return (
     <header className="sticky top-0 z-20 border-b border-line bg-cream-soft/95 backdrop-blur">
       <div className="mx-auto flex max-w-content items-center justify-between px-7 py-4">
@@ -39,7 +39,14 @@ function Header() {
                 href={item.href}
                 className="font-sans text-sm tracking-wide text-ink transition-colors hover:text-gold-deep"
               >
-                {item.label}
+                {item.label === "Cart" && cartCount > 0 ? (
+                  <>
+                    Cart
+                    <span className="ml-1 tabular-nums text-gold-deep">({cartCount})</span>
+                  </>
+                ) : (
+                  item.label
+                )}
               </Link>
             ) : (
               <span
@@ -80,15 +87,17 @@ function Footer() {
 
 export function AppShell({
   customerName,
+  cartCount,
   children,
 }: {
   customerName: string;
+  cartCount: number;
   children: React.ReactNode;
 }) {
   return (
     <div className={cn("flex min-h-screen flex-col")}>
       <ShoppingAsBar customerName={customerName} />
-      <Header />
+      <Header cartCount={cartCount} />
       <main className="mx-auto w-full max-w-content flex-1 px-7">{children}</main>
       <Footer />
     </div>
