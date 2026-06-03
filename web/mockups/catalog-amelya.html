@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Amelya's — catalog (brand applied)</title>
+<!-- THROWAWAY visual north-star (Phase 1). Real catalog in the Amelya's brand,
+     applying the DESIGN.md tokens. Not the app. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --gold:#a9824b; --gold-deep:#8a6a3a; --gold-lt:#c7a268;
+    --ink:#2b2723; --ink-muted:#6f685c;
+    --cream:#f5f0e4; --cream-soft:#faf7ef; --panel:#fbf8f1; --line:#e3dccb;
+    --sage:#3d4a38; --blush:#ecd9d2;
+    --r-md:8px; --r-pill:999px;
+    --shadow:0 6px 22px rgba(43,39,35,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--cream);color:var(--ink);font-family:"Jost",system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  img{display:block;max-width:100%;}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 28px;}
+
+  /* shopping-as bar */
+  .asbar{background:var(--sage);text-align:center;font-size:12px;letter-spacing:.04em;padding:7px 12px;color:#e9e7d8;}
+  .asbar b{color:#fff;font-weight:500;}
+
+  /* header */
+  header{border-bottom:1px solid var(--line);background:var(--cream-soft);}
+  .hd{display:flex;align-items:center;gap:14px;padding:16px 0;}
+  .hd .logo{display:flex;align-items:center;gap:12px;}
+  .hd .logo img{width:44px;height:44px;object-fit:contain;}
+  .hd .logo .wm{font-family:"Cinzel",serif;font-weight:600;font-size:22px;letter-spacing:.16em;}
+  .hd nav{margin-left:auto;display:flex;gap:28px;font-weight:300;font-size:14.5px;letter-spacing:.03em;color:var(--ink);}
+  .hd nav a{position:relative;color:inherit;text-decoration:none;}
+  .hd nav .cart{color:var(--gold-deep);font-weight:400;}
+
+  /* hero with arch motif */
+  .hero{text-align:center;padding:60px 0 30px;position:relative;}
+  .hero .eyebrow{font-size:12px;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);}
+  .hero h1{font-family:"Cinzel",serif;font-weight:500;font-size:46px;letter-spacing:.04em;margin:14px 0 10px;}
+  .hero p{font-family:"Cormorant Garamond",serif;font-size:21px;color:var(--ink-muted);max-width:520px;margin:0 auto;}
+  .hero .key{color:var(--gold);font-size:15px;letter-spacing:.5em;margin-top:18px;}
+
+  /* filter tabs */
+  .filters{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;padding:30px 0 36px;}
+  .tab{font-family:"Jost",sans-serif;font-weight:300;font-size:13px;letter-spacing:.04em;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 18px;border-radius:var(--r-pill);cursor:pointer;}
+  .tab.active{background:var(--ink);color:var(--cream);border-color:var(--ink);}
+
+  /* grid */
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:26px;padding-bottom:30px;}
+  @media(max-width:980px){.grid{grid-template-columns:repeat(2,1fr);}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;display:flex;flex-direction:column;}
+  .thumb{aspect-ratio:4/5;background:linear-gradient(165deg,#efe7d6,#e6dcc6);position:relative;display:flex;align-items:center;justify-content:center;}
+  .thumb .emb{font-family:"Cinzel",serif;font-size:54px;color:var(--gold);opacity:.55;}
+  .badge{position:absolute;top:12px;left:12px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:var(--r-pill);font-weight:500;}
+  .badge.low{background:#f3e3c2;color:#8a5a00;}
+  .badge.out{background:#e6e1d6;color:var(--ink-muted);}
+  .cbody{padding:16px 16px 18px;display:flex;flex-direction:column;gap:5px;flex:1;}
+  .cat{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-deep);}
+  .pname{font-family:"Cormorant Garamond",serif;font-weight:600;font-size:21px;line-height:1.15;}
+  .pdesc{font-family:"Cormorant Garamond",serif;font-size:15px;color:var(--ink-muted);line-height:1.35;flex:1;}
+  .prow{display:flex;align-items:center;justify-content:space-between;margin-top:12px;}
+  .price{font-family:"Jost",sans-serif;font-weight:500;font-size:16px;letter-spacing:.02em;}
+  .add{font-family:"Jost",sans-serif;font-weight:400;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--gold);background:transparent;color:var(--gold-deep);padding:8px 15px;border-radius:var(--r-pill);cursor:pointer;}
+  .add:hover{background:var(--gold);color:#fff;}
+  .add.disabled{border-color:var(--line);color:var(--ink-muted);background:transparent;cursor:not-allowed;}
+
+  /* footer */
+  footer{background:var(--sage);color:#e9e7d8;margin-top:50px;}
+  .ft{display:flex;gap:30px;flex-wrap:wrap;padding:40px 0;align-items:flex-start;}
+  .ft .fwm{font-family:"Cinzel",serif;font-size:20px;letter-spacing:.16em;color:#fff;}
+  .ft p{font-family:"Cormorant Garamond",serif;font-size:16px;max-width:420px;line-height:1.5;margin-top:8px;color:#d7d6c6;}
+  .ft .note{margin-left:auto;font-size:12px;letter-spacing:.04em;color:#bfc2b0;max-width:260px;line-height:1.6;}
+</style>
+</head>
+<body>
+  <div class="asbar">Shopping as <b>Mei L.</b> — your saved cart, orders &amp; returns are private to you.</div>
+
+  <header>
+    <div class="wrap hd">
+      <div class="logo">
+        <img src="refs/amelya-emblem-web.png" alt="Amelya's">
+        <span class="wm">AMELYA'S</span>
+      </div>
+      <nav>
+        <a>Shop</a><a>Routines</a><a>Orders</a><a>Returns</a><a class="cart">Cart (2)</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="hero">
+      <div class="eyebrow">Natural Skincare · Taipei</div>
+      <h1>Skincare, simply.</h1>
+      <p>Gentle, fragrance-free essentials for an easy daily routine — chosen and cared for, never complicated.</p>
+      <div class="key">❧</div>
+    </section>
+
+    <nav class="filters">
+      <button class="tab active">All</button>
+      <button class="tab">Cleanser</button>
+      <button class="tab">Moisturizer</button>
+      <button class="tab">Sunscreen</button>
+      <button class="tab">Toner</button>
+      <button class="tab">Sets</button>
+      <button class="tab">Accessories</button>
+    </nav>
+
+    <section class="grid" id="grid"></section>
+  </div>
+
+  <footer>
+    <div class="wrap ft">
+      <div>
+        <div class="fwm">AMELYA'S</div>
+        <p>A companion view to the Amelya's assistant. Browse the catalogue, build a cart, and follow your own orders and returns — all in one calm place.</p>
+      </div>
+      <div class="note">No checkout in this demo · prices in NT$ · powered by the shared shop backend.</div>
+    </div>
+  </footer>
+
+<script>
+  const products = [
+    {name:"Cloud Cleanser", cat:"Cleanser", price:420, stock:"in", mono:"A", desc:"A gentle fragrance-free daily cleanser for simple routines."},
+    {name:"Clear Day Gel Moisturizer", cat:"Moisturizer", price:560, stock:"in", mono:"A", desc:"A lightweight gel moisturizer for oily or combination skin."},
+    {name:"Calm Barrier Cream", cat:"Moisturizer", price:680, stock:"in", mono:"A", desc:"A rich fragrance-free cream for dry or sensitive skin."},
+    {name:"Sunny Shield SPF50", cat:"Sunscreen", price:520, stock:"in", mono:"A", desc:"A daily SPF50 sunscreen for morning routines."},
+    {name:"Soft Reset Exfoliating Toner", cat:"Toner", price:620, stock:"in", mono:"A", desc:"An exfoliating toner for those comfortable with actives."},
+    {name:"Glow Starter Kit", cat:"Set", price:980, stock:"in", mono:"A", desc:"A starter set for a first routine or an easy gift."},
+    {name:"Travel Mini Trio", cat:"Set", price:720, stock:"low", mono:"A", desc:"A travel-friendly mini set that works as a small gift."},
+    {name:"Cotton Carry Pouch", cat:"Accessory", price:350, stock:"in", mono:"A", desc:"A washable fabric pouch for travel or product storage."},
+    {name:"Night Repair Oil", cat:"Facial Oil", price:840, stock:"out", mono:"A", desc:"A rich nighttime facial oil for dry skin."},
+  ];
+  const ntd = n => "NT$" + n.toLocaleString("en-US");
+  document.getElementById("grid").innerHTML = products.map(p=>{
+    const badge = p.stock==="low" ? '<span class="badge low">Low stock</span>'
+                : p.stock==="out" ? '<span class="badge out">Sold out</span>' : '';
+    const add = p.stock==="out" ? '<button class="add disabled">Sold out</button>'
+                                : '<button class="add">Add to cart</button>';
+    return `<article class="card">
+      <div class="thumb"><span class="emb">❦</span>${badge}</div>
+      <div class="cbody">
+        <span class="cat">${p.cat}</span>
+        <h3 class="pname">${p.name}</h3>
+        <p class="pdesc">${p.desc}</p>
+        <div class="prow"><span class="price">${ntd(p.price)}</span>${add}</div>
+      </div>
+    </article>`;
+  }).join("");
+</script>
+</body>
+</html>

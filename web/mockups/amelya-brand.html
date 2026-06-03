@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Amelya's — brand lockup</title>
+<!-- THROWAWAY brand mockup (Phase 1). Real generated emblem + Amelya's wordmark. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400&family=Pinyon+Script&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --gold:#a9824b; --gold-lt:#c7a268; --char:#2b2723; --cream:#f5f0e4;
+    --sage:#3d4a38; --blush:#ecd9d2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#e7e1d5;font-family:"Cormorant Garamond",serif;color:var(--char);}
+  .bar{background:#111;color:#fff;font-family:ui-monospace,Menlo,monospace;font-size:13px;padding:12px 20px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+  .bar .note{color:#888;margin-left:auto;}
+  .row{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;align-items:stretch;padding:34px 24px 0;}
+  .panel{border-radius:14px;padding:40px 34px;display:flex;flex-direction:column;align-items:center;gap:14px;box-shadow:0 6px 22px rgba(0,0,0,.10);min-width:300px;}
+  .on-cream{background:var(--cream);} .on-char{background:var(--char);} .on-sage{background:var(--sage);}
+  .cap{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.06em;opacity:.55;}
+  .on-char .cap,.on-sage .cap{color:#d8cfc0;opacity:.7;}
+
+  .emblem{width:190px;height:190px;object-fit:contain;}
+  /* gold engraving is dark-on-light; invert-ish glow on dark bg via drop-shadow */
+  .on-char .emblem,.on-sage .emblem{filter:brightness(1.18) saturate(1.05);}
+
+  .lockup{display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .word{font-family:"Cinzel",serif;font-weight:600;letter-spacing:.20em;font-size:36px;color:var(--char);text-indent:.20em;}
+  .on-char .word,.on-sage .word{color:var(--cream);}
+  .tag{font-family:"Jost",sans-serif;font-weight:300;font-size:10.5px;letter-spacing:.40em;text-transform:uppercase;color:var(--gold);text-indent:.40em;}
+  .divider{display:flex;align-items:center;gap:8px;color:var(--gold);font-size:11px;margin:1px 0;}
+  .divider::before,.divider::after{content:"";height:1px;width:30px;background:var(--gold);display:inline-block;}
+
+  /* header lockup */
+  .hdr{background:var(--cream);margin:28px 24px 0;border-radius:14px;padding:16px 26px;display:flex;align-items:center;gap:14px;box-shadow:0 6px 22px rgba(0,0,0,.08);}
+  .hdr img{width:46px;height:46px;object-fit:contain;}
+  .hdr .hw{font-family:"Cinzel",serif;font-weight:600;font-size:22px;letter-spacing:.16em;}
+  .hdr nav{margin-left:auto;display:flex;gap:24px;font-family:"Jost",sans-serif;font-weight:300;font-size:14px;letter-spacing:.04em;color:#5b5448;}
+  .hdr nav .cart{color:var(--gold);}
+
+  /* favicon strip */
+  .fav{background:var(--cream);margin:24px 24px 40px;border-radius:14px;padding:22px 26px;display:flex;align-items:center;gap:26px;box-shadow:0 6px 22px rgba(0,0,0,.08);}
+  .fav img{object-fit:contain;}
+  .fav .tile{display:flex;flex-direction:column;align-items:center;gap:6px;}
+</style>
+</head>
+<body>
+  <div class="bar">
+    <strong>AMELYA'S — brand lockup</strong>
+    <span>real generated emblem + Cinzel wordmark · gold / cream / charcoal</span>
+    <span class="note">self-reviewed via puppeteer</span>
+  </div>
+
+  <div class="row">
+    <div class="panel on-cream">
+      <img class="emblem" src="refs/amelya-emblem-web.png" alt="Amelya's emblem">
+      <div class="lockup">
+        <div class="word">AMELYA'S</div>
+        <div class="divider">✦</div>
+        <div class="tag">Natural Skincare · Taipei</div>
+      </div>
+      <div class="cap">primary · on cream</div>
+    </div>
+
+    <div class="panel on-char">
+      <img class="emblem" src="refs/amelya-emblem-web.png" alt="Amelya's emblem">
+      <div class="lockup">
+        <div class="word">AMELYA'S</div>
+        <div class="divider">✦</div>
+        <div class="tag">Natural Skincare · Taipei</div>
+      </div>
+      <div class="cap">reversed · on charcoal</div>
+    </div>
+
+    <div class="panel on-sage">
+      <img class="emblem" src="refs/amelya-emblem-web.png" alt="Amelya's emblem">
+      <div class="lockup">
+        <div class="word">AMELYA'S</div>
+        <div class="divider">✦</div>
+        <div class="tag">Natural Skincare · Taipei</div>
+      </div>
+      <div class="cap">on deep sage</div>
+    </div>
+  </div>
+
+  <!-- header in context -->
+  <div class="hdr">
+    <img src="refs/amelya-emblem-web.png" alt="">
+    <span class="hw">AMELYA'S</span>
+    <nav><span>Shop</span><span>Routines</span><span>Orders</span><span class="cart">Cart (2)</span></nav>
+  </div>
+
+  <!-- favicon / small-size test -->
+  <div class="fav">
+    <div class="tile"><img src="refs/amelya-emblem-web.png" width="64" height="64"><span class="cap">64px</span></div>
+    <div class="tile"><img src="refs/amelya-emblem-web.png" width="32" height="32"><span class="cap">32px (favicon)</span></div>
+    <div class="tile"><img src="refs/amelya-emblem-web.png" width="16" height="16"><span class="cap">16px</span></div>
+    <span class="cap" style="max-width:320px;line-height:1.5">⚠ full emblem loses detail when tiny — we'll make a simplified monogram/medallion favicon for small sizes.</span>
+  </div>
+</body>
+</html>
