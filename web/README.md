@@ -92,6 +92,23 @@ consent**.
   is one shared store, a cart change here also shows up in the chat agent, and
   vice-versa; `npm run shop:reset` returns a clean demo cart.
 
+## Orders — read-only, own-orders-only (Phase 4)
+
+Order history + order detail/tracking (surfaces 5, DESIGN.md §5.5) are **reads**,
+not mutations — checkout/payments stay out of scope (ARCHITECTURE §5), so orders
+are seeded fixtures the app only displays. Both surfaces go through the same
+reuse-layer seam as everything else: [`lib/shop/index.ts`](lib/shop/index.ts)'s
+`getOrders()` / `getOrder(id)` call the chat tools' own `listOrdersForChannel` /
+`getOrderForChannel` in `src/shop`, so identity gating and ownership are the one
+real code path. Orders are the **demo customer's own** only.
+
+`getOrder(id)` returns `null` for an unknown **or** a non-owned id — the service's
+`findOwnedOrder` makes the two indistinguishable — and the route then renders the
+neutral `not-found` (no id echo, no existence leak; identical refusal to the
+skills, DESIGN.md §5.7). The wireframe's "Request a return" CTA on a delivered
+order stays **inert + muted** until the Returns surface ships (Phase 5), the same
+honest not-yet-built affordance the nav uses — never a dead link.
+
 ## Scalability rule
 
 A new customer-visible data domain = **one route + one typed data-access function
@@ -107,6 +124,8 @@ app/                      # App Router pages (server components read via lib/sho
   page.tsx                # catalogue grid (surface 2)
   products/[id]/page.tsx  # product detail / PDP (surface 3)
   cart/page.tsx           # cart (surface 4) — reads getCart(), mutates via actions
+  orders/page.tsx         # order history (surface 5) — reads getOrders(), own-only
+  orders/[id]/page.tsx    # order detail / tracking — getOrder(id), neutral 404
   not-found.tsx           # neutral 404 (no id/existence leak)
 components/
   shell/                  # AppShell (header/nav/footer + "Shopping as"), Logo
@@ -124,5 +143,6 @@ DESIGN.md, mockups/, tools/   # design-phase artifacts (see DESIGN §appendix)
 No checkout / payments / auth / address mutation / staff view. The cart is the
 only mutation and must still write the audit log — **shipped in Phase 3** (see
 "Cart mutations" above): Add-to-cart, qty update, and remove are live and audited.
+Orders (Phase 4) are **read-only** own-orders-only views over seeded fixtures.
 Adding anything beyond the decided scope requires an `ARCHITECTURE.md` §5 update
 first.

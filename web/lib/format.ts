@@ -10,6 +10,13 @@ export function formatCategory(category: string): string {
   return category.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// Order id → a short display number. Stored ids look like "order-2026-0001";
+// show the part after the "order-" prefix ("#2026-0001"). Falls back to the raw
+// id so a differently-shaped id still renders.
+export function formatOrderId(id: string): string {
+  return `#${id.replace(/^order-/, "")}`;
+}
+
 // Dates: day month year → "3 Jun 2026".
 export function formatDate(iso: string): string {
   const d = new Date(iso);
