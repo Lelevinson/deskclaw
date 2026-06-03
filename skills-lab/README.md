@@ -27,7 +27,40 @@ The `product-compatibility-tests.md` scenarios exercise the `policy-oracle` skil
 
 Do not add a `skills/` folder here. If a skill changes, edit [`../skills/`](../skills/) and update the matching scenario only when the expected behavior changes.
 
-## How to run the scenarios
+## Automated agent-layer eval (`npm run agent:eval`)
+
+The prose scenarios below are run manually in the TUI. A subset of the
+**model-in-the-loop** behavior is now also automated by
+[`../src/cli/agent-eval.ts`](../src/cli/agent-eval.ts) (cases in
+[`../src/cli/agent-eval-cases.ts`](../src/cli/agent-eval-cases.ts)), the incremental
+follow-up the skill-roadmap §5 left open. It drives the **real agent** through the
+running Gateway (one `openclaw agent` turn per step) and asserts what the
+tool-level `npm run shop:eval` can't: skill routing, answer-only-from-data,
+escalation to a durable handoff record, and preview→confirm before a mutation.
+
+```bash
+openclaw gateway          # needs a configured model (this repo: openai-codex/gpt-5.5 via Codex login)
+npm run agent:eval        # builds, then runs every case; named PASS/FAIL, non-zero exit on failure
+```
+
+Notes:
+- **Needs a running Gateway + model.** If the Gateway is unreachable the harness
+  SKIPS (exit 0) with guidance rather than failing.
+- **It is model-in-the-loop, so not perfectly deterministic.** Assertions lean on
+  the stable signals (which `shop_*` tools were called, shared-store deltas) and
+  keep reply-text regexes loose; an occasional flake is re-run, not a regression.
+- **It mutates the shared store** (`.local/shop-db.json`) the Gateway uses — it
+  resets around cases and once at the end, so don't run it during a live chat you
+  care about; `npm run shop:reset` restores a clean demo.
+- **Identity-gated skills:** the shop MCP tools take `channel`/`externalUserId` as
+  explicit arguments the model supplies from the message's channel context. A bare
+  CLI turn has no channel adapter, so gated cases (order-status, cart, returns)
+  state the linked sender in-prompt (`+886900000001` → `customer-demo-lin`) to
+  simulate what the WhatsApp adapter asserts. The safety-critical gating itself
+  (unlinked/non-owned refusals, ownership, audit) stays covered deterministically
+  by `npm run shop:eval` at the tool layer.
+
+## How to run the scenarios (manual TUI)
 
 1. Confirm OpenClaw is configured and can see the skills:
 
