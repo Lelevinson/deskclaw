@@ -6,7 +6,7 @@ import { formatCategory } from "@/lib/format";
 import { Price } from "@/components/store/Price";
 import { ProductTile } from "@/components/store/ProductTile";
 import { StockStatusText } from "@/components/store/StockBadge";
-import { QtyStepper } from "@/components/store/QtyStepper";
+import { PdpAddToCart } from "@/components/store/PdpAddToCart";
 import { AddToCartButton } from "@/components/store/AddToCartButton";
 
 // Product detail / PDP (surface 3, DESIGN.md §5.3). Reads one product through the
@@ -73,11 +73,12 @@ export default async function ProductPage({
 
           <div className="rule-gold my-8" />
 
-          {/* Add to cart — qty stepper + (inert this phase) add. Sold-out: no stepper. */}
-          <div className="flex flex-wrap items-center gap-4">
-            {!soldOut && <QtyStepper max={product.stockQuantity} />}
-            <AddToCartButton soldOut={soldOut} />
-          </div>
+          {/* Add to cart — qty stepper + audited add. Sold-out: disabled, no stepper. */}
+          {soldOut ? (
+            <AddToCartButton productId={product.id} soldOut />
+          ) : (
+            <PdpAddToCart productId={product.id} stockQuantity={product.stockQuantity} />
+          )}
 
           {product.tags.length > 0 && (
             <>

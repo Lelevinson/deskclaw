@@ -39,7 +39,7 @@ export function ProductCard({ product }: { product: Product }) {
         </Link>
         <Price amount={product.priceNtd} className="mt-1" />
         <div className="mt-auto pt-4">
-          <AddToCartButton soldOut={soldOut} size="sm" />
+          <AddToCartButton productId={product.id} soldOut={soldOut} size="sm" />
         </div>
       </div>
     </article>

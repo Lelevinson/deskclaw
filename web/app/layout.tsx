@@ -3,7 +3,7 @@ import { Cinzel, Cormorant_Garamond, Jost } from "next/font/google";
 
 import "./globals.css";
 import { AppShell } from "@/components/shell/AppShell";
-import { getDemoCustomerName } from "@/lib/shop";
+import { getCartCount, getDemoCustomerName } from "@/lib/shop";
 
 // DESIGN.md §3.2 — Cinzel (display/logo), Cormorant (editorial), Jost (UI).
 const cinzel = Cinzel({
@@ -36,11 +36,16 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const customerName = await getDemoCustomerName();
+  const [customerName, cartCount] = await Promise.all([
+    getDemoCustomerName(),
+    getCartCount(),
+  ]);
   return (
     <html lang="en" className={`${cinzel.variable} ${cormorant.variable} ${jost.variable}`}>
       <body>
-        <AppShell customerName={customerName}>{children}</AppShell>
+        <AppShell customerName={customerName} cartCount={cartCount}>
+          {children}
+        </AppShell>
       </body>
     </html>
   );

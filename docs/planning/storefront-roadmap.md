@@ -2,7 +2,7 @@
 
 Durable handoff for building the DeskClaw mock storefront. Like [`skill-roadmap.md`](skill-roadmap.md), decisions live **here**, not in chat history — each implementation chat reads this doc + [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md) and takes the top open phase.
 
-**Status:** DECIDED (2026-06-02) — scope, stack, and styling chosen in the planning session below. The MVP **skill** backlog is closed ([`skill-roadmap.md`](skill-roadmap.md) §4); the storefront is the one remaining in-scope MVP item. ARCHITECTURE §2/§3/§5/§6 were updated to match this decision. **Build progress (§6):** Phase 1 Design (PR #12) and Phase 2 Foundation (PR #14) are merged; **Phase 3 Cart is next.**
+**Status:** DECIDED (2026-06-02) — scope, stack, and styling chosen in the planning session below. The MVP **skill** backlog is closed ([`skill-roadmap.md`](skill-roadmap.md) §4); the storefront is the one remaining in-scope MVP item. ARCHITECTURE §2/§3/§5/§6 were updated to match this decision. **Build progress (§6):** Phase 1 Design (PR #12) and Phase 2 Foundation (PR #14) are merged; **Phase 3 Cart is built (PR pending review); Phase 4 Orders is next.**
 
 ## 1. What this is (and is not)
 
@@ -37,7 +37,7 @@ The single most important rule: **the storefront reuses `src/shop`; it does not 
 - Reads are identity-gated and own-resources-only exactly as the skills are (orders/returns are the linked customer's own; unknown/non-owned ids refused identically). The UI must not introduce a read that leaks existence or trusts a client-supplied id as proof.
 - The runtime store stays the resettable JSON DB (`.local/shop-db.json`, reset via `npm run shop:reset`). The web app and the agent share one store, so a cart change in chat shows up in the store and vice-versa.
 
-**Open design question for the build chat (Phase 2):** cart mutations from the UI. The chat pipeline is identity → preview → explicit confirm → execute → audit, where "confirm" guards against the *model* acting without consent. In a UI the user's click is the consent. Recommended resolution: the server action calls the same `src/shop` mutation path and **always writes the audit log**, with a UI confirm affordance (dialog / button state) standing in for the chat confirm step — either by calling preview+confirm back-to-back, or via a thin service entry that still audits. Decide and document this in Phase 2; do not silently drop the audit log.
+**Cart mutations from the UI — RESOLVED (Phase 3, 2026-06-03).** The chat pipeline is identity → preview → explicit confirm → execute → audit, where "confirm" guards against the *model* acting without consent. In a UI the user's click is the consent. **Decision:** the server actions in `web/lib/shop/cart-actions.ts` call the same `src/shop` path the chat tools use — `preview…ForChannel` then `confirmLatest…ForChannel` **back-to-back** — so identity gating, ownership, stock re-validation, and **both audit-log writes** (`*.preview` + success) fire exactly as in chat; the audit log is never dropped. The deliberate click stands in for the chat confirm beat (qty ± needs no dialog); the destructive **remove** gets a lightweight two-step "Remove?" confirm. Full rationale in [`../../web/README.md`](../../web/README.md) "Cart mutations" and DESIGN §5.4/§7.
 
 ## 4. Identity in the storefront
 
@@ -68,7 +68,7 @@ This is a **multi-branch build**, not one chat (same one-capability-per-branch d
 
 1. ~~**Design discovery** (`feat/storefront-design`)~~ — **DONE (merged 2026-06-03, PR #12).** Output is [`../../web/DESIGN.md`](../../web/DESIGN.md): brand = **Amelya's**, design tokens, surface→data-domain map, and low-fi wireframes for all 6 surfaces.
 2. ~~**Foundation** (`feat/storefront-foundation`)~~ — **DONE (merged 2026-06-03, PR #14).** Scaffolded Next.js + TypeScript + Tailwind + shadcn/ui under `web/`; encoded the DESIGN tokens; wired the **`src/shop` reuse layer** (the seam is `web/lib/shop/`, `import "server-only"`; `@shop/*` alias + Next `extensionAlias` `.js`→`.ts`; data seam via `DESKCLAW_DATA_DIR`/`DESKCLAW_SHOP_DB_PATH` so app + agent share one store; identity pinned to the existing `simulated-chat`/`demo-lin` link — see [`../../web/README.md`](../../web/README.md)); added `listProducts()`/`getProductById()` to `src/shop/service.ts`; built the app shell + shared component set; shipped the **catalogue grid + PDP vertical slice** reading the real catalog. Add-to-cart is rendered but **inert** — cart mutation is Phase 3.
-3. **Cart** (`feat/storefront-cart`) — **NEXT.** Cart view + add/remove/update through the reused cart service; resolve the still-open **mutation/audit question** (§3, §8): the UI confirm affordance stands in for the chat confirm step, and the mutation must still write the audit log. Document the decision.
+3. ~~**Cart** (`feat/storefront-cart`)~~ — **DONE (2026-06-03, PR pending review).** Cart view (surface 4) + add/remove/update through the reused cart service via `"use server"` actions in `web/lib/shop/cart-actions.ts`. **Resolved the mutation/audit question** (§3, §8): server actions call the chat `preview→confirm` path back-to-back so both audit-log writes fire (audit never dropped); the click is the consent, with a "Remove?" confirm for remove. Header `Cart(n)` is live. Documented in `web/README.md` "Cart mutations" + DESIGN §5.4/§7.
 4. **Orders** (`feat/storefront-orders`) — order history + detail/tracking, own-orders-only.
 5. **Returns** (`feat/storefront-returns`) — returns list + detail, own-returns-only.
 6. **Polish** (`feat/storefront-polish`) — responsive, empty/loading/error states, accessibility pass, brand finish.
@@ -81,7 +81,7 @@ The storefront scales the same way the skills do: **the UI mirrors the data-doma
 
 ## 8. Open questions for the build chats
 
-- **Cart mutation vs. the preview/confirm pipeline + audit log** (§3) — decide in Phase 2.
+- ~~**Cart mutation vs. the preview/confirm pipeline + audit log** (§3)~~ — **RESOLVED in Phase 3 (2026-06-03):** server actions reuse the chat `preview→confirm` path back-to-back; both audit writes fire, audit never dropped; click = consent, "Remove?" confirm for remove. See §3 and `web/README.md` "Cart mutations".
 - **Where `web/` lives and how it shares `src/shop`** — same repo, top-level `web/`; decide import path / tsconfig path mapping vs. a small internal package. Keep it a monorepo-simple import if possible.
 - **Dev/run wiring** — how the storefront runs in the devcontainer (port, `npm` script), and whether it reuses `npm run shop:reset` for a clean demo state. Add to [`../openclaw/setup.md`](../openclaw/setup.md) when built.
 - **Testing** — model-in-the-loop skill eval stays manual; for the UI, decide if a light Playwright smoke (catalog renders, add-to-cart writes the store) is worth it or out of scope for the prototype. Note the decision; don't silently skip.

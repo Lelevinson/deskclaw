@@ -57,6 +57,41 @@ How it is wired:
 Phase 2 added two read functions to `src/shop/service.ts` — `listProducts()` and
 `getProductById()` — so browse/PDP surfaces never touch `data/` directly.
 
+## Cart mutations — the UI confirm-vs-audit resolution (Phase 3)
+
+The cart is the storefront's **only** write, and it **must still write the audit
+log** (DESIGN.md §7; roadmap §3/§8). The chat pipeline is `identity → preview →
+explicit confirm → execute → audit`, where the **confirm step exists to stop the
+*model* from acting without the customer's consent**. In the storefront there is
+no untrusted model intermediary — **the customer's own deliberate click is the
+consent**.
+
+**Resolution (this is the answer to roadmap §3/§8 and DESIGN §5.4's open note):**
+
+- Mutations live in [`lib/shop/cart-actions.ts`](lib/shop/cart-actions.ts) as
+  `"use server"` server actions (`addToCart` / `updateCartQuantity` /
+  `removeFromCart`). Each calls the **same `src/shop` path the chat tools use** —
+  `preview…ForChannel` then `confirmLatest…ForChannel` back-to-back. This is **not**
+  a parallel write path: identity gating, ownership checks, stock re-validation,
+  and **both audit-log writes** (the `*.preview` entry and the success entry) fire
+  exactly as in chat. The audit log is never dropped.
+- The deliberate UI interaction stands in for the chat confirm beat: an Add click,
+  a qty ± step. For the destructive **remove**, the row's button takes an explicit
+  two-step **"Remove?" confirm** (a lightweight affordance, not a heavy modal —
+  DESIGN §5.4 argues against modal friction for qty). 
+- Assisted cart actions are capped at 10 units by `validateQuantity` in the
+  service (`ASSISTED_QTY_MAX` in `components/store/QtyStepper`). The PDP stepper
+  bounds at `min(stock, 10)` (it has the exact `stockQuantity`); the cart-line
+  stepper bounds at 10 and **disables entirely for an out-of-stock line** (which
+  the service refuses to re-quantity — it can only be removed). A cart line only
+  carries `stockStatus`, not an exact count, so an over-stock step on a low-stock
+  line is caught by the service's stock re-validation and surfaced inline, with the
+  optimistic quantity rolling back.
+- After a successful mutation the action `revalidatePath`s `/cart` and the root
+  layout so the cart page and the header `Cart(n)` badge stay in sync. Because it
+  is one shared store, a cart change here also shows up in the chat agent, and
+  vice-versa; `npm run shop:reset` returns a clean demo cart.
+
 ## Scalability rule
 
 A new customer-visible data domain = **one route + one typed data-access function
@@ -68,16 +103,18 @@ free.
 
 ```text
 app/                      # App Router pages (server components read via lib/shop)
-  layout.tsx              # fonts (Cinzel/Cormorant/Jost) + AppShell
+  layout.tsx              # fonts (Cinzel/Cormorant/Jost) + AppShell (+ cart count)
   page.tsx                # catalogue grid (surface 2)
   products/[id]/page.tsx  # product detail / PDP (surface 3)
+  cart/page.tsx           # cart (surface 4) — reads getCart(), mutates via actions
   not-found.tsx           # neutral 404 (no id/existence leak)
 components/
   shell/                  # AppShell (header/nav/footer + "Shopping as"), Logo
-  store/                  # ProductCard, CatalogueBrowser, Price, StockBadge, …
+  store/                  # ProductCard, CatalogueBrowser, CartLineItem, Price, …
   ui/                     # shadcn/ui primitives, themed to tokens
 lib/
   shop/                   # the server-only src/shop reuse layer + demo identity
+    cart-actions.ts       # "use server" audited cart mutations (preview→confirm)
   format.ts               # NT$ + date formatting (DESIGN §3.4)
 DESIGN.md, mockups/, tools/   # design-phase artifacts (see DESIGN §appendix)
 ```
@@ -85,6 +122,7 @@ DESIGN.md, mockups/, tools/   # design-phase artifacts (see DESIGN §appendix)
 ## Scope this app must respect
 
 No checkout / payments / auth / address mutation / staff view. The cart is the
-only mutation and must still write the audit log — **cart mutation is Phase 3**;
-Phase 2 ships the catalogue + PDP slice with the Add-to-cart control inert. Adding
-anything beyond the decided scope requires an `ARCHITECTURE.md` §5 update first.
+only mutation and must still write the audit log — **shipped in Phase 3** (see
+"Cart mutations" above): Add-to-cart, qty update, and remove are live and audited.
+Adding anything beyond the decided scope requires an `ARCHITECTURE.md` §5 update
+first.

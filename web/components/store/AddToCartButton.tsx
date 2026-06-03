@@ -1,24 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import Link from "next/link";
+
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { addToCart } from "@/lib/shop/cart-actions";
 
-// Phase 2 (Foundation) ships the Add-to-cart control visually, but cart MUTATION
-// — the add + its mandatory audit-log write — is Phase 3 (roadmap §3, §6). So
-// this is intentionally INERT: it never touches the cart service. A sold-out
-// product disables it outright; otherwise a click only surfaces a "coming soon"
-// note, keeping the wireframe faithful without writing un-audited state.
+// Add-to-cart (DESIGN.md §5.2/§5.3). The click IS the consent (roadmap §3) — it
+// calls the audited addToCart server action, which reuses the chat preview→confirm
+// path so the mutation always writes the audit log. Sold-out is disabled outright.
+// Used on catalogue cards (quantity defaults to 1) and the PDP (PdpAddToCart
+// passes the chosen quantity).
 export function AddToCartButton({
+  productId,
   soldOut,
+  quantity = 1,
   size = "default",
   className,
 }: {
+  productId: string;
   soldOut: boolean;
+  quantity?: number;
   size?: "default" | "sm";
   className?: string;
 }) {
-  const [noted, setNoted] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [added, setAdded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (soldOut) {
     return (
@@ -28,16 +37,34 @@ export function AddToCartButton({
     );
   }
 
+  const onClick = () => {
+    setError(null);
+    setAdded(false);
+    startTransition(async () => {
+      const result = await addToCart(productId, quantity);
+      if (result.ok) {
+        setAdded(true);
+      } else {
+        setAdded(false);
+        setError(result.error ?? "Could not add to cart.");
+      }
+    });
+  };
+
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <Button size={size} onClick={() => setNoted(true)}>
-        Add to cart
+      <Button size={size} onClick={onClick} disabled={pending}>
+        {pending ? "Adding…" : "Add to cart"}
       </Button>
-      {noted && (
+      {added && !error && (
         <span className="font-sans text-xs text-ink-muted">
-          Cart is coming soon in this demo.
+          Added ·{" "}
+          <Link href="/cart" className="text-gold-deep underline-offset-4 hover:underline">
+            View cart
+          </Link>
         </span>
       )}
+      {error && <span className="font-sans text-xs text-stock-out-fg">{error}</span>}
     </div>
   );
 }

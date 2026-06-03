@@ -252,8 +252,12 @@ Your Cart · 2 items
 └──────────────────────────────────────────────────────────────┘
 Empty state:  "Your cart is empty.  ❧  Browse the catalogue →"
 ```
-- Quantity / remove call the **reused cart service** (Phase 2 resolves the
-  preview→confirm/audit affordance; the click is the consent). No "checkout" CTA.
+- Quantity / remove call the **reused cart service**. **Resolved (Phase 3):** the
+  click *is* the consent — the server action reuses the chat `preview→confirm` path
+  so the mutation **always writes the audit log** (no model intermediary to guard
+  against). Qty ± needs no extra dialog; the destructive **remove** uses a
+  lightweight two-step "Remove?" confirm. Full rationale in
+  [`README.md`](README.md) "Cart mutations". No "checkout" CTA.
 
 ### 5.5 Orders — list + detail (surface 5, own-orders-only)
 ```
@@ -325,9 +329,11 @@ components** — never a rewrite. Tokens + component set keep it on-brand.
   from the browser.** (roadmap §3)
 - Reads identity-gated, **own-resources-only**; unknown/non-owned ids refused
   **identically** (no existence leak).
-- Cart is the only mutation; it **must still write the audit log** — Phase 2
-  decides how the UI confirm affordance stands in for the chat confirm step
-  (roadmap §3, §8). Do not silently drop the audit.
+- Cart is the only mutation; it **must still write the audit log**. **Resolved
+  (Phase 3, see `README.md` "Cart mutations"):** the server action reuses the chat
+  `preview→confirm` path back-to-back, so both audit-log writes fire and the audit
+  is never dropped; the user's click is the consent, with a "Remove?" confirm for
+  the destructive remove (roadmap §3, §8).
 - **No checkout / payments / auth / address mutation / staff view.** Adding any
   requires updating [`../ARCHITECTURE.md`](../ARCHITECTURE.md) §5 first.
 
