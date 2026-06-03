@@ -283,6 +283,27 @@ export async function searchProducts(
   return { ok: true, data: scored };
 }
 
+// Full catalogue read for browse surfaces (the storefront catalogue grid). Unlike
+// searchProducts this needs no query and returns every product, so the web app
+// never has to read data/catalog/products.json directly. Public, identity-free —
+// the catalogue is public (DESIGN.md §4). Catalogue display order is preserved.
+export async function listProducts(): Promise<ServiceResult<Product[]>> {
+  const db = await readShopDb();
+  return { ok: true, data: db.products };
+}
+
+// Read one product by its catalog id for a product-detail (PDP) read. An unknown
+// id yields a not-found result (no record, no leak); the catalogue is public so
+// there is no ownership gating here.
+export async function getProductById(productId: string): Promise<ServiceResult<Product>> {
+  const db = await readShopDb();
+  const product = findProduct(db, productId);
+  if (!product) {
+    return { ok: false, error: "No product with that id was found." };
+  }
+  return { ok: true, data: product };
+}
+
 export async function getCartForChannel(
   channel: string,
   externalUserId: string
