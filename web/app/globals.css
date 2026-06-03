@@ -60,6 +60,13 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
+  /* Shared focus-visible ring core (gold ring, no outline). Call sites add the
+     shape (rounded-*) and either a ring-offset color (cream/panel/cream-soft) or
+     ring-inset — those vary by surface, the core does not. Centralizes the token
+     so a focus-treatment change is one edit, not ~15 hand-copied strings. */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+  }
   /* Cinzel display headings: inscriptional caps with brand tracking (DESIGN §3.2) */
   .font-display {
     text-transform: uppercase;
@@ -85,5 +92,40 @@
     background:
       radial-gradient(120% 100% at 50% 0%, theme("colors.cream.soft"), theme("colors.panel")),
       theme("colors.panel");
+  }
+
+  /* Loading skeleton (DESIGN §5.7): a quiet cream block with a faint gold shimmer
+     sweeping across. The block itself is a hairline-toned fill; the ::after sweep
+     is the only motion. Honors prefers-reduced-motion (sweep removed, block stays). */
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background-color: theme("colors.line / 45%");
+  }
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      theme("colors.gold.DEFAULT / 14%") 45%,
+      theme("colors.gold.light / 18%") 50%,
+      theme("colors.gold.DEFAULT / 14%") 55%,
+      transparent
+    );
+    transform: translateX(-100%);
+    animation: amelya-shimmer 1.6s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton::after {
+      animation: none;
+    }
+  }
+}
+
+@keyframes amelya-shimmer {
+  100% {
+    transform: translateX(100%);
   }
 }

@@ -1,12 +1,11 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
-import Link from "next/link";
 import { X } from "lucide-react";
 
 import type { CartLine } from "@shop/types.js";
 import { Price } from "./Price";
-import { ProductTile } from "./ProductTile";
+import { LineItemRow } from "./LineItemRow";
 import { ASSISTED_QTY_MAX, QtyStepper } from "./QtyStepper";
 import { removeFromCart, updateCartQuantity } from "@/lib/shop/cart-actions";
 
@@ -55,36 +54,21 @@ export function CartLineItem({ line }: { line: CartLine }) {
   return (
     <div className="flex flex-col gap-3 border-b border-line py-5 last:border-b-0 sm:flex-row sm:items-center sm:gap-4">
       {/* Thumb + name/price — takes the remaining row width on desktop. */}
-      <div className="flex min-w-0 flex-1 items-center gap-4">
-        <Link
-          href={`/products/${line.productId}`}
-          className="shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label={line.name}
-        >
-          <ProductTile className="w-16 rounded-md border border-line" aspect="aspect-square" />
-        </Link>
-        <div className="min-w-0">
-          <Link
-            href={`/products/${line.productId}`}
-            className="block truncate font-serif text-xl font-medium leading-tight text-ink hover:text-gold-deep focus-visible:underline"
-          >
-            {line.name}
-          </Link>
-          <div className="mt-1">
-            <Price amount={line.priceNtd} />
-          </div>
-          {outOfStock && (
-            <p className="mt-1 font-sans text-xs text-stock-out-fg">
-              Sold out — remove to update your cart.
-            </p>
-          )}
-          {error && (
-            <p className="mt-1 font-sans text-xs text-stock-out-fg" role="alert">
-              {error}
-            </p>
-          )}
+      <LineItemRow productId={line.productId} name={line.name} className="min-w-0 flex-1">
+        <div className="mt-1">
+          <Price amount={line.priceNtd} />
         </div>
-      </div>
+        {outOfStock && (
+          <p className="mt-1 font-sans text-xs text-stock-out-fg">
+            Sold out — remove to update your cart.
+          </p>
+        )}
+        {error && (
+          <p className="mt-1 font-sans text-xs text-stock-out-fg" role="alert">
+            {error}
+          </p>
+        )}
+      </LineItemRow>
 
       {/* Controls — stack below the name on mobile, inline on desktop. */}
       <div className="flex items-center justify-between gap-4 sm:justify-end">
@@ -106,7 +90,7 @@ export function CartLineItem({ line }: { line: CartLine }) {
                 type="button"
                 onClick={remove}
                 disabled={pending}
-                className="text-stock-out-fg underline-offset-4 hover:underline disabled:opacity-50"
+                className="rounded-sm text-stock-out-fg underline-offset-4 hover:underline focus-visible:underline focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-panel disabled:opacity-50"
               >
                 Remove?
               </button>
@@ -114,7 +98,7 @@ export function CartLineItem({ line }: { line: CartLine }) {
                 type="button"
                 onClick={() => setConfirmingRemove(false)}
                 disabled={pending}
-                className="text-ink-muted underline-offset-4 hover:underline disabled:opacity-50"
+                className="rounded-sm text-ink-muted underline-offset-4 hover:underline focus-visible:underline focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-panel disabled:opacity-50"
               >
                 Keep
               </button>
@@ -124,7 +108,7 @@ export function CartLineItem({ line }: { line: CartLine }) {
               type="button"
               onClick={() => setConfirmingRemove(true)}
               disabled={pending}
-              className="inline-flex items-center gap-1 font-sans text-xs text-ink-muted transition-colors hover:text-ink disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-sm font-sans text-xs text-ink-muted transition-colors hover:text-ink focus-visible:text-ink focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-panel disabled:opacity-50"
             >
               <X className="size-3.5" /> remove
             </button>

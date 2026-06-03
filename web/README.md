@@ -137,6 +137,38 @@ ARCHITECTURE §5), while the storefront shows returns read-only. The button now
 links to the live `/returns` list rather than being a muted not-yet-built
 affordance.
 
+## Polish — responsive, shared states, a11y, brand finish (Phase 6)
+
+The final storefront phase is a cross-cutting pass over the surfaces shipped in
+Phases 2–5 — **no new routes, data domains, or mutations** (cart stays the only
+write; reads stay identity-gated own-only with identical refusals). It adds:
+
+- **Responsive shell.** The shared header collapses its nav behind a hamburger
+  below `md` ([`components/shell/MobileNav.tsx`](components/shell/MobileNav.tsx)),
+  fixing the wordmark/nav overlap at narrow widths; the desktop inline nav and the
+  mobile menu share one IA definition ([`components/shell/nav.ts`](components/shell/nav.ts)).
+  Every surface was screenshot-audited at desktop + narrow.
+- **Shared states (DESIGN §5.7).** A `Skeleton` primitive (cream blocks + a faint
+  gold shimmer that honors `prefers-reduced-motion`) in
+  [`components/store/Skeleton.tsx`](components/store/Skeleton.tsx), with a
+  `loading.tsx` per data route; a neutral `app/error.tsx` boundary that reuses
+  `EmptyState` and **leaks no error detail/id** (same no-existence-leak discipline
+  as the not-found refusal); empty states verified across all surfaces.
+- **Deferred cleanups (now that the 3rd copy existed).** A shared `StatusPill`
+  shell ([`components/store/StatusPill.tsx`](components/store/StatusPill.tsx)) under
+  StockBadge / OrderStatusBadge / ReturnStatusBadge — **each surface keeps its own
+  status vocabulary**, the pill owns only the wrapper + brand tones — and a shared
+  `LineItemRow` ([`components/store/LineItemRow.tsx`](components/store/LineItemRow.tsx))
+  under the cart line and the order-detail row (the proven-duplicated thumb→PDP +
+  name→PDP unit; qty/remove/price stay with each caller). Not abstracted further.
+- **Accessibility.** Visible focus rings on every interactive element (a shared
+  `.focus-ring` utility in `globals.css`), keyboard-operable mobile menu
+  (aria-expanded/-controls, Escape, close-on-tap), gold-on-cream uses `gold-deep`,
+  reduced-motion for the shimmer.
+- **Brand finish.** A simplified small-mark favicon — the gold monogram-A-in-laurel
+  as a vector [`app/icon.svg`](app/icon.svg) (the detailed emblem muddies at ≤32px),
+  resolving the DESIGN §5/§8 TODO.
+
 ## Scalability rule
 
 A new customer-visible data domain = **one route + one typed data-access function

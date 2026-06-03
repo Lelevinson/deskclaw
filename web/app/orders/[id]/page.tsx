@@ -7,7 +7,7 @@ import { formatDate, formatNtd, formatOrderId } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { OrderStatusBadge } from "@/components/store/OrderStatusBadge";
 import { Price } from "@/components/store/Price";
-import { ProductTile } from "@/components/store/ProductTile";
+import { LineItemRow } from "@/components/store/LineItemRow";
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +56,7 @@ export default async function OrderDetailPage({
     <div className="py-10">
       {/* Breadcrumb back to the history list. */}
       <nav className="mb-6 font-sans text-sm text-ink-muted">
-        <Link href="/orders" className="hover:text-gold-deep">
+        <Link href="/orders" className="rounded-sm hover:text-gold-deep focus-visible:text-gold-deep focus-visible:underline focus-visible:outline-none">
           Orders
         </Link>{" "}
         <span aria-hidden className="text-line">/</span>{" "}
@@ -87,33 +87,17 @@ export default async function OrderDetailPage({
         {/* Line items. */}
         <div className="px-6">
           {order.items.map((item) => (
-            <div
+            <LineItemRow
               key={item.productId}
-              className="flex items-center gap-4 border-b border-line py-5 last:border-b-0"
+              productId={item.productId}
+              name={item.name}
+              trailing={<Price amount={item.subtotalNtd} />}
+              className="border-b border-line py-5 last:border-b-0"
             >
-              <Link
-                href={`/products/${item.productId}`}
-                className="shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label={item.name}
-              >
-                <ProductTile
-                  className="w-16 rounded-md border border-line"
-                  aspect="aspect-square"
-                />
-              </Link>
-              <div className="min-w-0 flex-1">
-                <Link
-                  href={`/products/${item.productId}`}
-                  className="block truncate font-serif text-xl font-medium leading-tight text-ink hover:text-gold-deep focus-visible:underline"
-                >
-                  {item.name}
-                </Link>
-                <span className="font-sans text-sm tabular-nums text-ink-muted">
-                  ×{item.quantity} · {formatNtd(item.unitPriceNtd)} each
-                </span>
-              </div>
-              <Price amount={item.subtotalNtd} />
-            </div>
+              <span className="font-sans text-sm tabular-nums text-ink-muted">
+                ×{item.quantity} · {formatNtd(item.unitPriceNtd)} each
+              </span>
+            </LineItemRow>
           ))}
         </div>
 
@@ -148,7 +132,7 @@ export default async function OrderDetailPage({
             Ask the assistant to open a return for this order.{" "}
             <Link
               href="/returns"
-              className="text-gold-deep underline-offset-4 hover:underline"
+              className="rounded-sm text-gold-deep underline-offset-4 hover:underline focus-visible:underline focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-cream"
             >
               View your returns →
             </Link>
@@ -159,7 +143,7 @@ export default async function OrderDetailPage({
       <div className="mt-8">
         <Link
           href="/orders"
-          className="font-sans text-sm tracking-wide text-gold-deep underline-offset-4 hover:underline"
+          className="font-sans text-sm tracking-wide rounded-sm text-gold-deep underline-offset-4 hover:underline focus-visible:underline focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-cream"
         >
           ← All orders
         </Link>
