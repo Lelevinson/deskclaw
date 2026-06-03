@@ -1,0 +1,10 @@
+{
+  "name": "deskclaw-design-tools",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Throwaway design-phase tooling: Puppeteer screenshots of static mockups so the agent can self-review designs. NOT part of the storefront app.",
+  "type": "module",
+  "dependencies": {
+    "puppeteer": "^24.10.0"
+  }
+}
