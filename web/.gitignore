@@ -1,2 +1,13 @@
 # Design-phase tooling deps (Puppeteer) — never commit
 tools/node_modules/
+
+# Next.js storefront app
+/node_modules
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Local env overrides (the committed .env only points at the shared repo store)
+.env.local
+.env*.local
