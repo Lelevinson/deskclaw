@@ -17,6 +17,13 @@ export function formatOrderId(id: string): string {
   return `#${id.replace(/^order-/, "")}`;
 }
 
+// Return id → a short display number, mirroring formatOrderId. Stored ids look
+// like "return-2026-0001"; show the part after the "return-" prefix
+// ("#2026-0001"). Falls back to the raw id so a differently-shaped id still renders.
+export function formatReturnId(id: string): string {
+  return `#${id.replace(/^return-/, "")}`;
+}
+
 // Dates: day month year → "3 Jun 2026".
 export function formatDate(iso: string): string {
   const d = new Date(iso);
