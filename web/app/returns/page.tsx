@@ -41,7 +41,7 @@ export default async function ReturnsPage() {
           <Link
             key={ret.id}
             href={`/returns/${ret.id}`}
-            className="flex flex-col gap-2 border-b border-line py-5 last:border-b-0 transition-colors hover:bg-cream-soft/60 sm:-mx-6 sm:flex-row sm:items-center sm:gap-4 sm:px-6"
+            className="flex flex-col gap-2 rounded-sm border-b border-line py-5 transition-colors last:border-b-0 hover:bg-cream-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:-mx-6 sm:flex-row sm:items-center sm:gap-4 sm:px-6"
           >
             {/* Identity column: return number · the order it is against · opened date. */}
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5">

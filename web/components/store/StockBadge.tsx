@@ -1,8 +1,10 @@
 import { cn } from "@/lib/utils";
 import type { StockStatus } from "@shop/types.js";
+import { StatusPill } from "./StatusPill";
 
-// Stock-state pill (DESIGN.md §3.1). In-stock shows no badge by default (the
-// `inline` variant renders a quiet "In stock" line for the PDP status row).
+// Stock-state pill (DESIGN.md §3.1) — its own stock vocabulary over the shared
+// StatusPill shell. In-stock shows no badge by default (the StockStatusText
+// variant renders a quiet "In stock" line for the PDP status row).
 export function StockBadge({
   status,
   className,
@@ -13,17 +15,9 @@ export function StockBadge({
   if (status === "in_stock") return null;
   const isLow = status === "low_stock";
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-pill px-2.5 py-1 font-sans text-xs font-medium uppercase tracking-caps",
-        isLow
-          ? "bg-stock-low-bg text-stock-low-fg"
-          : "bg-stock-out-bg text-stock-out-fg",
-        className,
-      )}
-    >
+    <StatusPill tone={isLow ? "amber" : "muted"} className={className}>
       {isLow ? "Low stock" : "Sold out"}
-    </span>
+    </StatusPill>
   );
 }
 

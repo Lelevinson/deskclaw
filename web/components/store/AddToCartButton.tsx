@@ -59,7 +59,10 @@ export function AddToCartButton({
       {added && !error && (
         <span className="font-sans text-xs text-ink-muted">
           Added ·{" "}
-          <Link href="/cart" className="text-gold-deep underline-offset-4 hover:underline">
+          <Link
+            href="/cart"
+            className="rounded-sm text-gold-deep underline-offset-4 hover:underline focus-visible:underline focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-cream"
+          >
             View cart
           </Link>
         </span>

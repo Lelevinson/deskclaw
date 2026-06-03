@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 // Amelya's button — gold pill primary, gold-outline secondary (DESIGN.md §3.3, §6).
 // Jost (sans), pill radius, low elevation, hairline borders over heavy shadow.
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-pill font-sans text-sm font-medium tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-100 [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-pill font-sans text-sm font-medium tracking-wide transition-colors focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-100 [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {

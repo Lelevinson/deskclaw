@@ -1,19 +1,8 @@
 import Link from "next/link";
 
-import { cn } from "@/lib/utils";
 import { Logo } from "./Logo";
-
-// Planned storefront IA (DESIGN.md §5.1). "Shop", "Orders" (Phase 4), "Returns"
-// (Phase 5), and "Cart" (Phase 3) are live; any remaining later-phase surface stays
-// muted + inert so the nav reads complete and honest without dead links/404s. The
-// Cart label carries a live count (DESIGN §5.1).
-const NAV: { label: string; href?: string }[] = [
-  { label: "Shop", href: "/" },
-  { label: "Routines" },
-  { label: "Orders", href: "/orders" },
-  { label: "Returns", href: "/returns" },
-  { label: "Cart", href: "/cart" },
-];
+import { MobileNav } from "./MobileNav";
+import { NAV } from "./nav";
 
 function ShoppingAsBar({ customerName }: { customerName: string }) {
   return (
@@ -30,15 +19,18 @@ function ShoppingAsBar({ customerName }: { customerName: string }) {
 function Header({ cartCount }: { cartCount: number }) {
   return (
     <header className="sticky top-0 z-20 border-b border-line bg-cream-soft/95 backdrop-blur">
-      <div className="mx-auto flex max-w-content items-center justify-between px-7 py-4">
+      <div className="relative mx-auto flex max-w-content items-center justify-between px-7 py-4">
         <Logo />
-        <nav className="flex items-center gap-6">
+
+        {/* Desktop inline nav — collapses to the hamburger below md, where it
+            would otherwise crowd the AMELYA'S wordmark (the known overlap). */}
+        <nav aria-label="Main" className="hidden items-center gap-6 md:flex">
           {NAV.map((item) =>
             item.href ? (
               <Link
                 key={item.label}
                 href={item.href}
-                className="font-sans text-sm tracking-wide text-ink transition-colors hover:text-gold-deep"
+                className="rounded-sm font-sans text-sm tracking-wide text-ink transition-colors hover:text-gold-deep focus-visible:text-gold-deep focus-ring focus-visible:ring-offset-4 focus-visible:ring-offset-cream-soft"
               >
                 {item.label === "Cart" && cartCount > 0 ? (
                   <>
@@ -54,13 +46,15 @@ function Header({ cartCount }: { cartCount: number }) {
                 key={item.label}
                 aria-disabled
                 title="Coming soon in this demo"
-                className="hidden cursor-default font-sans text-sm tracking-wide text-ink-muted/60 sm:inline"
+                className="cursor-default font-sans text-sm tracking-wide text-ink-muted/60"
               >
                 {item.label}
               </span>
             ),
           )}
         </nav>
+
+        <MobileNav items={NAV} cartCount={cartCount} />
       </div>
     </header>
   );
@@ -96,7 +90,7 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn("flex min-h-screen flex-col")}>
+    <div className="flex min-h-screen flex-col">
       <ShoppingAsBar customerName={customerName} />
       <Header cartCount={cartCount} />
       <main className="mx-auto w-full max-w-content flex-1 px-7">{children}</main>

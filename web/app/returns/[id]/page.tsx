@@ -59,7 +59,7 @@ export default async function ReturnDetailPage({
     <div className="py-10">
       {/* Breadcrumb back to the returns list. */}
       <nav className="mb-6 font-sans text-sm text-ink-muted">
-        <Link href="/returns" className="hover:text-gold-deep">
+        <Link href="/returns" className="rounded-sm hover:text-gold-deep focus-visible:text-gold-deep focus-visible:underline focus-visible:outline-none">
           Returns
         </Link>{" "}
         <span aria-hidden className="text-line">/</span>{" "}
@@ -84,7 +84,7 @@ export default async function ReturnDetailPage({
                 {entry.href ? (
                   <Link
                     href={entry.href}
-                    className="text-ink tabular-nums underline-offset-4 hover:text-gold-deep hover:underline"
+                    className="rounded-sm text-ink tabular-nums underline-offset-4 hover:text-gold-deep hover:underline focus-visible:text-gold-deep focus-visible:underline focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
                   >
                     {entry.value}
                   </Link>
@@ -130,7 +130,7 @@ export default async function ReturnDetailPage({
       <div className="mt-8">
         <Link
           href="/returns"
-          className="font-sans text-sm tracking-wide text-gold-deep underline-offset-4 hover:underline"
+          className="font-sans text-sm tracking-wide rounded-sm text-gold-deep underline-offset-4 hover:underline focus-visible:underline focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-cream"
         >
           ← All returns
         </Link>

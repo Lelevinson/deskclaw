@@ -15,7 +15,7 @@ export function ProductCard({ product }: { product: Product }) {
     <article className="group flex flex-col overflow-hidden rounded-md border border-line bg-panel shadow-elev-sm transition-shadow hover:shadow-elev-md">
       <Link
         href={product.link}
-        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="block focus-ring"
       >
         <div className="relative">
           <ProductTile />

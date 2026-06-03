@@ -28,7 +28,7 @@ export default async function ProductPage({
     <div className="py-10">
       {/* Breadcrumb */}
       <nav className="mb-8 font-sans text-sm text-ink-muted" aria-label="Breadcrumb">
-        <Link href="/" className="hover:text-gold-deep">
+        <Link href="/" className="rounded-sm hover:text-gold-deep focus-visible:text-gold-deep focus-visible:underline focus-visible:outline-none">
           Shop
         </Link>
         <span className="px-2 text-line">/</span>

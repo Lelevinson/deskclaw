@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { formatCategory } from "@/lib/format";
 import { ProductCard } from "./ProductCard";
 import { EmptyState } from "./EmptyState";
+import { CATALOGUE_GRID } from "./catalogue-grid";
 
 // Catalogue grid + pill category filters (DESIGN.md §5.2). Client-side filtering
 // over the full catalogue the server already loaded via the src/shop reuse layer
@@ -41,7 +42,7 @@ export function CatalogueBrowser({ products }: { products: Product[] }) {
               aria-selected={selected}
               onClick={() => setActive(cat)}
               className={cn(
-                "rounded-pill border px-4 py-2 font-sans text-sm tracking-wide transition-colors",
+                "rounded-pill border px-4 py-2 font-sans text-sm tracking-wide transition-colors focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-cream",
                 selected
                   ? "border-gold bg-gold text-cream-soft"
                   : "border-line bg-cream-soft text-ink-muted hover:border-gold/50 hover:text-ink",
@@ -56,7 +57,7 @@ export function CatalogueBrowser({ products }: { products: Product[] }) {
       {visible.length === 0 ? (
         <EmptyState message="Nothing in this category yet." />
       ) : (
-        <div className="grid grid-cols-1 gap-[26px] min-[600px]:grid-cols-2 min-[980px]:grid-cols-4">
+        <div className={CATALOGUE_GRID}>
           {visible.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
