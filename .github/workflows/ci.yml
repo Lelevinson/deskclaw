@@ -1,0 +1,55 @@
+name: CI
+
+# Runs the DESKCLAW checks that need no model and no OpenClaw gateway, so they can
+# run on GitHub's runners. The model-in-the-loop layer (`npm run agent:eval`) is
+# deliberately NOT here — it needs a running OpenClaw gateway + a configured model
+# (the Codex login), neither of which exists in CI; run it locally instead.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: backend — typecheck + tool-level eval (shop:eval)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Typecheck
+        run: npm run check
+      # shop:eval builds (tsc) then runs the 56 deterministic safety assertions
+      # over the src/shop service functions (identity gating, ownership, preview→
+      # confirm, audit logging). No model, no gateway.
+      - name: Tool-level eval
+        run: npm run shop:eval
+
+  web:
+    name: web — production build + typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      # `next build` typechecks and prerenders. web/.env is gitignored, and the
+      # static catalogue page reads the shared data dir at build time, so point the
+      # src/shop data seam back at the repo root (same as web/.env does locally).
+      - name: Build
+        run: npm run build
+        working-directory: web
+        env:
+          DESKCLAW_DATA_DIR: ${{ github.workspace }}/data
+          DESKCLAW_SHOP_DB_PATH: ${{ github.workspace }}/.local/shop-db.json
