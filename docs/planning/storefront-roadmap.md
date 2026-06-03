@@ -2,7 +2,7 @@
 
 Durable handoff for building the DeskClaw mock storefront. Like [`skill-roadmap.md`](skill-roadmap.md), decisions live **here**, not in chat history — each implementation chat reads this doc + [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md) and takes the top open phase.
 
-**Status:** DECIDED (2026-06-02) — scope, stack, and styling chosen in the planning session below. The MVP **skill** backlog is closed ([`skill-roadmap.md`](skill-roadmap.md) §4); the storefront is the one remaining in-scope MVP item. ARCHITECTURE §2/§3/§5/§6 were updated to match this decision.
+**Status:** DECIDED (2026-06-02) — scope, stack, and styling chosen in the planning session below. The MVP **skill** backlog is closed ([`skill-roadmap.md`](skill-roadmap.md) §4); the storefront is the one remaining in-scope MVP item. ARCHITECTURE §2/§3/§5/§6 were updated to match this decision. **Build progress (§6):** Phase 1 Design (PR #12) and Phase 2 Foundation (PR #14) are merged; **Phase 3 Cart is next.**
 
 ## 1. What this is (and is not)
 
@@ -66,9 +66,9 @@ Out of scope here: a `handoffs`/ops view (staff-only, §2). Policy/FAQ/compatibi
 
 This is a **multi-branch build**, not one chat (same one-capability-per-branch discipline as the skills). Suggested order:
 
-1. **Design discovery** (`feat/storefront-design`) — no app code yet. Inventory the surfaces (§5), choose a concrete design language + reference, define **design tokens** (brand colors/type/spacing for the skincare brand, NT$ formatting), and produce **low-fi wireframes** for each surface. Output: a `web/DESIGN.md` (or similar) + token values the build phases consume. This is the "find the UI design first" step — it prevents random design.
-2. **Foundation** (`feat/storefront-foundation`) — scaffold Next.js + TypeScript + Tailwind + shadcn/ui under a new top-level `web/` (or `storefront/`) dir; wire the **data-access/reuse layer** to `src/shop`; build the app shell (header/nav/footer) + tokens; ship **one vertical slice (catalog grid + PDP)** end-to-end to prove the architecture and the reuse layer.
-3. **Cart** (`feat/storefront-cart`) — cart view + add/remove/update through the reused cart service; resolve the Phase-2 mutation/audit question.
+1. ~~**Design discovery** (`feat/storefront-design`)~~ — **DONE (merged 2026-06-03, PR #12).** Output is [`../../web/DESIGN.md`](../../web/DESIGN.md): brand = **Amelya's**, design tokens, surface→data-domain map, and low-fi wireframes for all 6 surfaces.
+2. ~~**Foundation** (`feat/storefront-foundation`)~~ — **DONE (merged 2026-06-03, PR #14).** Scaffolded Next.js + TypeScript + Tailwind + shadcn/ui under `web/`; encoded the DESIGN tokens; wired the **`src/shop` reuse layer** (the seam is `web/lib/shop/`, `import "server-only"`; `@shop/*` alias + Next `extensionAlias` `.js`→`.ts`; data seam via `DESKCLAW_DATA_DIR`/`DESKCLAW_SHOP_DB_PATH` so app + agent share one store; identity pinned to the existing `simulated-chat`/`demo-lin` link — see [`../../web/README.md`](../../web/README.md)); added `listProducts()`/`getProductById()` to `src/shop/service.ts`; built the app shell + shared component set; shipped the **catalogue grid + PDP vertical slice** reading the real catalog. Add-to-cart is rendered but **inert** — cart mutation is Phase 3.
+3. **Cart** (`feat/storefront-cart`) — **NEXT.** Cart view + add/remove/update through the reused cart service; resolve the still-open **mutation/audit question** (§3, §8): the UI confirm affordance stands in for the chat confirm step, and the mutation must still write the audit log. Document the decision.
 4. **Orders** (`feat/storefront-orders`) — order history + detail/tracking, own-orders-only.
 5. **Returns** (`feat/storefront-returns`) — returns list + detail, own-returns-only.
 6. **Polish** (`feat/storefront-polish`) — responsive, empty/loading/error states, accessibility pass, brand finish.
