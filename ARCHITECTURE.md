@@ -47,7 +47,7 @@ DeskClaw is a local-first conversational commerce agent prototype for small D2C 
 
 The **mock storefront web UI** (formerly the one open MVP item) is now **COMPLETE** — see "Implemented" above and roadmap §6.
 
-**MVP complete** — the skill backlog is closed (scoped in [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §4; build order: ~~cart-edit~~ (shipped 2026-05-29) → ~~tool-level eval harness~~ (shipped 2026-05-29) → ~~order-status~~ (shipped 2026-06-01) → ~~returns-intake~~ (shipped 2026-06-01) → ~~handoff-ticket~~ (shipped 2026-06-01) → ~~product-compatibility Q&A~~ (shipped 2026-06-02)) and the **mock storefront UI** is built (all six phases merged 2026-06-03, roadmap §6). The `orders`, `returns`, and `handoffs` data domains are in place. **No in-scope MVP items remain**; further work would be from the deferred list below (requires updating this file first) or the still-open non-MVP gaps (skill/agent-layer eval, CI/linting/deploy).
+**MVP complete** — the skill backlog is closed (scoped in [`docs/planning/skill-roadmap.md`](docs/planning/skill-roadmap.md) §4; build order: ~~cart-edit~~ (shipped 2026-05-29) → ~~tool-level eval harness~~ (shipped 2026-05-29) → ~~order-status~~ (shipped 2026-06-01) → ~~returns-intake~~ (shipped 2026-06-01) → ~~handoff-ticket~~ (shipped 2026-06-01) → ~~product-compatibility Q&A~~ (shipped 2026-06-02)) and the **mock storefront UI** is built (all six phases merged 2026-06-03, roadmap §6). The `orders`, `returns`, and `handoffs` data domains are in place. **No in-scope MVP items remain**; further work would be from the deferred list below (requires updating this file first) or the still-open non-MVP gaps (fuller agent-layer eval coverage + a real channel-adapter identity path, CI/linting/deploy).
 
 ## 4. Repository layout
 
@@ -72,6 +72,7 @@ src/
   mcp/shop-server.ts          # safe MCP tool surface for agent actions
   cli/reset-shop-db.ts        # reset local runtime DB from baseline data
   cli/shop-eval.ts            # tool-level eval harness (npm run shop:eval)
+  cli/agent-eval.ts           # agent-layer (model-in-the-loop) eval harness (npm run agent:eval)
 
 data/
   README.md                   # data ownership rules
