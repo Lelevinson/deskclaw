@@ -15,9 +15,11 @@ import type { NavItem } from "./nav";
 export function MobileNav({
   items,
   cartCount,
+  customerName,
 }: {
   items: NavItem[];
   cartCount: number;
+  customerName: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -100,6 +102,42 @@ export function MobileNav({
                   </span>
                 </li>
               ),
+            )}
+
+            {/* Account control mirrors the desktop header: the profile link when
+                signed in, sign in / register when not. */}
+            {customerName ? (
+              <li>
+                <Link
+                  href="/account"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center justify-between border-b border-line/60 py-3.5 font-sans text-sm tracking-wide text-ink transition-colors last:border-b-0 hover:text-gold-deep focus-visible:text-gold-deep focus-visible:outline-none"
+                >
+                  Account
+                  <span className="font-sans text-xs tracking-wide text-ink-muted">{customerName}</span>
+                </Link>
+              </li>
+            ) : (
+              <>
+                <li>
+                  <Link
+                    href="/login"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center border-b border-line/60 py-3.5 font-sans text-sm tracking-wide text-ink transition-colors hover:text-gold-deep focus-visible:text-gold-deep focus-visible:outline-none"
+                  >
+                    Sign in
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/register"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center border-b border-line/60 py-3.5 font-sans text-sm tracking-wide text-ink transition-colors last:border-b-0 hover:text-gold-deep focus-visible:text-gold-deep focus-visible:outline-none"
+                  >
+                    Register
+                  </Link>
+                </li>
+              </>
             )}
           </ul>
         </nav>

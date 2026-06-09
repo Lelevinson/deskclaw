@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { getReturn } from "@/lib/shop";
 import type { ReturnRequest } from "@/lib/shop";
+import { requireIdentity } from "@/lib/auth/session";
 import { formatDate, formatOrderId, formatReturnId } from "@/lib/format";
 import { ReturnStatusBadge } from "@/components/store/ReturnStatusBadge";
 
@@ -43,6 +44,7 @@ export default async function ReturnDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireIdentity(); // gated: redirects to /login when logged out
   const { id } = await params;
   const ret = await getReturn(id);
   if (!ret) notFound();

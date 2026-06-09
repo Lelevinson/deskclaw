@@ -15,10 +15,11 @@ for the brand, tokens, surfaces, and wireframes. No app code is scaffolded yet.
 A **companion view** to the conversational agent — not a commerce engine. It runs
 on the existing [`../src/shop`](../src/shop) backend (server-side reuse), shows the same shared
 shop state in a browser, and is lightly interactive: **browse catalogue → build a
-cart → view your own orders & returns.** **No checkout, no payments, no auth**
-(see roadmap §1–2, ARCHITECTURE §5). It shops as the pre-linked **demo customer**
-("Shopping as Mei L."), reads are own-resources-only, and cart mutations reuse the
-same `src/shop` path (audit/confirm question resolved in Phase 2, roadmap §3).
+cart → place a mock order → view your own orders & returns.** **Real login + signup
+and a mock checkout (cart → unpaid order) shipped 2026-06-09; no real payment** (see roadmap §1–2, ARCHITECTURE §5). A logged-in
+customer's session drives identity (a `web`-channel account-link); browsing is
+public, account surfaces require a session. Reads are own-resources-only, and cart
+mutations reuse the same `src/shop` path (audit/confirm question resolved in Phase 2, roadmap §3).
 
 ---
 
@@ -47,7 +48,7 @@ engraving) + the **AMELYA'S** wordmark in Cinzel. **No tagline.**
   compressed PNG/SVG + a generated favicon set before production use.
 
 **Brand voice (for UI copy):** calm, plain, reassuring. "Skincare, simply."
-Honest about the demo ("No checkout in this demo"). Never medical/curative claims.
+Honest about the demo (a mock checkout — no payment is taken). Never medical/curative claims.
 
 ---
 
@@ -168,11 +169,20 @@ mutations are cart edits.
 | 4 | **Cart** | `carts` | read · **mutate** (add / remove / update qty) | own cart (demo customer) |
 | 5 | **Orders** (history + detail/tracking) | `orders` (names joined from catalog) | read | **own-orders-only** |
 | 6 | **Returns** (list + detail) | `returns` (+ `orders`) | read | **own-returns-only** |
+| 7 | **Login / Register** | `credentials` (+ `accountLinks`) | write · sign in / sign up | public |
+| 8 | **Account** (profile + accountCode + sign out) | `customers` / `accountLinks` | read · sign out | **own profile only** |
 
-**Out of scope here:** checkout/payments, auth/login, address mutation, a
-`handoffs`/staff view (staff-only domain, roadmap §2). **Optional polish, not a
-core surface:** static "Routines" / compatibility info page sourced from
-[`../data/catalog/compatibility.md`](../data/catalog/compatibility.md) and policy pages from `data/policies/*`.
+**Auth shipped 2026-06-09** (was out of scope): real per-user login + signup
+(scrypt-hashed `credentials`, an HMAC session cookie, a `web`-channel account-link).
+A logged-in user resolves through the same `resolveLinkedCustomer` path as chat.
+Browsing (surfaces 2–3) is public; the account surfaces (4–6, 8) require a session.
+
+**Mock checkout shipped 2026-06-09** (surface 4 now also WRITES `orders`): the cart
+Checkout button creates an unpaid `placed` order, decrements stock, clears the cart.
+**Still out of scope here:** real payment/charging, password reset / email / OAuth,
+address mutation, a `handoffs`/staff view (staff-only domain, roadmap §2).
+**Optional polish, not a core surface:** static "Routines" / compatibility info
+page sourced from [`../data/catalog/compatibility.md`](../data/catalog/compatibility.md) and policy pages from `data/policies/*`.
 
 ---
 
@@ -181,17 +191,21 @@ core surface:** static "Routines" / compatibility info page sourced from
 ASCII; brand styling per §2–3. Real product imagery is TBD — placeholders shown.
 
 ### 5.1 App shell (every page)
+
+Auth shipped 2026-06-09: the old "Shopping as …" sage bar is **removed**. Identity
+now lives in the header as an account control — a person icon + the name linking to
+`/account` when signed in, or **Sign in** when not. The "private to you"
+reassurance moved onto the Account page (§5.8). Below `md` the control collapses
+into the hamburger menu.
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│  Shopping as Mei L. — your cart, orders & returns are private to you   │ ← sage bar
-├──────────────────────────────────────────────────────────────────────┤
-│  (emblem) AMELYA'S          Shop   Routines   Orders   Returns   Cart(2)│ ← header
+│ (emblem) AMELYA'S     Shop  Routines  Orders  Returns  Cart(2) │ 𝅼 ◐ Mei │ ← header (◐ = account icon; "Sign in" when logged out)
 ├──────────────────────────────────────────────────────────────────────┤
 │                                                                        │
 │                          « page content »                              │
 │                                                                        │
 ├──────────────────────────────────────────────────────────────────────┤
-│  AMELYA'S                                   No checkout in this demo ·  │ ← sage footer
+│  AMELYA'S                                Mock checkout · no payment ·   │ ← sage footer
 │  A companion to the assistant…              prices in NT$ · shared backend│
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -247,7 +261,8 @@ Your Cart · 2 items
 │ [img]  Sunny Shield SPF50          NT$520   [ − 1 + ]  ✕ remove│
 ├──────────────────────────────────────────────────────────────┤
 │                                   Subtotal           NT$940    │
-│                                   ── No checkout in this demo ──│
+│                                   [      Checkout      ]        │
+│                                   No payment is taken in this demo
 │                                   [  Continue shopping  ]       │
 └──────────────────────────────────────────────────────────────┘
 Empty state:  "Your cart is empty.  ❧  Browse the catalogue →"
@@ -257,7 +272,12 @@ Empty state:  "Your cart is empty.  ❧  Browse the catalogue →"
   so the mutation **always writes the audit log** (no model intermediary to guard
   against). Qty ± needs no extra dialog; the destructive **remove** uses a
   lightweight two-step "Remove?" confirm. Full rationale in
-  [`README.md`](README.md) "Cart mutations". No "checkout" CTA.
+  [`README.md`](README.md) "Cart mutations".
+- **Checkout CTA (shipped 2026-06-09, mock — ARCHITECTURE §5):** the primary
+  **Checkout** button turns the cart into a `placed` order via the same audited
+  preview→confirm path (the click is the consent), then redirects to the new order.
+  **No payment, no card, no address** — orders are created unpaid; stock decrements
+  and the cart clears. Disabled/absent when the cart is empty.
 
 ### 5.5 Orders — list + detail (surface 5, own-orders-only)
 ```
@@ -334,8 +354,13 @@ components** — never a rewrite. Tokens + component set keep it on-brand.
   `preview→confirm` path back-to-back, so both audit-log writes fire and the audit
   is never dropped; the user's click is the consent, with a "Remove?" confirm for
   the destructive remove (roadmap §3, §8).
-- **No checkout / payments / auth / address mutation / staff view.** Adding any
-  requires updating [`../ARCHITECTURE.md`](../ARCHITECTURE.md) §5 first.
+- **Login + signup AND a mock checkout shipped 2026-06-09** (scrypt `credentials`,
+  HMAC session cookie, `web` account-link; checkout = cart → unpaid `placed` order
+  via the same audited preview→confirm path; ARCHITECTURE §5). Shop mutations are now
+  cart edits **+ checkout** (writes `orders`, decrements stock, clears cart); account
+  writes are register/login/logout. **Still no real payment/charging, password-reset /
+  OAuth / address mutation / staff view.** Adding any requires updating
+  [`../ARCHITECTURE.md`](../ARCHITECTURE.md) §5 first.
 
 ---
 

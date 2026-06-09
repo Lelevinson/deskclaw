@@ -21,6 +21,7 @@ import path from "node:path";
 
 import {
   confirmAddItemForChannel,
+  confirmCheckoutForChannel,
   confirmCreateReturnForChannel,
   confirmLatestAddItemForChannel,
   confirmLatestRemoveItemForChannel,
@@ -34,13 +35,18 @@ import {
   listActionLogs,
   listHandoffs,
   listOrdersForChannel,
+  linkExistingAccountForChannel,
   listReturnsForChannel,
   lookupCustomerByChannel,
   previewAddItemForChannel,
+  previewCheckoutForChannel,
   previewCreateReturnForChannel,
   previewRemoveItemForChannel,
   previewUpdateQuantityForChannel,
-  searchProducts
+  registerNewCustomerForChannel,
+  registerWebAccount,
+  searchProducts,
+  verifyWebCredential
 } from "../shop/service.js";
 import { getShopDbPath, readShopDb, resetShopDb, writeShopDb } from "../shop/store.js";
 import type { ShopDatabase } from "../shop/types.js";
@@ -56,6 +62,7 @@ const LIN = "demo-lin"; // -> customer-demo-lin via link-demo-lin-simulated-chat
 const LIN_CUSTOMER = "customer-demo-lin";
 const LIN_WHATSAPP_LINK = "link-demo-lin-whatsapp";
 const LIN_WHATSAPP_EXTERNAL = "+886900000001";
+const LIN_ACCOUNT_CODE = "LIN-7421"; // demo verification code seeded on the demo customer
 
 // --- a second customer injected into the runtime DB (never into data/) ---
 const MALLORY_EXTERNAL = "eval-mallory";
@@ -199,6 +206,21 @@ async function cartItemCount(): Promise<number> {
   const cart = await getCartForChannel(CH, LIN);
   assert(cart.ok && cart.data, "cart read should succeed");
   return cart.data.items.length;
+}
+
+/** Count the orders the demo customer owns. */
+async function orderCount(): Promise<number> {
+  const list = await listOrdersForChannel(CH, LIN);
+  assert(list.ok && list.data, "order list read should succeed");
+  return list.data.length;
+}
+
+/** A product's current stock quantity, read straight from the runtime DB. */
+async function productStock(productId: string): Promise<number> {
+  const db = await readShopDb();
+  const product = db.products.find((entry) => entry.id === productId);
+  assert(product, `product ${productId} should exist`);
+  return product.stockQuantity;
 }
 
 // --- tests ---------------------------------------------------------------
@@ -934,6 +956,181 @@ async function main(): Promise<void> {
       created.ok && created.data?.status === "open",
       created.error ?? "an escalation must record even when the loaded DB lacked a handoffs array"
     );
+  });
+
+  group("Self-service registration & linking");
+
+  await test("an unlinked sender registers a NEW account and can then use it (own, empty)", async () => {
+    const before = await lookupCustomerByChannel(CH, "eval-newbie");
+    assert(!before.ok, "the new sender must start unlinked");
+    const reg = await registerNewCustomerForChannel(CH, "eval-newbie", "Newbie Demo");
+    assert(reg.ok && reg.data, reg.error ?? "registering a new account should succeed");
+    assert(reg.data.displayName === "Newbie Demo", "the new account should carry the requested display name");
+    // Now resolvable, and gets its OWN (empty) cart — not anyone else's.
+    const lookup = await lookupCustomerByChannel(CH, "eval-newbie");
+    assert(lookup.ok && lookup.data?.customerId === reg.data.customerId, "the sender must now resolve to the new customer");
+    const cart = await getCartForChannel(CH, "eval-newbie");
+    assert(cart.ok && cart.data?.items.length === 0, "a freshly-registered customer must start with an empty cart");
+    // Audit trail recorded.
+    const logs = await listActionLogs(reg.data.customerId, 20);
+    assert(
+      logs.data?.some((log) => log.type === "account.register" && log.status === "success"),
+      "registration must write a success audit log"
+    );
+  });
+
+  await test("registering an already-linked channel identity is refused", async () => {
+    const reg = await registerNewCustomerForChannel(CH, LIN, "Impostor");
+    assert(!reg.ok, "an already-linked identity must not be re-registered");
+    // The existing customer is untouched (name not overwritten).
+    const lookup = await lookupCustomerByChannel(CH, LIN);
+    assert(lookup.ok && lookup.data?.customerId === LIN_CUSTOMER, "the existing link must be unchanged");
+  });
+
+  await test("a freshly-registered customer cannot read another customer's data", async () => {
+    const reg = await registerNewCustomerForChannel(CH, "eval-newbie", "Newbie Demo");
+    assert(reg.ok, reg.error ?? "registration should succeed");
+    const orders = await listOrdersForChannel(CH, "eval-newbie");
+    assert(orders.ok && orders.data?.length === 0, "a new customer has no orders of their own");
+    // Quoting Lin's real order id must be refused (gating intact, no existence leak).
+    const hijack = await getOrderForChannel(CH, "eval-newbie", LIN_SHIPPED_ORDER);
+    assert(!hijack.ok, "a new customer must not read another customer's order by quoting its id");
+  });
+
+  await test("link-existing with the correct code links the channel to that account", async () => {
+    const before = await lookupCustomerByChannel(CH, "eval-linker");
+    assert(!before.ok, "the linking sender must start unlinked");
+    const link = await linkExistingAccountForChannel(CH, "eval-linker", LIN_ACCOUNT_CODE);
+    assert(link.ok && link.data?.customerId === LIN_CUSTOMER, link.error ?? "the correct code must link to the demo customer");
+    // The newly-linked channel now reads the existing customer's own orders.
+    const orders = await listOrdersForChannel(CH, "eval-linker");
+    assert(orders.ok && orders.data?.length === 3, "the linked channel should now see the existing customer's 3 orders");
+    const logs = await listActionLogs(LIN_CUSTOMER, 20);
+    assert(
+      logs.data?.some((log) => log.type === "account.link_existing" && log.status === "success"),
+      "linking an existing account must write a success audit log"
+    );
+  });
+
+  await test("link-existing with a wrong code is refused and links nothing", async () => {
+    const link = await linkExistingAccountForChannel(CH, "eval-linker", "NOPE-0000");
+    assert(!link.ok && link.error?.includes("not recognized"), "an unrecognized code must be refused generically");
+    const lookup = await lookupCustomerByChannel(CH, "eval-linker");
+    assert(!lookup.ok, "a refused link must not create any account link");
+  });
+
+  await test("link-existing is refused for an already-linked identity", async () => {
+    const link = await linkExistingAccountForChannel(CH, LIN, LIN_ACCOUNT_CODE);
+    assert(!link.ok, "an already-linked identity must not link again");
+  });
+
+  group("Web login credentials");
+
+  const DEMO_LIN_PASSWORD = "amelya-demo"; // matches data/customers/credentials.json seed
+
+  await test("the seeded demo login (lin) verifies and resolves to the demo customer", async () => {
+    const ok = await verifyWebCredential("lin", DEMO_LIN_PASSWORD);
+    assert(ok.ok && ok.data?.customerId === LIN_CUSTOMER, ok.error ?? "seeded login should verify to Lin");
+    // The web login resolves the SAME customer her chat channels do — so she sees her real orders.
+    const orders = await listOrdersForChannel("web", "lin");
+    assert(orders.ok && orders.data?.length === 3, "logging in as lin must surface her 3 seeded orders");
+  });
+
+  await test("a wrong password and an unknown username are both refused with the same generic error", async () => {
+    const wrong = await verifyWebCredential("lin", "not-the-password");
+    assert(!wrong.ok && wrong.error === "Invalid username or password.", "a wrong password must be refused generically");
+    const missing = await verifyWebCredential("ghost", "whatever123");
+    assert(!missing.ok && missing.error === wrong.error, "an unknown username must return the SAME message (no existence leak)");
+  });
+
+  await test("web signup creates a customer + web link + a hashed credential, then logs in", async () => {
+    const reg = await registerWebAccount("newshopper", "s3cretpw!", "New Shopper");
+    assert(reg.ok && reg.data, reg.error ?? "web signup should succeed");
+    assert(reg.data.channel === "web" && reg.data.externalUserId === "newshopper", "signup must create a web account-link");
+    // The stored credential must be hashed, never the plaintext password.
+    const db = await readShopDb();
+    const cred = db.credentials.find((c) => c.username === "newshopper");
+    assert(cred && cred.hash.length > 0 && cred.salt.length > 0, "a credential row with salt+hash must exist");
+    assert(!JSON.stringify(db.credentials).includes("s3cretpw!"), "the plaintext password must NEVER be stored");
+    // The new account can log in...
+    const login = await verifyWebCredential("newshopper", "s3cretpw!");
+    assert(login.ok && login.data?.customerId === reg.data.customerId, "the new account should log in");
+    // ...and starts empty / cannot read another customer's orders.
+    const ownOrders = await listOrdersForChannel("web", "newshopper");
+    assert(ownOrders.ok && ownOrders.data?.length === 0, "a fresh web account has no orders of its own");
+    const hijack = await getOrderForChannel("web", "newshopper", LIN_SHIPPED_ORDER);
+    assert(!hijack.ok, "a fresh web account must not read another customer's order");
+  });
+
+  await test("a duplicate username is refused", async () => {
+    const dup = await registerWebAccount("lin", "anotherpw1", "Impostor");
+    assert(!dup.ok && dup.error?.includes("already taken"), "registering an existing username must be refused");
+  });
+
+  await test("signup validation: short password and bad username are refused", async () => {
+    const shortPw = await registerWebAccount("okname", "short", "Some One");
+    assert(!shortPw.ok && shortPw.error?.includes("at least"), "a too-short password must be refused");
+    const badName = await registerWebAccount("bad name!", "longenough1", "Some One");
+    assert(!badName.ok, "a username with spaces/symbols must be refused");
+  });
+
+  group("Checkout (mock — cart → order, no payment)");
+
+  await test("an empty cart cannot be checked out", async () => {
+    const preview = await previewCheckoutForChannel(CH, LIN);
+    assert(!preview.ok && preview.error?.includes("empty"), "checkout preview on an empty cart must be refused");
+    const confirm = await confirmCheckoutForChannel(CH, LIN);
+    assert(!confirm.ok, "checkout confirm on an empty cart must be refused");
+    assert((await orderCount()) === 3, "no order may be created from an empty cart");
+  });
+
+  await test("unlinked identity cannot checkout", async () => {
+    const preview = await previewCheckoutForChannel(CH, "unknown-user");
+    assert(!preview.ok, "unlinked identity must not preview checkout");
+    const confirm = await confirmCheckoutForChannel(CH, "unknown-user");
+    assert(!confirm.ok, "unlinked identity must not place an order");
+  });
+
+  await test("checkout places a 'placed' order, decrements stock, clears the cart, and audits", async () => {
+    await seedCartItem("cloud-cleanser", 2);
+    const stockBefore = await productStock("cloud-cleanser");
+
+    const preview = await previewCheckoutForChannel(CH, LIN);
+    assert(preview.ok && preview.data?.totalNtd === 840, preview.error ?? "preview should total 2 x 420 = 840");
+
+    const placed = await confirmCheckoutForChannel(CH, LIN);
+    assert(placed.ok && placed.data, placed.error ?? "checkout should place an order");
+    assert(placed.data.order.status === "placed", "a fresh order must be in 'placed' status");
+    assert(
+      placed.data.order.totalNtd === 840 && placed.data.order.items[0]?.unitPriceNtd === 420,
+      "the order must capture items + the unit price at checkout time"
+    );
+    // It is the customer's own order and shows in their history.
+    const list = await listOrdersForChannel(CH, LIN);
+    assert(list.ok && list.data?.some((o) => o.id === placed.data!.order.id), "the placed order must appear in the customer's orders");
+    // Cart cleared and stock decremented by the ordered quantity.
+    assert((await cartItemCount()) === 0, "checkout must clear the cart");
+    assert((await productStock("cloud-cleanser")) === stockBefore - 2, "checkout must decrement stock by the ordered quantity");
+    // Audit.
+    const logs = await listActionLogs(LIN_CUSTOMER, 20);
+    assert(
+      logs.data?.some((log) => log.type === "checkout" && log.status === "success"),
+      "checkout must write a success audit log"
+    );
+  });
+
+  await test("checkout is refused if a cart line goes out of stock, leaving cart + orders untouched", async () => {
+    await seedCartItem("cloud-cleanser", 1);
+    await patchDb((db) => {
+      const product = db.products.find((entry) => entry.id === "cloud-cleanser");
+      assert(product, "cloud-cleanser must exist");
+      product.stockQuantity = 0;
+      product.stockStatus = "out_of_stock";
+    });
+    const confirm = await confirmCheckoutForChannel(CH, LIN);
+    assert(!confirm.ok && confirm.error?.includes("out of stock"), "checkout must refuse an out-of-stock line");
+    assert((await orderCount()) === 3, "a refused checkout must not create an order");
+    assert((await cartItemCount()) === 1, "a refused checkout must not clear the cart");
   });
 
   // Remove the temp sandbox DB; the real .local/shop-db.json was never touched.

@@ -2,9 +2,11 @@
 
 The mock storefront web UI for DeskClaw — the **Amelya's** demo skincare brand
 presented over the existing `src/shop` backend. A **companion view** to the
-conversational agent: browse the catalogue, and (later phases) manage a cart and
-view the linked customer's own orders & returns. **No checkout, no payments, no
-auth** (ARCHITECTURE §5; roadmap §1–2).
+conversational agent: browse the catalogue, and manage a cart and view the
+logged-in customer's own orders & returns, and **place a mock order**. **Real login
++ signup and a mock checkout shipped (2026-06-09)**; browsing is public,
+cart/orders/returns require a session. Checkout turns the cart into an unpaid
+`placed` order (decrements stock, clears the cart) — **no real payment** (ARCHITECTURE §5; roadmap §1–2).
 
 - Design system & wireframes: [`DESIGN.md`](DESIGN.md) (source of truth for brand/tokens).
 - Plan & phasing: [`../docs/planning/storefront-roadmap.md`](../docs/planning/storefront-roadmap.md).
@@ -48,11 +50,21 @@ How it is wired:
   `DESKCLAW_SHOP_DB_PATH`. Next runs with cwd = `web/`, so [`.env`](.env) points
   both back at the repo-root `data/` and `.local/shop-db.json`. One store, shared
   with the agent.
-- **Identity:** no login (auth deferred). The session is pinned to the existing
-  pre-linked demo customer via [`lib/shop/identity.ts`](lib/shop/identity.ts)
-  (`simulated-chat` + `demo-lin` → `customer-demo-lin`). Reads are identity-gated,
-  own-resources-only; unknown/non-owned ids are refused identically (no existence
-  leak). The header shows "Shopping as <demo customer>".
+- **Identity:** real login (shipped 2026-06-09). Identity comes from the session
+  cookie, not a hardcoded pin: [`lib/auth/session.ts`](lib/auth/session.ts) reads an
+  HMAC-signed `httpOnly` cookie holding the logged-in username, which is the
+  `externalUserId` of the customer's `web`-channel account-link — so a session
+  resolves through the **same `resolveLinkedCustomer` path** every channel uses
+  (`web` + username → customer). [`lib/shop/identity.ts`](lib/shop/identity.ts) now
+  re-exports `getIdentity`/`requireIdentity` from there. Passwords are scrypt-hashed
+  in the shared store's `credentials` domain (`registerWebAccount` /
+  `verifyWebCredential` in `src/shop/service.ts`); the storefront never stores or
+  sees plaintext. Browsing the catalogue is public; the gated routes
+  (cart/orders/returns) call `requireIdentity()` and redirect to `/login` when
+  logged out. Reads stay identity-gated, own-resources-only, with identical
+  no-existence-leak refusals. The header shows "Shopping as <name>" + Sign out when
+  logged in, and Sign in / Register when not. The demo customer **Lin** is seeded a
+  web login (`lin` / a demo password — see `data/customers/credentials.json`).
 
 Phase 2 added two read functions to `src/shop/service.ts` — `listProducts()` and
 `getProductById()` — so browse/PDP surfaces never touch `data/` directly.
@@ -94,9 +106,10 @@ consent**.
 
 ## Orders — read-only, own-orders-only (Phase 4)
 
-Order history + order detail/tracking (surfaces 5, DESIGN.md §5.5) are **reads**,
-not mutations — checkout/payments stay out of scope (ARCHITECTURE §5), so orders
-are seeded fixtures the app only displays. Both surfaces go through the same
+Order history + order detail/tracking (surfaces 5, DESIGN.md §5.5) are **reads**.
+Orders start as seeded fixtures, and since the **mock checkout** shipped (2026-06-09,
+ARCHITECTURE §5) they also include real customer-placed orders (cart → unpaid `placed`
+order; real payment stays out of scope). Both surfaces go through the same
 reuse-layer seam as everything else: [`lib/shop/index.ts`](lib/shop/index.ts)'s
 `getOrders()` / `getOrder(id)` call the chat tools' own `listOrdersForChannel` /
 `getOrderForChannel` in `src/shop`, so identity gating and ownership are the one
@@ -202,10 +215,11 @@ DESIGN.md, mockups/, tools/   # design-phase artifacts (see DESIGN §appendix)
 
 ## Scope this app must respect
 
-No checkout / payments / auth / address mutation / staff view. The cart is the
-only mutation and must still write the audit log — **shipped in Phase 3** (see
-"Cart mutations" above): Add-to-cart, qty update, and remove are live and audited.
-Orders (Phase 4) and Returns (Phase 5) are **read-only** own-only views over seeded
-fixtures — a return is *requested* through the assistant, never opened or refunded
-from the storefront. Adding anything beyond the decided scope requires an
-`ARCHITECTURE.md` §5 update first.
+Auth, mock checkout (login/signup + cart→order) **shipped 2026-06-09**; still **no
+real payment / address mutation / staff view**. Shop mutations are cart edits (Phase
+3 — add/qty/remove, audited) **plus checkout** (cart → unpaid `placed` order,
+decrements stock, clears cart, audited via the same preview→confirm path). Orders
+(Phase 4) and Returns (Phase 5) are **read-only** own-only views — orders now include
+customer-placed ones, but a return is still *requested* through the assistant, never
+opened or refunded from the storefront. Adding anything beyond the decided scope
+requires an `ARCHITECTURE.md` §5 update first.

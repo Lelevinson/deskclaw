@@ -1,12 +1,10 @@
-// The storefront has no login (auth is deferred — ARCHITECTURE §5, roadmap §4).
-// It shops as the single pre-linked demo customer, treating the web session as a
-// fixed channel identity. We reuse the EXISTING seeded account-link
-// (data/customers/account-links.json) rather than minting a new channel, so no
-// data changes are needed and the same identity → ownership → audit path the
-// chat skills use applies verbatim.
+import "server-only";
+
+// The storefront's identity seam. Auth has shipped: identity now comes from the
+// logged-in session (a "web"-channel username), resolved through the SAME
+// resolveLinkedCustomer path every channel uses — there is no parallel identity
+// logic. This replaced the hardcoded single-customer DEMO_IDENTITY that existed
+// while login was deferred (ARCHITECTURE §5).
 //
-// channel + externalUserId → accountLink → customerId (= customer-demo-lin)
-export const DEMO_IDENTITY = {
-  channel: "simulated-chat",
-  externalUserId: "demo-lin",
-} as const;
+// session username  →  web account-link  →  customerId
+export { getIdentity, requireIdentity, type WebIdentity } from "../auth/session";

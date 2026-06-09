@@ -1,9 +1,11 @@
 import Link from "next/link";
 
 import { countCartItems, getCart } from "@/lib/shop";
+import { requireIdentity } from "@/lib/auth/session";
 import { formatNtd } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { CartLineItem } from "@/components/store/CartLineItem";
+import { CheckoutButton } from "@/components/store/CheckoutButton";
 import { EmptyState } from "@/components/store/EmptyState";
 
 // The cart reads live, shared, per-request mutable state (the same store the chat
@@ -13,9 +15,11 @@ export const dynamic = "force-dynamic";
 
 // Cart (surface 4, DESIGN.md §5.4). Server component: reads the demo customer's
 // own cart through the src/shop reuse layer (identity-gated, own-cart-only). The
-// rows mutate via audited server actions (lib/shop/cart-actions) — the only writes
-// the storefront makes. No checkout CTA (out of scope, ARCHITECTURE §5).
+// rows mutate via audited server actions (lib/shop/cart-actions). Checkout (mock,
+// no payment — ARCHITECTURE §5) turns the cart into an order via the same audited
+// preview→confirm path.
 export default async function CartPage() {
+  await requireIdentity(); // gated: redirects to /login when logged out
   const cart = await getCart();
   const itemCount = countCartItems(cart);
 
@@ -54,13 +58,13 @@ export default async function CartPage() {
         </div>
 
         <div className="rule-gold w-full max-w-xs" />
-        <p className="font-serif text-sm italic text-ink-muted">
-          No checkout in this demo
-        </p>
 
-        <Button asChild variant="outline">
-          <Link href="/">Continue shopping</Link>
-        </Button>
+        <div className="flex w-full max-w-xs flex-col items-stretch gap-3">
+          <CheckoutButton />
+          <Button asChild variant="outline">
+            <Link href="/">Continue shopping</Link>
+          </Button>
+        </div>
       </div>
     </div>
   );

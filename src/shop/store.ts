@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { AccountLink, ActionLog, Cart, Customer, HandoffRecord, Order, PendingAction, ProductCatalog, ReturnRequest, ShopDatabase } from "./types.js";
+import type { AccountLink, ActionLog, Cart, Credential, Customer, HandoffRecord, Order, PendingAction, ProductCatalog, ReturnRequest, ShopDatabase } from "./types.js";
 
 const DEFAULT_DATA_DIR = path.resolve(process.cwd(), "data");
 const DEFAULT_DB_PATH = path.resolve(process.cwd(), ".local/shop-db.json");
@@ -31,6 +31,9 @@ async function readInitialDatabase(): Promise<ShopDatabase> {
   const accountLinkData = await readJsonFile<{ accountLinks: AccountLink[] }>(
     path.join(dataDir, "customers/account-links.json")
   );
+  const credentialData = await readJsonFile<{ credentials: Credential[] }>(
+    path.join(dataDir, "customers/credentials.json")
+  );
   const cartState = await readJsonFile<{ carts: Cart[] }>(path.join(dataDir, "shop/carts.json"));
   const orderState = await readJsonFile<{ orders: Order[] }>(path.join(dataDir, "shop/orders.json"));
   const returnState = await readJsonFile<{ returns: ReturnRequest[] }>(path.join(dataDir, "shop/returns.json"));
@@ -45,6 +48,7 @@ async function readInitialDatabase(): Promise<ShopDatabase> {
     products: catalog.products,
     customers: customerData.customers,
     accountLinks: accountLinkData.accountLinks,
+    credentials: credentialData.credentials,
     carts: cartState.carts,
     orders: orderState.orders,
     returns: returnState.returns,
@@ -61,6 +65,7 @@ async function readInitialDatabase(): Promise<ShopDatabase> {
 // happy path below, and the seed path via readInitialDatabase (which both the
 // ENOENT branch and resetShopDb use). New array-valued domains go here too.
 function normalizeShopDb(db: ShopDatabase): ShopDatabase {
+  db.credentials ??= [];
   db.carts ??= [];
   db.orders ??= [];
   db.returns ??= [];

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { getReturns } from "@/lib/shop";
+import { requireIdentity } from "@/lib/auth/session";
 import { formatDate, formatOrderId, formatReturnId } from "@/lib/format";
 import { EmptyState } from "@/components/store/EmptyState";
 import { ReturnStatusBadge } from "@/components/store/ReturnStatusBadge";
@@ -16,6 +17,7 @@ export const dynamic = "force-dynamic";
 // mutation here; returns are read-only request records (the chat returns-actions
 // skill opens them, never the storefront — ARCHITECTURE §5, DESIGN §5.6).
 export default async function ReturnsPage() {
+  await requireIdentity(); // gated: redirects to /login when logged out
   const returns = await getReturns();
 
   if (returns.length === 0) {

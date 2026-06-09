@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
 
 import { readShopDb, writeShopDb } from "./store.js";
 import type {
@@ -8,6 +8,7 @@ import type {
   CartLine,
   CartPendingActionType,
   CartView,
+  Credential,
   Customer,
   HandoffClassification,
   HandoffRecord,
@@ -37,6 +38,15 @@ export interface ProductSearchResult {
   product: Product;
   score: number;
   reason: string;
+}
+
+// The logged-in customer's own profile for the storefront account page. Includes
+// the accountCode so the owner can read it off to link another channel (chat);
+// only ever returned for the resolved, own identity.
+export interface AccountProfile {
+  customerId: string;
+  displayName: string;
+  accountCode?: string;
 }
 
 interface LinkedCustomerRecord {
@@ -70,6 +80,52 @@ function addLog(db: ShopDatabase, log: Omit<ActionLog, "id" | "createdAt">): voi
 
 function findCustomer(db: ShopDatabase, customerId: string): Customer | undefined {
   return db.customers.find((customer) => customer.id === customerId);
+}
+
+function findCustomerByAccountCode(db: ShopDatabase, accountCode: string): Customer | undefined {
+  const normalized = normalize(accountCode);
+  return db.customers.find(
+    (customer) => customer.accountCode != null && normalize(customer.accountCode) === normalized
+  );
+}
+
+// Human-shareable demo verification code, e.g. "A1B2-C3D4" (no ambiguous chars),
+// unique within the store. Stands in for an OTP delivered to the contact on file.
+function generateAccountCode(db: ShopDatabase): string {
+  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  const make = (): string => {
+    const hex = randomUUID().replace(/-/g, "");
+    let raw = "";
+    for (let i = 0; i < 8; i += 1) {
+      raw += alphabet[parseInt(hex.slice(i * 2, i * 2 + 2), 16) % alphabet.length];
+    }
+    return `${raw.slice(0, 4)}-${raw.slice(4)}`;
+  };
+  let code = make();
+  while (db.customers.some((customer) => customer.accountCode === code)) {
+    code = make();
+  }
+  return code;
+}
+
+// --- web login credentials (scrypt; passwords never stored in clear) ---
+const MIN_PASSWORD_LENGTH = 8;
+const SCRYPT_KEYLEN = 64;
+
+function hashPassword(password: string, salt: string): string {
+  return scryptSync(password, salt, SCRYPT_KEYLEN).toString("hex");
+}
+
+// Constant-time check of a candidate password against a stored salt + hash.
+function passwordMatches(password: string, salt: string, expectedHash: string): boolean {
+  const candidate = scryptSync(password, salt, SCRYPT_KEYLEN);
+  const expected = Buffer.from(expectedHash, "hex");
+  return candidate.length === expected.length && timingSafeEqual(candidate, expected);
+}
+
+function findCredentialByUsername(db: ShopDatabase, username: string): Credential | undefined {
+  const normalized = normalize(username);
+  return (db.credentials ?? []).find((cred) => normalize(cred.username) === normalized);
 }
 
 function buildLinkedCustomer(customer: Customer, accountLink: AccountLink): LinkedCustomer {
@@ -241,6 +297,236 @@ export async function lookupCustomerByChannel(
   return { ok: true, data: linked.data.publicView };
 }
 
+// Self-service registration of a BRAND-NEW customer bound to the caller's own
+// channel identity. Safe (no pre-existing data to take over). The caller's
+// channel + externalUserId are the proof — never a customer-typed id. Linking a
+// PRE-EXISTING account instead goes through linkExistingAccountForChannel, which
+// requires the verification code.
+export async function registerNewCustomerForChannel(
+  channel: string,
+  externalUserId: string,
+  displayName: string
+): Promise<ServiceResult<LinkedCustomer>> {
+  const db = await readShopDb();
+
+  const existing = resolveLinkedCustomer(db, channel, externalUserId);
+  if (existing.ok && existing.data) {
+    return {
+      ok: false,
+      error: `This channel identity is already registered as ${existing.data.customer.displayName}.`
+    };
+  }
+
+  const trimmedName = displayName.trim();
+  if (!trimmedName) {
+    return { ok: false, error: "Please share the name to register the account under." };
+  }
+
+  const customer: Customer = {
+    id: `customer_${randomUUID()}`,
+    displayName: trimmedName,
+    accountCode: generateAccountCode(db)
+  };
+  const accountLink: AccountLink = {
+    id: `link_${randomUUID()}`,
+    customerId: customer.id,
+    channel,
+    externalUserId,
+    status: "linked",
+    linkedAt: nowIso()
+  };
+
+  db.customers.push(customer);
+  db.accountLinks.push(accountLink);
+
+  addLog(db, {
+    type: "account.register",
+    status: "success",
+    customerId: customer.id,
+    summary: `Register new customer ${customer.displayName} from ${accountLink.channel}.`,
+    metadata: { accountLinkId: accountLink.id, channel: accountLink.channel }
+  });
+
+  await writeShopDb(db);
+  return { ok: true, data: buildLinkedCustomer(customer, accountLink) };
+}
+
+// Link the caller's channel identity to an EXISTING customer account, gated by
+// that account's verification code (a demo-grade stand-in for an OTP sent to the
+// contact on file). The code both selects and authenticates the account; an
+// unknown code is refused with a generic message (no existence leak).
+export async function linkExistingAccountForChannel(
+  channel: string,
+  externalUserId: string,
+  accountCode: string
+): Promise<ServiceResult<LinkedCustomer>> {
+  const db = await readShopDb();
+
+  const existing = resolveLinkedCustomer(db, channel, externalUserId);
+  if (existing.ok && existing.data) {
+    return {
+      ok: false,
+      error: `This channel identity is already registered as ${existing.data.customer.displayName}.`
+    };
+  }
+
+  const trimmedCode = accountCode.trim();
+  if (!trimmedCode) {
+    return { ok: false, error: "Please share your account verification code." };
+  }
+
+  const customer = findCustomerByAccountCode(db, trimmedCode);
+  if (!customer) {
+    return { ok: false, error: "That verification code was not recognized." };
+  }
+
+  const accountLink: AccountLink = {
+    id: `link_${randomUUID()}`,
+    customerId: customer.id,
+    channel,
+    externalUserId,
+    status: "linked",
+    linkedAt: nowIso()
+  };
+  db.accountLinks.push(accountLink);
+
+  addLog(db, {
+    type: "account.link_existing",
+    status: "success",
+    customerId: customer.id,
+    summary: `Link existing customer ${customer.displayName} to a ${accountLink.channel} identity.`,
+    metadata: { accountLinkId: accountLink.id, channel: accountLink.channel }
+  });
+
+  await writeShopDb(db);
+  return { ok: true, data: buildLinkedCustomer(customer, accountLink) };
+}
+
+// Register a brand-new customer with a storefront web login. Creates a Customer,
+// a "web" AccountLink (externalUserId = the username) so a logged-in session
+// resolves through resolveLinkedCustomer like any channel, and a Credential whose
+// password is scrypt-hashed (never stored in clear). Web-only; not an MCP tool.
+export async function registerWebAccount(
+  username: string,
+  password: string,
+  displayName: string
+): Promise<ServiceResult<LinkedCustomer>> {
+  const db = await readShopDb();
+
+  const normalizedUsername = normalize(username);
+  if (!normalizedUsername) {
+    return { ok: false, error: "Please choose a username." };
+  }
+  if (!/^[a-z0-9._-]+$/.test(normalizedUsername)) {
+    return { ok: false, error: "Username can use only letters, numbers, dots, underscores, and hyphens." };
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return { ok: false, error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` };
+  }
+  const trimmedName = displayName.trim();
+  if (!trimmedName) {
+    return { ok: false, error: "Please share the name to register the account under." };
+  }
+  if (findCredentialByUsername(db, normalizedUsername)) {
+    return { ok: false, error: "That username is already taken." };
+  }
+
+  const customer: Customer = {
+    id: `customer_${randomUUID()}`,
+    displayName: trimmedName,
+    accountCode: generateAccountCode(db)
+  };
+  const accountLink: AccountLink = {
+    id: `link_${randomUUID()}`,
+    customerId: customer.id,
+    channel: "web",
+    externalUserId: normalizedUsername,
+    status: "linked",
+    linkedAt: nowIso()
+  };
+  const salt = randomBytes(16).toString("hex");
+  const credential: Credential = {
+    customerId: customer.id,
+    username: normalizedUsername,
+    salt,
+    hash: hashPassword(password, salt),
+    createdAt: nowIso()
+  };
+
+  db.customers.push(customer);
+  db.accountLinks.push(accountLink);
+  db.credentials.push(credential);
+
+  addLog(db, {
+    type: "account.web_register",
+    status: "success",
+    customerId: customer.id,
+    summary: `Register web account ${customer.displayName} (@${normalizedUsername}).`,
+    metadata: { accountLinkId: accountLink.id, channel: accountLink.channel }
+  });
+
+  await writeShopDb(db);
+  return { ok: true, data: buildLinkedCustomer(customer, accountLink) };
+}
+
+// Verify a storefront login. Returns the linked customer on success; a single
+// generic error otherwise. Hashes even when the username is unknown so a missing
+// user and a wrong password are indistinguishable and roughly equal-time.
+export async function verifyWebCredential(
+  username: string,
+  password: string
+): Promise<ServiceResult<LinkedCustomer>> {
+  const db = await readShopDb();
+  const generic = "Invalid username or password.";
+
+  const credential = findCredentialByUsername(db, normalize(username));
+  if (!credential) {
+    hashPassword(password, "decoy-salt"); // equalize timing; do not reveal absence
+    return { ok: false, error: generic };
+  }
+  if (!passwordMatches(password, credential.salt, credential.hash)) {
+    return { ok: false, error: generic };
+  }
+
+  const linked = resolveLinkedCustomer(db, "web", credential.username);
+  if (!linked.ok || !linked.data) {
+    return { ok: false, error: generic };
+  }
+
+  addLog(db, {
+    type: "account.web_login",
+    status: "success",
+    customerId: linked.data.customer.id,
+    summary: `Web login for ${linked.data.customer.displayName} (@${credential.username}).`,
+    metadata: { accountLinkId: linked.data.accountLink.id, channel: "web" }
+  });
+  await writeShopDb(db);
+
+  return { ok: true, data: linked.data.publicView };
+}
+
+// Read the resolved customer's own profile (display name + their accountCode) for
+// the storefront account page. Identity-gated, own-only — same resolution path as
+// everything else.
+export async function getAccountProfileForChannel(
+  channel: string,
+  externalUserId: string
+): Promise<ServiceResult<AccountProfile>> {
+  const db = await readShopDb();
+  const linked = resolveLinkedCustomer(db, channel, externalUserId);
+  if (!linked.ok || !linked.data) {
+    return { ok: false, error: linked.error };
+  }
+  return {
+    ok: true,
+    data: {
+      customerId: linked.data.customer.id,
+      displayName: linked.data.customer.displayName,
+      accountCode: linked.data.customer.accountCode
+    }
+  };
+}
+
 export async function searchProducts(
   query: string,
   maxResults = 5
@@ -315,6 +601,147 @@ export async function getCartForChannel(
   }
 
   return { ok: true, data: buildCartView(db, findOrCreateCart(db, linked.data.customer.id)) };
+}
+
+// --- checkout (mock: cart -> order; NO payment, ARCHITECTURE §5) ---
+const LOW_STOCK_THRESHOLD = 5;
+
+export interface CheckoutPreview {
+  lines: CartLine[];
+  totalNtd: number;
+  confirmationText: string;
+}
+
+// Next sequential id in the seeded "order-YYYY-NNNN" format so generated ids match
+// fixtures and never collide.
+function nextOrderId(db: ShopDatabase): string {
+  let max = 0;
+  for (const order of db.orders ?? []) {
+    const match = /^order-\d{4}-(\d+)$/.exec(order.id);
+    if (match) max = Math.max(max, parseInt(match[1], 10));
+  }
+  return `order-${nowIso().slice(0, 4)}-${String(max + 1).padStart(4, "0")}`;
+}
+
+function stockStatusFor(quantity: number): Product["stockStatus"] {
+  if (quantity <= 0) return "out_of_stock";
+  if (quantity <= LOW_STOCK_THRESHOLD) return "low_stock";
+  return "in_stock";
+}
+
+// The cart is checkout-ready when it is non-empty and every line is still in stock
+// at the requested quantity. Used by both preview and confirm (re-checked at confirm
+// so stock that dropped in between is caught).
+function validateCartForCheckout(db: ShopDatabase, customerId: string): ServiceResult<{ cart: Cart }> {
+  const cart = findOrCreateCart(db, customerId);
+  if (cart.items.length === 0) {
+    return { ok: false, error: "Your cart is empty — add something before checking out." };
+  }
+  for (const item of cart.items) {
+    const product = findProduct(db, item.productId);
+    if (!product) {
+      return { ok: false, error: "A product in your cart is no longer available." };
+    }
+    const stockError = validateAvailableQuantity(product, item.quantity);
+    if (stockError) {
+      return { ok: false, error: stockError };
+    }
+  }
+  return { ok: true, data: { cart } };
+}
+
+// Read-only: validate the cart and summarize what would be ordered. No write.
+export async function previewCheckoutForChannel(
+  channel: string,
+  externalUserId: string
+): Promise<ServiceResult<CheckoutPreview>> {
+  const db = await readShopDb();
+  const linked = resolveLinkedCustomer(db, channel, externalUserId);
+  if (!linked.ok || !linked.data) {
+    return { ok: false, error: linked.error };
+  }
+  const valid = validateCartForCheckout(db, linked.data.customer.id);
+  if (!valid.ok || !valid.data) {
+    return { ok: false, error: valid.error };
+  }
+  const view = buildCartView(db, valid.data.cart);
+  const count = view.items.reduce((sum, item) => sum + item.quantity, 0);
+  return {
+    ok: true,
+    data: {
+      lines: view.items,
+      totalNtd: view.totalNtd,
+      confirmationText: `Place an order for ${count} item(s) totaling NT$${view.totalNtd}? No payment is taken in this demo.`
+    }
+  };
+}
+
+// Commit: turn the cart into a new "placed" order, decrement stock, clear the cart,
+// and audit. Re-reads the cart (no pending-action id), so a second confirm finds an
+// empty cart and is refused — no double order.
+export async function confirmCheckoutForChannel(
+  channel: string,
+  externalUserId: string
+): Promise<ServiceResult<{ order: Order }>> {
+  const db = await readShopDb();
+  const linked = resolveLinkedCustomer(db, channel, externalUserId);
+  if (!linked.ok || !linked.data) {
+    return { ok: false, error: linked.error };
+  }
+  const customerId = linked.data.customer.id;
+
+  const valid = validateCartForCheckout(db, customerId);
+  if (!valid.ok || !valid.data) {
+    return { ok: false, error: valid.error };
+  }
+  const cart = valid.data.cart;
+
+  const now = nowIso();
+  // Capture the unit price from the catalog AT CHECKOUT TIME (order is a historical fact).
+  const items: Order["items"] = cart.items.map((item) => ({
+    productId: item.productId,
+    quantity: item.quantity,
+    unitPriceNtd: findProduct(db, item.productId)!.priceNtd
+  }));
+  const totalNtd = items.reduce((sum, item) => sum + item.unitPriceNtd * item.quantity, 0);
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  const order: Order = {
+    id: nextOrderId(db),
+    customerId,
+    status: "placed",
+    placedAt: now,
+    updatedAt: now,
+    items,
+    totalNtd
+  };
+  db.orders.push(order);
+
+  // Decrement stock and recompute status for each ordered product.
+  for (const item of cart.items) {
+    const product = findProduct(db, item.productId);
+    if (!product) continue;
+    product.stockQuantity = Math.max(0, product.stockQuantity - item.quantity);
+    product.stockStatus = stockStatusFor(product.stockQuantity);
+  }
+
+  cart.items = []; // the order now holds these items
+
+  addLog(db, {
+    type: "checkout",
+    status: "success",
+    customerId,
+    summary: `Place order ${order.id} — ${itemCount} item(s), NT$${totalNtd}.`,
+    metadata: {
+      orderId: order.id,
+      accountLinkId: linked.data.accountLink.id,
+      channel: linked.data.accountLink.channel,
+      itemCount
+    }
+  });
+
+  await writeShopDb(db);
+  return { ok: true, data: { order } };
 }
 
 function previewAddItemForLink(
