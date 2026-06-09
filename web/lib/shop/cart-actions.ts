@@ -20,26 +20,27 @@
 // or the chat agent for the same demo customer — can't make this confirm commit a
 // different staged action.
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import {
   confirmAddItemForChannel,
+  confirmCheckoutForChannel,
   confirmRemoveItemForChannel,
   confirmUpdateQuantityForChannel,
   previewAddItemForChannel,
+  previewCheckoutForChannel,
   previewRemoveItemForChannel,
   previewUpdateQuantityForChannel,
 } from "@shop/service.js";
 import type { ServiceResult } from "@shop/service.js";
 import type { PendingAction } from "@shop/types.js";
 
-import { DEMO_IDENTITY } from "./identity";
+import { requireIdentity } from "./identity";
 
 export interface CartActionResult {
   ok: boolean;
   error?: string;
 }
-
-const { channel, externalUserId } = DEMO_IDENTITY;
 
 // Refresh both the cart page and the layout (header "Cart(n)" badge) after any
 // successful mutation so server-rendered counts/lines stay in sync.
@@ -73,6 +74,7 @@ export async function addToCart(
   productId: string,
   quantity: number,
 ): Promise<CartActionResult> {
+  const { channel, externalUserId } = await requireIdentity();
   return runAuditedMutation(
     () => previewAddItemForChannel(channel, externalUserId, productId, quantity),
     (id) => confirmAddItemForChannel(channel, externalUserId, id),
@@ -83,6 +85,7 @@ export async function updateCartQuantity(
   productId: string,
   quantity: number,
 ): Promise<CartActionResult> {
+  const { channel, externalUserId } = await requireIdentity();
   return runAuditedMutation(
     () => previewUpdateQuantityForChannel(channel, externalUserId, productId, quantity),
     (id) => confirmUpdateQuantityForChannel(channel, externalUserId, id),
@@ -90,8 +93,30 @@ export async function updateCartQuantity(
 }
 
 export async function removeFromCart(productId: string): Promise<CartActionResult> {
+  const { channel, externalUserId } = await requireIdentity();
   return runAuditedMutation(
     () => previewRemoveItemForChannel(channel, externalUserId, productId),
     (id) => confirmRemoveItemForChannel(channel, externalUserId, id),
   );
+}
+
+// Mock checkout: turn the cart into an order (no payment). Like the cart actions,
+// the deliberate click is the consent, and it reuses the same preview→confirm
+// audited path. On success it redirects to the new order; on failure (empty cart /
+// stock) it returns the error to show inline.
+export async function checkout(): Promise<CartActionResult> {
+  const { channel, externalUserId } = await requireIdentity();
+
+  const previewed = await previewCheckoutForChannel(channel, externalUserId);
+  if (!previewed.ok) return { ok: false, error: previewed.error };
+
+  const placed = await confirmCheckoutForChannel(channel, externalUserId);
+  if (!placed.ok || !placed.data) {
+    return { ok: false, error: placed.error ?? "Could not place your order." };
+  }
+
+  revalidatePath("/cart");
+  revalidatePath("/orders");
+  revalidatePath("/", "layout");
+  redirect(`/orders/${placed.data.order.id}`);
 }

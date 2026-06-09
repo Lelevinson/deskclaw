@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { getOrders } from "@/lib/shop";
+import { requireIdentity } from "@/lib/auth/session";
 import { formatDate, formatOrderId } from "@/lib/format";
 import { EmptyState } from "@/components/store/EmptyState";
 import { OrderStatusBadge } from "@/components/store/OrderStatusBadge";
@@ -17,6 +18,7 @@ export const dynamic = "force-dynamic";
 // mutation here; orders are read-only (checkout/payments are out of scope,
 // ARCHITECTURE §5).
 export default async function OrdersPage() {
+  await requireIdentity(); // gated: redirects to /login when logged out
   const orders = await getOrders();
 
   if (orders.length === 0) {

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { getOrder } from "@/lib/shop";
 import type { OrderView } from "@/lib/shop";
+import { requireIdentity } from "@/lib/auth/session";
 import { formatDate, formatNtd, formatOrderId } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { OrderStatusBadge } from "@/components/store/OrderStatusBadge";
@@ -46,6 +47,7 @@ export default async function OrderDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireIdentity(); // gated: redirects to /login when logged out
   const { id } = await params;
   const order = await getOrder(id);
   if (!order) notFound();

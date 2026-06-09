@@ -16,6 +16,14 @@
       "externalUserId": "demo-lin",
       "status": "linked",
       "linkedAt": "2026-05-28T00:00:00.000Z"
+    },
+    {
+      "id": "link-demo-lin-web",
+      "customerId": "customer-demo-lin",
+      "channel": "web",
+      "externalUserId": "lin",
+      "status": "linked",
+      "linkedAt": "2026-05-28T00:00:00.000Z"
     }
   ]
 }

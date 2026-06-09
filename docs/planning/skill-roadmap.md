@@ -103,7 +103,7 @@ Walked the full customer journey (pre-purchase → buying → post-purchase → 
 One capability was added from this check (refund/return-status read, folded into item 4 above). Everything else surfaced was either already covered or a deliberate post-MVP deferral, now recorded in [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md) §5:
 
 - **Checkout (cart → paid order)** — no payment in a local mock and the riskiest mutation; deferred. Consequence: `data/shop/orders.json` is **seeded fixtures**, not agent-created — `order-status` and `returns-actions` read pre-existing orders. Stated so it is a decision, not a silent gap.
-- **Self-service account linking** for unlinked senders — deferred with deep-link/QR onboarding; the demo is pre-linked and skills already ask unlinked users to verify.
+- **Self-service account registration & linking** for unlinked senders — **shipped 2026-06-09** (`account-registration` skill + `shop_account_register` / `shop_account_link_existing`; see ARCHITECTURE §5 in-scope). A new account is created bound to the sender's own channel identity; an existing account is linked only with its `accountCode` (a demo stand-in for an OTP). Still deferred: out-of-band code delivery, deep-link/QR onboarding, and repairing a revoked link from chat.
 - **Loyalty / points / gift balance** — not in the data model; research flags it as cash-equivalent high-risk. Deferred.
 - **Proactive / outbound** (post-purchase check-ins, review requests, abandoned-cart nudges) — no async outbound channel; deferred (same blocker as restock alerts).
 

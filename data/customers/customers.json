@@ -3,7 +3,8 @@
   "customers": [
     {
       "id": "customer-demo-lin",
-      "displayName": "Lin Demo"
+      "displayName": "Lin Demo",
+      "accountCode": "LIN-7421"
     }
   ]
 }

@@ -25,7 +25,7 @@ This skill is **read-only**. It never changes an order, places an order, cancels
 - Never use raw database access.
 - Only ever reveal orders that the linked account owns. The tools enforce this; never try to work around it.
 - A customer quoting an order number does not prove they own it. Identity is always the channel binding, never the order number. If `shop_order_get` reports no matching order for the account, say you could not find that order on their account — do not confirm or deny that the order exists for someone else.
-- If channel identity or linked account context is missing, unlinked, or revoked, ask the customer to verify or link their account instead of guessing or reading any order.
+- If channel identity or linked account context is missing, unlinked, or revoked, do not guess or read any order. If the sender wants to proceed, hand off to `account-registration` to create or link an account; otherwise ask them to verify.
 - Never invent order ids, statuses, items, prices, carriers, tracking numbers, or delivery dates. If a field is absent (for example, no tracking yet on a processing order), say it is not available yet rather than guessing.
 - This skill cannot place, change, or cancel an order, and cannot issue a refund. If a customer wants any of those, explain that you can show the order's status but a human teammate handles changes, cancellations, and refunds.
 - Keep replies short and customer-facing. Do not reveal internal tool names unless the user is asking as a developer.

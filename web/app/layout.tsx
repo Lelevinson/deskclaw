@@ -3,7 +3,7 @@ import { Cinzel, Cormorant_Garamond, Jost } from "next/font/google";
 
 import "./globals.css";
 import { AppShell } from "@/components/shell/AppShell";
-import { getCartCount, getDemoCustomerName } from "@/lib/shop";
+import { getCartCount, getCurrentCustomerName } from "@/lib/shop";
 
 // DESIGN.md §3.2 — Cinzel (display/logo), Cormorant (editorial), Jost (UI).
 const cinzel = Cinzel({
@@ -28,7 +28,7 @@ const jost = Jost({
 export const metadata: Metadata = {
   title: "Amelya's — Skincare, simply.",
   description:
-    "A companion view to the Amelya's assistant — browse the skincare catalogue. No checkout in this demo.",
+    "A companion view to the Amelya's assistant — browse the skincare catalogue, build a cart, and place a mock order (no payment).",
 };
 
 export default async function RootLayout({
@@ -37,7 +37,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const [customerName, cartCount] = await Promise.all([
-    getDemoCustomerName(),
+    getCurrentCustomerName(),
     getCartCount(),
   ]);
   return (

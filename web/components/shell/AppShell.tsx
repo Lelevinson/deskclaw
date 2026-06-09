@@ -1,22 +1,43 @@
 import Link from "next/link";
+import { User } from "lucide-react";
 
 import { Logo } from "./Logo";
 import { MobileNav } from "./MobileNav";
 import { NAV } from "./nav";
 
-function ShoppingAsBar({ customerName }: { customerName: string }) {
+// The header account control (DESIGN §5.1). Logged in: a person icon + the
+// customer's name linking to /account (where the profile + Sign out live). Logged
+// out: a "Sign in" link. This replaced the old sage "Shopping as …" banner.
+function AccountControl({ customerName }: { customerName: string | null }) {
+  if (!customerName) {
+    return (
+      <Link
+        href="/login"
+        className="rounded-sm font-sans text-sm tracking-wide text-ink transition-colors hover:text-gold-deep focus-visible:text-gold-deep focus-ring focus-visible:ring-offset-4 focus-visible:ring-offset-cream-soft"
+      >
+        Sign in
+      </Link>
+    );
+  }
   return (
-    <div className="bg-sage text-cream-soft">
-      <div className="mx-auto max-w-content px-7 py-2 text-center font-sans text-xs tracking-wide">
-        Shopping as{" "}
-        <span className="font-medium text-gold-light">{customerName}</span> — your
-        cart, orders &amp; returns are private to you
-      </div>
-    </div>
+    <Link
+      href="/account"
+      aria-label={`Account — signed in as ${customerName}`}
+      className="flex items-center gap-1.5 rounded-sm font-sans text-sm tracking-wide text-ink transition-colors hover:text-gold-deep focus-visible:text-gold-deep focus-ring focus-visible:ring-offset-4 focus-visible:ring-offset-cream-soft"
+    >
+      <User className="size-4 text-gold-deep" aria-hidden />
+      {customerName}
+    </Link>
   );
 }
 
-function Header({ cartCount }: { cartCount: number }) {
+function Header({
+  customerName,
+  cartCount,
+}: {
+  customerName: string | null;
+  cartCount: number;
+}) {
   return (
     <header className="sticky top-0 z-20 border-b border-line bg-cream-soft/95 backdrop-blur">
       <div className="relative mx-auto flex max-w-content items-center justify-between px-7 py-4">
@@ -52,9 +73,13 @@ function Header({ cartCount }: { cartCount: number }) {
               </span>
             ),
           )}
+
+          {/* Account control sits after the surfaces, set off by a hairline. */}
+          <span aria-hidden className="h-4 w-px bg-line" />
+          <AccountControl customerName={customerName} />
         </nav>
 
-        <MobileNav items={NAV} cartCount={cartCount} />
+        <MobileNav items={NAV} cartCount={cartCount} customerName={customerName} />
       </div>
     </header>
   );
@@ -71,7 +96,7 @@ function Footer() {
           </p>
         </div>
         <p className="font-sans text-xs leading-relaxed tracking-wide text-cream-soft/70 sm:text-right">
-          No checkout in this demo
+          Mock checkout · no payment taken
           <br />
           Prices in NT$ · shared backend
         </p>
@@ -85,14 +110,13 @@ export function AppShell({
   cartCount,
   children,
 }: {
-  customerName: string;
+  customerName: string | null;
   cartCount: number;
   children: React.ReactNode;
 }) {
   return (
     <div className="flex min-h-screen flex-col">
-      <ShoppingAsBar customerName={customerName} />
-      <Header cartCount={cartCount} />
+      <Header customerName={customerName} cartCount={cartCount} />
       <main className="mx-auto w-full max-w-content flex-1 px-7">{children}</main>
       <Footer />
     </div>

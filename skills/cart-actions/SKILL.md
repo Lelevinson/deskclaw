@@ -34,7 +34,7 @@ Every mutation — add, remove, or quantity change — follows the same identity
 - Never mutate a cart without explicit customer confirmation.
 - After the customer confirms a preview, commit the existing pending action. Do not create another preview unless the previous confirmation expired or the customer changed product or quantity.
 - Never invent tool results, customer ids, product ids, prices, stock, or cart state.
-- If channel identity or linked account context is missing, unlinked, or revoked, ask the customer to verify or link their account instead of guessing.
+- If channel identity or linked account context is missing, unlinked, or revoked, do not guess. If the sender wants to proceed, hand off to `account-registration` to create or link an account; otherwise ask them to verify.
 - Do not accept a typed internal customer id as ownership proof.
 - If a shop tool is unavailable or returns an error, explain briefly and suggest a human teammate.
 - Keep replies short and customer-facing. Do not reveal internal tool names unless the user is asking as a developer.
@@ -49,4 +49,4 @@ Notes specific to remove and quantity change:
 - A quantity change sets the new total for that item. To take an item out entirely, remove it rather than setting its quantity to zero — a request for zero is not treated as a quantity change.
 - A change that exceeds available stock is refused; report the available amount rather than promising hidden stock.
 
-Other actions, such as applying discounts, changing addresses, or creating returns, are future extensions unless their tools exist.
+To **place an order** for what is in the cart, hand off to the `checkout` skill (a mock checkout — preview → confirm → order, no payment). Other actions, such as applying discounts or changing addresses, are future extensions unless their tools exist.

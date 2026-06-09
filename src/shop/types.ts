@@ -29,6 +29,12 @@ export interface ChannelIdentity {
 export interface Customer {
   id: string;
   displayName: string;
+  // Demo-grade verification/link code. A human-shareable secret that stands in
+  // for an OTP sent to the contact on file — used by the account-registration
+  // skill to let a sender link an EXISTING account from a new channel identity
+  // (real OTP delivery is deferred; ARCHITECTURE §5). New self-registrations get
+  // one generated; absent on legacy records.
+  accountCode?: string;
 }
 
 export interface AccountLink extends ChannelIdentity {
@@ -36,6 +42,19 @@ export interface AccountLink extends ChannelIdentity {
   customerId: string;
   status: "linked" | "revoked";
   linkedAt: string;
+}
+
+// A storefront web login for a customer. The password is never stored in the
+// clear — `hash` is scrypt(password, salt) (see src/shop/service.ts). A customer
+// with a credential also has an AccountLink on the "web" channel whose
+// externalUserId is this `username`, so a logged-in session resolves through the
+// same resolveLinkedCustomer path as any other channel.
+export interface Credential {
+  customerId: string;
+  username: string;
+  salt: string;
+  hash: string;
+  createdAt: string;
 }
 
 export interface LinkedCustomer {
@@ -202,6 +221,7 @@ export interface ShopDatabase {
   products: Product[];
   customers: Customer[];
   accountLinks: AccountLink[];
+  credentials: Credential[];
   carts: Cart[];
   orders: Order[];
   returns: ReturnRequest[];

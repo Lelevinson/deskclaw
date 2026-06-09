@@ -63,7 +63,8 @@ products.json (e.g. retinol, other brands).
   "customers": [
     {
       "id": "customer-stable-id", // internal account id, never accepted as ownership proof by itself
-      "displayName": "Customer Display Name"
+      "displayName": "Customer Display Name",
+      "accountCode": "LIN-7421" // optional; demo-grade verification code used by account-registration to link an EXISTING account from a new channel identity (stands in for an OTP sent to the contact on file). New self-registrations get one generated.
     }
   ]
 }
@@ -78,10 +79,33 @@ products.json (e.g. retinol, other brands).
     {
       "id": "link-customer-channel",
       "customerId": "customer-stable-id",
-      "channel": "whatsapp", // examples: whatsapp, simulated-chat
-      "externalUserId": "+886900000001", // identity supplied by the channel
+      "channel": "whatsapp", // examples: whatsapp, simulated-chat, web (storefront login)
+      "externalUserId": "+886900000001", // identity supplied by the channel; for "web" this is the login username
       "status": "linked", // linked | revoked
       "linkedAt": "2026-05-28T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+## `customers/credentials.json`
+
+Storefront web logins. The password is **never** stored in clear: `hash` is
+`scrypt(password, salt)` (see `src/shop/service.ts` `hashPassword`). A customer with
+a credential also has a `web`-channel account-link whose `externalUserId` equals the
+`username`, so a logged-in session resolves through the same `resolveLinkedCustomer`
+path as any channel. New web signups append a row here at runtime.
+
+```jsonc
+{
+  "version": 1,
+  "credentials": [
+    {
+      "customerId": "customer-stable-id",
+      "username": "lin", // matches the externalUserId of the customer's "web" account-link
+      "salt": "hex-random-salt",
+      "hash": "scrypt-hex-of-password+salt", // never plaintext
+      "createdAt": "2026-05-28T00:00:00.000Z"
     }
   ]
 }
@@ -234,7 +258,7 @@ Seeded escalation/handoff records. `sentiment-router` appends one (via `shop_han
 
 ## `shop/action-logs.json`
 
-`type` is the action that happened, e.g. `cart.add_item`, `cart.add_item.preview`, `return.create`, or `handoff.create` (escalations also write an audit log here, in addition to the durable record in `shop/handoffs.json`). For a `handoff.create` entry, `customerId` is present only when the escalated sender was a linked customer.
+`type` is the action that happened, e.g. `cart.add_item`, `cart.add_item.preview`, `return.create`, `handoff.create`, `account.register` (a self-service new-customer signup), `account.link_existing` (a channel identity linked to an existing account via its verification code), `account.web_register` (a storefront signup), `account.web_login` (a storefront login), or `checkout` (a mock order placed from the cart — creates an order, decrements stock, clears the cart; no payment). Escalations also write an audit log here, in addition to the durable record in `shop/handoffs.json`. For a `handoff.create` entry, `customerId` is present only when the escalated sender was a linked customer.
 
 ```jsonc
 {

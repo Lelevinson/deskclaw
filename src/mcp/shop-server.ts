@@ -4,6 +4,7 @@ import * as z from "zod/v4";
 
 import {
   confirmAddItemForChannel,
+  confirmCheckoutForChannel,
   confirmCreateReturnForChannel,
   confirmLatestAddItemForChannel,
   confirmLatestRemoveItemForChannel,
@@ -17,12 +18,15 @@ import {
   listActionLogs,
   listHandoffs,
   listOrdersForChannel,
+  linkExistingAccountForChannel,
   listReturnsForChannel,
   lookupCustomerByChannel,
   previewAddItemForChannel,
+  previewCheckoutForChannel,
   previewCreateReturnForChannel,
   previewRemoveItemForChannel,
   previewUpdateQuantityForChannel,
+  registerNewCustomerForChannel,
   searchProducts
 } from "../shop/service.js";
 
@@ -57,6 +61,38 @@ server.registerTool(
     })
   },
   async ({ channel, externalUserId }) => jsonText(await lookupCustomerByChannel(channel, externalUserId))
+);
+
+server.registerTool(
+  "shop_account_register",
+  {
+    title: "Register New Customer",
+    description:
+      "Register a brand-new DeskClaw customer account bound to the sender's own channel identity. Use only for an UNLINKED sender who wants to create a new account. The channel + externalUserId are the proof of ownership — never accept a customer-typed phone number or internal id.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel context (e.g. phone number). Use the channel-supplied value, not one the customer typed."),
+      displayName: z.string().min(1).describe("The name the customer wants their account under.")
+    })
+  },
+  async ({ channel, externalUserId, displayName }) =>
+    jsonText(await registerNewCustomerForChannel(channel, externalUserId, displayName))
+);
+
+server.registerTool(
+  "shop_account_link_existing",
+  {
+    title: "Link Existing Account",
+    description:
+      "Link the sender's channel identity to an EXISTING customer account, gated by that account's verification code (a demo stand-in for an OTP sent to the contact on file). Use only for an UNLINKED sender who says they already have an account. The channel + externalUserId are the proof of which device is linking; the code proves account ownership. Never reveal or guess the code.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel context. Use the channel-supplied value, not one the customer typed."),
+      accountCode: z.string().min(1).describe("The verification code the customer provides to prove they own the existing account.")
+    })
+  },
+  async ({ channel, externalUserId, accountCode }) =>
+    jsonText(await linkExistingAccountForChannel(channel, externalUserId, accountCode))
 );
 
 server.registerTool(
@@ -222,6 +258,34 @@ server.registerTool(
   },
   async ({ channel, externalUserId, productId, quantity }) =>
     jsonText(await confirmLatestUpdateQuantityForChannel(channel, externalUserId, productId, quantity))
+);
+
+server.registerTool(
+  "shop_checkout_preview",
+  {
+    title: "Preview Checkout",
+    description:
+      "Validate the linked customer's cart for a mock checkout (non-empty, all items in stock) and summarize the order (items + total). Read-only — use before asking the customer to confirm placing the order. No payment is taken.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel.")
+    })
+  },
+  async ({ channel, externalUserId }) => jsonText(await previewCheckoutForChannel(channel, externalUserId)),
+);
+
+server.registerTool(
+  "shop_checkout_confirm",
+  {
+    title: "Confirm Checkout",
+    description:
+      "Place the order from the linked customer's cart after explicit confirmation: creates a new order (status 'placed'), decrements stock, and clears the cart. NO payment is taken (mock). Call only after the customer confirms the previewed items and total.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel.")
+    })
+  },
+  async ({ channel, externalUserId }) => jsonText(await confirmCheckoutForChannel(channel, externalUserId)),
 );
 
 server.registerTool(
