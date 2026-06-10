@@ -32,6 +32,7 @@ import {
   getCartForChannel,
   getOrderForChannel,
   getReturnForChannel,
+  getRoutineGuide,
   listActionLogs,
   listHandoffs,
   listOrdersForChannel,
@@ -1131,6 +1132,50 @@ async function main(): Promise<void> {
     assert(!confirm.ok && confirm.error?.includes("out of stock"), "checkout must refuse an out-of-stock line");
     assert((await orderCount()) === 3, "a refused checkout must not create an order");
     assert((await cartItemCount()) === 1, "a refused checkout must not clear the cart");
+  });
+
+  group("Routine guide (faithful to compatibility.md)");
+
+  await test("returns exactly the 6 routine-step products, excluding sets + accessory", async () => {
+    const guide = await getRoutineGuide();
+    assert(guide.ok && guide.data, guide.error ?? "routine guide should load");
+    const ids = guide.data.products.map((p) => p.id);
+    assert(ids.length === 6, `expected 6 routine products, got ${ids.length}`);
+    assert(
+      !ids.includes("glow-starter-kit") && !ids.includes("travel-mini-trio") && !ids.includes("cotton-carry-pouch"),
+      "sets and accessories must NOT be offered as routine steps"
+    );
+    assert(
+      ids.includes("cloud-cleanser") && ids.includes("soft-reset-toner") && ids.includes("night-repair-oil"),
+      "the stated routine products must be present"
+    );
+  });
+
+  await test("AM/PM placements match the brand's stated facts", async () => {
+    const guide = await getRoutineGuide();
+    assert(guide.ok && guide.data, "routine guide should load");
+    const find = (id: string) => guide.data!.products.find((p) => p.id === id);
+    const toner = find("soft-reset-toner");
+    assert(toner && toner.times.length === 1 && toner.times[0] === "pm", "the exfoliating toner must be PM-only");
+    const spf = find("sunny-shield-spf50");
+    assert(spf && spf.times.join() === "am" && spf.isFinalStep, "SPF must be AM-only and the final step");
+    const cleanser = find("cloud-cleanser");
+    assert(
+      cleanser && cleanser.times.includes("am") && cleanser.times.includes("pm") && cleanser.stepOrder === 1,
+      "the cleanser must be the first step in both AM and PM"
+    );
+    const oil = find("night-repair-oil");
+    assert(oil && oil.times.join() === "pm" && oil.isFinalStep, "the facial oil must be the PM final step");
+  });
+
+  await test("the toner+oil 'alternate nights' caution is present and conditioned on both products", async () => {
+    const guide = await getRoutineGuide();
+    assert(guide.ok && guide.data, "routine guide should load");
+    const caution = guide.data.cautions.find(
+      (c) => c.whenAll.includes("soft-reset-toner") && c.whenAll.includes("night-repair-oil")
+    );
+    assert(caution && /alternate/i.test(caution.text), "the toner+oil alternate-nights caution must exist");
+    assert(caution!.whenAll.length === 2, "the alternate-nights caution must require BOTH products to be selected");
   });
 
   // Remove the temp sandbox DB; the real .local/shop-db.json was never touched.

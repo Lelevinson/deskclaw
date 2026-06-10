@@ -182,6 +182,24 @@ write; reads stay identity-gated own-only with identical refusals). It adds:
   as a vector [`app/icon.svg`](app/icon.svg) (the detailed emblem muddies at ≤32px),
   resolving the DESIGN §5/§8 TODO.
 
+## Routines — public, faithful build-your-routine (2026-06-09)
+
+`/routines` is an interactive but **deterministic** page: the customer picks the
+products they have and it arranges them into the brand's stated **AM/PM** order,
+surfacing only the cautions/pairings written in
+[`../data/catalog/compatibility.md`](../data/catalog/compatibility.md) — the same brand
+guidance the chat `policy-oracle` skill answers from. It is **faithful**: every
+placement, caution, and pairing is stated in that file; nothing is inferred, and there
+is **no personalized or medical advice** (an escalation footer routes the rest to the
+assistant / a human). Sets and accessories are excluded.
+
+The reuse seam is unchanged: a new `getRoutineGuide()` in `src/shop` joins the live
+catalog (`category` → step/order) with a curated rules module
+([`../src/shop/routine-rules.ts`](../src/shop/routine-rules.ts)) that **mirrors
+`compatibility.md` — keep the two in sync**; `lib/shop/index.ts` exposes it to the
+public `/routines` server component, which hands the guide to the client
+`RoutineBuilder`. Read-only brand content — **no new data domain, no mutation, public**.
+
 ## Scalability rule
 
 A new customer-visible data domain = **one route + one typed data-access function
