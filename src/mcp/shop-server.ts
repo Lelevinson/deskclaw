@@ -17,7 +17,9 @@ import {
   getReturnForChannel,
   listActionLogs,
   listHandoffs,
+  listLowStockProducts,
   listOrdersForChannel,
+  listOrdersOps,
   linkExistingAccountForChannel,
   listReturnsForChannel,
   lookupCustomerByChannel,
@@ -420,27 +422,60 @@ server.registerTool(
 );
 
 server.registerTool(
+  "shop_orders_list_ops",
+  {
+    title: "List Orders (Ops-Wide, Read-Only)",
+    description:
+      "Read orders ACROSS ALL customers for the proactive ops digest / staff triage — NOT a customer-facing read (use shop_orders_list_for_channel for a customer's own orders). Optionally filter by `status` (e.g. 'processing' to find orders that have not yet shipped) and by `stalerThanDays` (only orders not updated within that many days — surfaces orders stuck in a status). Newest-updated first. Read-only; staff/ops-only.",
+    inputSchema: z.object({
+      status: z
+        .enum(["placed", "processing", "shipped", "out_for_delivery", "delivered", "cancelled"])
+        .optional()
+        .describe("Only orders in this status (e.g. 'processing')."),
+      stalerThanDays: z
+        .number()
+        .int()
+        .min(0)
+        .optional()
+        .describe("Only orders NOT updated within this many days (e.g. 2 = stuck for 2+ days).")
+    })
+  },
+  async ({ status, stalerThanDays }) => jsonText(await listOrdersOps({ status, stalerThanDays }))
+);
+
+server.registerTool(
+  "shop_low_stock_list",
+  {
+    title: "List Low-Stock Products (Ops-Wide, Read-Only)",
+    description:
+      "Read every product at or under the low-stock threshold (low_stock and out_of_stock), scarcest first, for the proactive ops digest / restock planning. Read-only; staff/ops-only; takes no input.",
+    inputSchema: z.object({})
+  },
+  async () => jsonText(await listLowStockProducts())
+);
+
+server.registerTool(
   "shop_owner_notify",
   {
     title: "Email the Owner (Owner-Only Outbound)",
     description:
-      "Send a short notification email to the SHOP OWNER ONLY — never a customer. Call this AFTER recording a handoff (shop_handoff_create) or placing an order (shop_checkout_confirm), with a subject and body you compose yourself in prose (do NOT paste a template — summarise the situation in your own words). There is no recipient field: the email always goes to the configured owner address, so this can never message a customer. Pass `kind` ('handoff' or 'order_placed') and the source id as `dedupeKey` (the handoff id or order id) so the same event is never emailed twice. In dry mode the email is recorded + audited but not sent; in live mode it is sent via Resend.",
+      "Send a short notification email to the SHOP OWNER ONLY — never a customer. Call this AFTER recording a handoff (shop_handoff_create), placing an order (shop_checkout_confirm), or compiling a scheduled ops digest, with a subject and body you compose yourself in prose (do NOT paste a template — summarise the situation in your own words). There is no recipient field: the email always goes to the configured owner address, so this can never message a customer. Pass `kind` ('handoff', 'order_placed', or 'ops_digest') and the source id as `dedupeKey` (the handoff id, order id, or — for a digest — today's date YYYY-MM-DD) so the same event is never emailed twice. In dry mode the email is recorded + audited but not sent; in live mode it is sent via Resend.",
     inputSchema: z.object({
       kind: z
-        .enum(["handoff", "order_placed"])
-        .describe("What triggered this: a sentiment-router handoff, or a placed order."),
+        .enum(["handoff", "order_placed", "ops_digest"])
+        .describe("What triggered this: a sentiment-router handoff, a placed order, or a scheduled ops digest."),
       subject: z.string().min(1).describe("A short, model-composed subject line (not a template)."),
       body: z
         .string()
         .min(1)
         .describe(
-          "A short, model-composed plain-text body: for a handoff include the classification, a one-line reason, the customer-safe summary, and the customer's channel + contact. Write it in your own words."
+          "A short, model-composed plain-text body: for a handoff include the classification, a one-line reason, the customer-safe summary, and the customer's channel + contact; for an ops digest, a one-line health summary then the open handoffs, orders stuck in processing, and low-stock products. Write it in your own words."
         ),
       dedupeKey: z
         .string()
         .min(1)
         .optional()
-        .describe("The source object id (handoff id or order id) so one event emails the owner exactly once.")
+        .describe("The source object id (handoff id, order id, or a digest's date YYYY-MM-DD) so one event emails the owner exactly once.")
     })
   },
   async ({ kind, subject, body, dedupeKey }) => jsonText(await notifyOwner({ kind, subject, body, dedupeKey }))

@@ -26,6 +26,7 @@ export interface ShopStore {
   returns?: Array<{ id: string; orderId?: string; status?: string }>;
   handoffs?: Array<{ id: string }>;
   carts?: Array<{ items?: Array<{ productId: string; quantity: number }> }>;
+  notifications?: Array<{ id: string; kind?: string }>;
 }
 
 /**
@@ -64,6 +65,14 @@ const handoffAdded: StoreCheck = (before, after) =>
   (after.handoffs?.length ?? 0) > (before.handoffs?.length ?? 0)
     ? null
     : "expected a new handoff record to be appended";
+
+const opsDigestRecorded: StoreCheck = (before, after) => {
+  const had = new Set((before.notifications ?? []).map((n) => n.id));
+  const fresh = (after.notifications ?? []).filter((n) => !had.has(n.id));
+  if (fresh.length === 0) return "expected a new owner notification after the digest run";
+  if (!fresh.some((n) => n.kind === "ops_digest")) return "the new notification should be kind 'ops_digest'";
+  return null;
+};
 
 export const CASES: EvalCase[] = [
   // ── Reads ───────────────────────────────────────────────────────────────
@@ -126,6 +135,20 @@ export const CASES: EvalCase[] = [
     ],
     expectTools: ["shop_handoff_create"],
     storeCheck: handoffAdded,
+  },
+
+  // ── Proactive (no human prompt — a scheduled ops digest, owner-facing) ────
+  {
+    id: "ops-digest-proactive",
+    skill: "ops-digest",
+    // No identity: the digest reads are ops-wide/ungated and there is no customer.
+    // The store baseline has an open handoff, a stuck processing order, and low-stock
+    // items for the agent to find. The digest emails the OWNER only (no customer).
+    turns: [
+      "Run the morning ops digest for the shop owner (today is 2026-06-10). Inspect open handoffs, orders stuck in processing, and low-stock products, then email the owner the digest via shop_owner_notify with kind \"ops_digest\" and dedupeKey \"2026-06-10\".",
+    ],
+    expectTools: ["shop_handoff_list", "shop_orders_list_ops", "shop_low_stock_list", "shop_owner_notify"],
+    storeCheck: opsDigestRecorded,
   },
 
   // ── Mutations (must run preview→confirm across the two turns) ─────────────

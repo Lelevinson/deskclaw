@@ -245,9 +245,10 @@ export interface ActionLog {
   metadata?: Record<string, unknown>;
 }
 
-// What triggered an owner notification: a sentiment-router handoff, or a mock
-// checkout placing an order. Used as the dedupe namespace alongside the source id.
-export type NotificationKind = "handoff" | "order_placed";
+// What triggered an owner notification: a sentiment-router handoff, a mock checkout
+// placing an order, or a proactive scheduled ops digest. Used as the dedupe namespace
+// alongside the source id (for the digest, that id is the date — one digest per day).
+export type NotificationKind = "handoff" | "order_placed" | "ops_digest";
 
 // "sent" — Resend accepted it in live mode. "recorded" — dry mode (or no key): the
 // composed email was persisted + audited but no network call was made. "failed" —
