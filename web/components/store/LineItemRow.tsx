@@ -32,7 +32,7 @@ export function LineItemRow({
         className="shrink-0 rounded-md focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
         aria-label={name}
       >
-        <ProductTile className="w-16 rounded-md border border-line" aspect="aspect-square" />
+        <ProductTile productId={productId} alt={name} className="w-16 rounded-md border border-line" aspect="aspect-square" sizes="64px" />
       </Link>
       <div className="min-w-0 flex-1">
         <Link
