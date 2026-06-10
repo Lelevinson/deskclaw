@@ -54,9 +54,15 @@ npm run shop:eval
 Configure OpenClaw to see the shop MCP server:
 
 ```bash
-openclaw mcp set deskclaw-shop '{"command":"node","args":["/workspaces/deskclaw/dist/mcp/shop-server.js"],"cwd":"/workspaces/deskclaw"}'
+openclaw mcp set deskclaw-shop '{"command":"node","args":["--env-file-if-exists=/workspaces/deskclaw/.env","/workspaces/deskclaw/dist/mcp/shop-server.js"],"cwd":"/workspaces/deskclaw"}'
 openclaw mcp list
 ```
+
+The `--env-file-if-exists=.env` flag is what loads the **outbound-email** secrets
+(`RESEND_API_KEY`, `OWNER_EMAIL`, `NOTIFY_FROM`, `DESKCLAW_NOTIFY_MODE`) into the
+MCP server process for `shop_owner_notify` (see [ARCHITECTURE.md](../../ARCHITECTURE.md) §5).
+Without it the server still runs, but owner notifications stay in `dry` mode (no
+`OWNER_EMAIL` → recorded, never sent). Restart the gateway after changing `.env`.
 
 Run the MCP server directly only when debugging the server process:
 

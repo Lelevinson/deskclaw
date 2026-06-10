@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { AccountLink, ActionLog, Cart, Credential, Customer, HandoffRecord, Order, PendingAction, ProductCatalog, ReturnRequest, ShopDatabase } from "./types.js";
+import type { AccountLink, ActionLog, Cart, Credential, Customer, HandoffRecord, NotificationRecord, Order, PendingAction, ProductCatalog, ReturnRequest, ShopDatabase } from "./types.js";
 
 const DEFAULT_DATA_DIR = path.resolve(process.cwd(), "data");
 const DEFAULT_DB_PATH = path.resolve(process.cwd(), ".local/shop-db.json");
@@ -42,6 +42,9 @@ async function readInitialDatabase(): Promise<ShopDatabase> {
     path.join(dataDir, "shop/pending-actions.json")
   );
   const actionLogState = await readJsonFile<{ actionLogs: ActionLog[] }>(path.join(dataDir, "shop/action-logs.json"));
+  const notificationState = await readJsonFile<{ notifications: NotificationRecord[] }>(
+    path.join(dataDir, "shop/notifications.json")
+  );
 
   return normalizeShopDb({
     version: 1,
@@ -54,7 +57,8 @@ async function readInitialDatabase(): Promise<ShopDatabase> {
     returns: returnState.returns,
     handoffs: handoffState.handoffs,
     pendingActions: pendingActionState.pendingActions,
-    actionLogs: actionLogState.actionLogs
+    actionLogs: actionLogState.actionLogs,
+    notifications: notificationState.notifications
   });
 }
 
@@ -72,6 +76,7 @@ function normalizeShopDb(db: ShopDatabase): ShopDatabase {
   db.handoffs ??= [];
   db.pendingActions ??= [];
   db.actionLogs ??= [];
+  db.notifications ??= [];
   return db;
 }
 

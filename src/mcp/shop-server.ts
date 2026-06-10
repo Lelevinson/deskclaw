@@ -29,6 +29,7 @@ import {
   registerNewCustomerForChannel,
   searchProducts
 } from "../shop/service.js";
+import { notifyOwner } from "../shop/notify.js";
 
 function jsonText(payload: unknown) {
   return {
@@ -416,6 +417,33 @@ server.registerTool(
     })
   },
   async ({ customerId, limit }) => jsonText(await listHandoffs(customerId, limit))
+);
+
+server.registerTool(
+  "shop_owner_notify",
+  {
+    title: "Email the Owner (Owner-Only Outbound)",
+    description:
+      "Send a short notification email to the SHOP OWNER ONLY — never a customer. Call this AFTER recording a handoff (shop_handoff_create) or placing an order (shop_checkout_confirm), with a subject and body you compose yourself in prose (do NOT paste a template — summarise the situation in your own words). There is no recipient field: the email always goes to the configured owner address, so this can never message a customer. Pass `kind` ('handoff' or 'order_placed') and the source id as `dedupeKey` (the handoff id or order id) so the same event is never emailed twice. In dry mode the email is recorded + audited but not sent; in live mode it is sent via Resend.",
+    inputSchema: z.object({
+      kind: z
+        .enum(["handoff", "order_placed"])
+        .describe("What triggered this: a sentiment-router handoff, or a placed order."),
+      subject: z.string().min(1).describe("A short, model-composed subject line (not a template)."),
+      body: z
+        .string()
+        .min(1)
+        .describe(
+          "A short, model-composed plain-text body: for a handoff include the classification, a one-line reason, the customer-safe summary, and the customer's channel + contact. Write it in your own words."
+        ),
+      dedupeKey: z
+        .string()
+        .min(1)
+        .optional()
+        .describe("The source object id (handoff id or order id) so one event emails the owner exactly once.")
+    })
+  },
+  async ({ kind, subject, body, dedupeKey }) => jsonText(await notifyOwner({ kind, subject, body, dedupeKey }))
 );
 
 server.registerTool(

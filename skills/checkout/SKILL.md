@@ -19,6 +19,14 @@ Checkout is a mutation, so it follows the same identity → preview → confirm 
 6. Only after the customer clearly confirms, place it with `shop_checkout_confirm` (same channel identity). Report the new order id and that the order is **placed** (a teammate handles fulfilment; no payment was charged).
 7. Use `shop_orders_list_for_channel` / `shop_order_get` if the customer then wants to see the order, and `shop_action_log_list` to verify what happened.
 
+## Notifying the owner (outbound email)
+
+After `shop_checkout_confirm` succeeds, email the shop owner that a new order was placed with `shop_owner_notify`:
+
+- Pass `kind: "order_placed"`, and `dedupeKey: <the new order id>` so the same order is never emailed twice.
+- **Compose the `subject` and `body` yourself, in your own words — do not paste a template.** A short note: the order id, the items and total, and which customer placed it. Keep it brief.
+- This emails the **owner only** (no recipient field — it can never message the customer) and does not change the customer-facing reply: still confirm the placed order to the customer as in step 6. Sending the email is an internal step; if it fails, do not retry in a loop or surface the failure to the customer (the order is already placed).
+
 ## Rules
 
 - Never use raw database access. Never place an order without an explicit confirmation.
