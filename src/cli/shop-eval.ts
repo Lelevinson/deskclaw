@@ -537,6 +537,93 @@ async function main(): Promise<void> {
     );
   });
 
+  group("Routine bundle (multi-item add — the routine-concierge invariant)");
+
+  await test("previews for different products coexist; each confirms by id into one cart", async () => {
+    // The routine concierge stages one preview per product, then confirms each by
+    // its own pending id. Previews for DIFFERENT products must not supersede one
+    // another (supersede is per-product), so the whole bundle can land.
+    const bundle = ["cloud-cleanser", "calm-barrier-cream", "sunny-shield-spf50"];
+    const pendingIds: string[] = [];
+    for (const productId of bundle) {
+      const preview = await previewAddItemForChannel(CH, LIN, productId, 1);
+      assert(preview.ok && preview.data, preview.error ?? `preview for ${productId} should succeed`);
+      pendingIds.push(preview.data.pendingAction.id);
+    }
+    assert((await cartItemCount()) === 0, "staging the bundle previews must not mutate the cart");
+    for (const pendingId of pendingIds) {
+      const confirm = await confirmAddItemForChannel(CH, LIN, pendingId);
+      assert(confirm.ok, confirm.error ?? `by-id confirm for ${pendingId} should succeed`);
+    }
+    const cart = await getCartForChannel(CH, LIN);
+    assert(cart.ok && cart.data, "cart read should succeed");
+    const ids = cart.data.items.map((item) => item.productId).sort();
+    assert(
+      ids.length === 3 && ids.join(",") === [...bundle].sort().join(","),
+      `the whole bundle must land in one cart, got ${ids.join(",")}`
+    );
+    const logs = await listActionLogs(LIN_CUSTOMER, 50);
+    const successAdds = logs.data?.filter((log) => log.type === "cart.add_item" && log.status === "success").length ?? 0;
+    assert(successAdds === 3, `each confirmed bundle item must write a success audit log, got ${successAdds}`);
+  });
+
+  await test("re-previewing one bundle item supersedes only its own pending, not the rest", async () => {
+    // If the customer changes their mind on one product, re-previewing it expires
+    // only that product's prior pending — the other bundle items stay confirmable.
+    const cleanser = await previewAddItemForChannel(CH, LIN, "cloud-cleanser", 1);
+    const cream = await previewAddItemForChannel(CH, LIN, "calm-barrier-cream", 1);
+    assert(cleanser.ok && cleanser.data && cream.ok && cream.data, "both initial previews should succeed");
+    const staleCleanserId = cleanser.data.pendingAction.id;
+    const creamId = cream.data.pendingAction.id;
+
+    const reCleanser = await previewAddItemForChannel(CH, LIN, "cloud-cleanser", 2);
+    assert(reCleanser.ok && reCleanser.data, reCleanser.error ?? "re-preview should succeed");
+
+    const staleConfirm = await confirmAddItemForChannel(CH, LIN, staleCleanserId);
+    assert(!staleConfirm.ok, "the superseded same-product pending must no longer be confirmable");
+
+    const creamConfirm = await confirmAddItemForChannel(CH, LIN, creamId);
+    assert(creamConfirm.ok, creamConfirm.error ?? "the untouched other-product pending must still confirm");
+    const freshConfirm = await confirmAddItemForChannel(CH, LIN, reCleanser.data.pendingAction.id);
+    assert(freshConfirm.ok, freshConfirm.error ?? "the re-previewed pending must confirm");
+
+    const cart = await getCartForChannel(CH, LIN);
+    const cleanserQty = cart.data?.items.find((item) => item.productId === "cloud-cleanser")?.quantity;
+    assert(cleanserQty === 2, `only the re-previewed quantity should apply, got ${String(cleanserQty)}`);
+    assert(cart.data?.items.length === 2, "both distinct products should be in the cart exactly once");
+  });
+
+  await test("partial bundle: an item gone out of stock fails its confirm; the rest still land", async () => {
+    // Honest partial failure — if one product sells out between preview and confirm,
+    // its by-id confirm fails (with an audit log) while the others commit.
+    const cleanser = await previewAddItemForChannel(CH, LIN, "cloud-cleanser", 1);
+    const cream = await previewAddItemForChannel(CH, LIN, "calm-barrier-cream", 1);
+    assert(cleanser.ok && cleanser.data && cream.ok && cream.data, "both previews should succeed");
+
+    await patchDb((db) => {
+      const product = db.products.find((entry) => entry.id === "calm-barrier-cream");
+      assert(product, "calm-barrier-cream must exist");
+      product.stockStatus = "out_of_stock";
+      product.stockQuantity = 0;
+    });
+
+    const cleanserConfirm = await confirmAddItemForChannel(CH, LIN, cleanser.data.pendingAction.id);
+    assert(cleanserConfirm.ok, cleanserConfirm.error ?? "the in-stock item must still confirm");
+    const creamConfirm = await confirmAddItemForChannel(CH, LIN, cream.data.pendingAction.id);
+    assert(!creamConfirm.ok, "the now-out-of-stock item must fail its confirm");
+
+    const cart = await getCartForChannel(CH, LIN);
+    assert(
+      cart.data?.items.length === 1 && cart.data.items[0]?.productId === "cloud-cleanser",
+      "only the in-stock bundle item should land in the cart"
+    );
+    const logs = await listActionLogs(LIN_CUSTOMER, 50);
+    assert(
+      logs.data?.some((log) => log.type === "cart.add_item" && log.status === "failed"),
+      "the failed bundle item must write a failed audit log"
+    );
+  });
+
   group("Order status (read-only, identity-gated)");
 
   await test("unlinked channel identity cannot list or get orders", async () => {

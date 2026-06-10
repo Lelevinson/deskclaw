@@ -49,4 +49,18 @@ Notes specific to remove and quantity change:
 - A quantity change sets the new total for that item. To take an item out entirely, remove it rather than setting its quantity to zero — a request for zero is not treated as a quantity change.
 - A change that exceeds available stock is refused; report the available amount rather than promising hidden stock.
 
+## Suggesting a relevant next step
+
+When you report a **successful** add on a normal, happy interaction, **close your reply with one short, relevant next-step suggestion**, the way a good shop assistant rounds out a routine. Treat this as a normal part of confirming an add, not an afterthought — skip it only in the cases listed below.
+
+For example, after adding the Calm Barrier Cream for dry skin: "Done, the Calm Barrier Cream is in your cart. A lot of people start the routine with the Cloud Cleanser too — want me to add it?"
+
+- Base the suggestion only on real catalog data and the stated pairings in `data/catalog/compatibility.md` (for example the lightweight gel in the AM and the richer cream in the PM, or the cleanser that comes first). Never invent a product, a benefit, or a reason to buy.
+- Prefer an **in-stock** product. Do not suggest something out of stock.
+- Suggest **at most one** item, and offer to add it through the same preview → confirm path. **Never auto-add it** — the customer's explicit yes is still the consent.
+- **Skip the suggestion entirely** if the customer is frustrated, reporting a problem, asking for a human, or clearly done. A suggestion is never appropriate during a complaint or a handoff.
+- If they decline, drop it gracefully and do not ask again.
+
+To build a **whole routine / regimen** at once (e.g. "build me a routine for dry skin under NT$2000 and add it"), hand off to the `routine-concierge` skill — it selects and sequences the products, then adds the bundle through this same per-item preview → confirm path (one preview + one by-id confirm per product; there is no bulk-add tool).
+
 To **place an order** for what is in the cart, hand off to the `checkout` skill (a mock checkout — preview → confirm → order, no payment). Other actions, such as applying discounts or changing addresses, are future extensions unless their tools exist.
