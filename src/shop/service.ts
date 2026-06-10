@@ -1,6 +1,13 @@
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
 
 import { readShopDb, writeShopDb } from "./store.js";
+import {
+  ROUTINE_CAUTIONS,
+  ROUTINE_DISCLAIMER,
+  ROUTINE_PAIRINGS,
+  ROUTINE_TIMING,
+  STEP_BY_CATEGORY,
+} from "./routine-rules.js";
 import type {
   AccountLink,
   ActionLog,
@@ -19,6 +26,8 @@ import type {
   OrderView,
   PendingAction,
   Product,
+  RoutineGuide,
+  RoutineProduct,
   ReturnPendingAction,
   ReturnRequest,
   ReturnResolution,
@@ -576,6 +585,43 @@ export async function searchProducts(
 export async function listProducts(): Promise<ServiceResult<Product[]>> {
   const db = await readShopDb();
   return { ok: true, data: db.products };
+}
+
+// Public, read-only routine guide for the /routines builder. Joins the live catalog
+// (structured `category` → step/order) with the curated AM/PM timing + cautions +
+// pairings that mirror data/catalog/compatibility.md (see routine-rules.ts). A
+// product is included ONLY if it has both a routine-step category AND stated timing,
+// so sets/accessories — and anything without stated guidance — are excluded; nothing
+// is inferred.
+function buildRoutineGuide(products: Product[]): RoutineGuide {
+  const routineProducts: RoutineProduct[] = products
+    .map((product): RoutineProduct | undefined => {
+      const stepInfo = STEP_BY_CATEGORY[normalize(product.category)];
+      const timing = ROUTINE_TIMING[product.id];
+      if (!stepInfo || !timing) return undefined;
+      return {
+        id: product.id,
+        name: product.name,
+        link: product.link,
+        step: stepInfo.step,
+        stepOrder: stepInfo.stepOrder,
+        times: timing.times,
+        isFinalStep: timing.isFinalStep,
+      };
+    })
+    .filter((entry): entry is RoutineProduct => Boolean(entry));
+
+  return {
+    products: routineProducts,
+    cautions: ROUTINE_CAUTIONS,
+    pairings: ROUTINE_PAIRINGS,
+    disclaimer: ROUTINE_DISCLAIMER,
+  };
+}
+
+export async function getRoutineGuide(): Promise<ServiceResult<RoutineGuide>> {
+  const db = await readShopDb();
+  return { ok: true, data: buildRoutineGuide(db.products) };
 }
 
 // Read one product by its catalog id for a product-detail (PDP) read. An unknown

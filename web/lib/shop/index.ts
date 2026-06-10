@@ -22,6 +22,7 @@ import {
   getOrderForChannel,
   getProductById,
   getReturnForChannel,
+  getRoutineGuide as getRoutineGuideService,
   listOrdersForChannel,
   listProducts,
   listReturnsForChannel,
@@ -33,11 +34,12 @@ import type {
   OrderView,
   Product,
   ReturnRequest,
+  RoutineGuide,
 } from "@shop/types.js";
 
 import { getIdentity } from "./identity";
 
-export type { CartView, OrderSummary, OrderView, Product, ReturnRequest };
+export type { CartView, OrderSummary, OrderView, Product, ReturnRequest, RoutineGuide };
 
 // An empty cart used when there is no session (the cart page redirects logged-out
 // visitors, but the header badge reads via the layout on public pages too).
@@ -71,6 +73,16 @@ export async function getAccountProfile(): Promise<AccountProfile | null> {
     username: id.externalUserId,
     accountCode: result.data.accountCode ?? null,
   };
+}
+
+// The routine guide for the /routines builder (public, read-only brand content).
+// Faithful + deterministic — mirrors data/catalog/compatibility.md (same source the
+// chat policy-oracle skill uses). Empty guide if the service ever fails.
+export async function getRoutineGuide(): Promise<RoutineGuide> {
+  const result = await getRoutineGuideService();
+  return result.ok && result.data
+    ? result.data
+    : { products: [], cautions: [], pairings: [], disclaimer: "" };
 }
 
 // Full catalogue for the catalogue grid (surface 2) — public, browse-only.

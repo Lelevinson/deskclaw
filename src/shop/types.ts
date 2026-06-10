@@ -26,6 +26,35 @@ export interface ChannelIdentity {
   externalUserId: string;
 }
 
+// --- routine guide (the /routines builder; faithful to data/catalog/compatibility.md) ---
+export type RoutineStep = "cleanser" | "toner" | "moisturizer" | "sunscreen" | "facial-oil";
+export type RoutineTime = "am" | "pm";
+
+export interface RoutineProduct {
+  id: string;
+  name: string;
+  link: string;
+  step: RoutineStep;
+  // 1 = first step … 4 = final step, from the brand's stated routine order.
+  stepOrder: number;
+  // Which routines this product belongs to (AM / PM), as stated in compatibility.md.
+  times: RoutineTime[];
+  isFinalStep: boolean;
+}
+
+// A conditional note shown only when ALL `whenAll` product ids are selected.
+export interface RoutineNote {
+  whenAll: string[];
+  text: string;
+}
+
+export interface RoutineGuide {
+  products: RoutineProduct[];
+  cautions: RoutineNote[];
+  pairings: RoutineNote[];
+  disclaimer: string;
+}
+
 export interface Customer {
   id: string;
   displayName: string;

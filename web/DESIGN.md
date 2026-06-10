@@ -171,6 +171,7 @@ mutations are cart edits.
 | 6 | **Returns** (list + detail) | `returns` (+ `orders`) | read | **own-returns-only** |
 | 7 | **Login / Register** | `credentials` (+ `accountLinks`) | write · sign in / sign up | public |
 | 8 | **Account** (profile + accountCode + sign out) | `customers` / `accountLinks` | read · sign out | **own profile only** |
+| 9 | **Routines** (build-your-routine) | `catalog/products.json` + `catalog/compatibility.md` (via `getRoutineGuide`) | read · pick products → AM/PM plan | public |
 
 **Auth shipped 2026-06-09** (was out of scope): real per-user login + signup
 (scrypt-hashed `credentials`, an HMAC session cookie, a `web`-channel account-link).
@@ -181,8 +182,15 @@ Browsing (surfaces 2–3) is public; the account surfaces (4–6, 8) require a s
 Checkout button creates an unpaid `placed` order, decrements stock, clears the cart.
 **Still out of scope here:** real payment/charging, password reset / email / OAuth,
 address mutation, a `handoffs`/staff view (staff-only domain, roadmap §2).
-**Optional polish, not a core surface:** static "Routines" / compatibility info
-page sourced from [`../data/catalog/compatibility.md`](../data/catalog/compatibility.md) and policy pages from `data/policies/*`.
+**Routines builder shipped 2026-06-09** (surface 9, promoted from "optional polish"):
+an interactive but **deterministic, faithful** page — the customer picks the products
+they have, and it arranges them into the brand's stated AM/PM order and surfaces only
+the cautions/pairings written in [`../data/catalog/compatibility.md`](../data/catalog/compatibility.md)
+(the same source the chat `policy-oracle` skill uses). **No personalized or medical
+advice, nothing inferred**; sets/accessories are excluded; the curated rules live in
+`src/shop/routine-rules.ts` (mirrors compatibility.md — keep in sync). Read-only brand
+content, public, no new data domain. **Optional, still not built:** static policy
+pages from `data/policies/*`.
 
 ---
 
@@ -323,6 +331,29 @@ Return RET-204 · Requested
 - **Empty:** one line + a quiet ❧ glyph + a single CTA back to the catalogue.
 - **Error / not-found:** neutral message; **never leak existence** of non-owned ids
   (identical refusal to the skills). No raw stack/ids.
+
+### 5.8 Routines — build-your-routine (surface 9, public)
+```
+BUILD YOUR ROUTINE
+General morning & evening guidance for Amelya's products — pick what you have.
+
+Your products:  [✓ Cloud Cleanser] [Soft Reset Toner] [✓ Clear Day Gel] …  ← gold pill toggles
+
+┌─ Morning ───────────────┐   ┌─ Evening ───────────────┐
+│ 1  Cloud Cleanser        │   │ 1  Cloud Cleanser        │
+│    Cleanser              │   │    Cleanser              │
+│ 2  Clear Day Gel         │   │ 2  Calm Barrier Cream    │
+│    Moisturizer           │   │    Moisturizer           │
+│ 3  Sunny Shield SPF50    │   │ 3  Night Repair Oil      │
+│    Sunscreen · last step │   │    Facial oil · last step│
+└──────────────────────────┘   └──────────────────────────┘
+
+Good to know: gel AM / cream PM …      Take care: toner + oil — alternate nights …
+— General guidance, not personalized/medical advice; escalate the rest to a human. —
+```
+Deterministic + faithful to `compatibility.md`: only stated AM/PM order, pairings, and
+cautions; product names link to their PDPs; sets/accessories never offered; empty state
+prompts a selection. Curated rules in `src/shop/routine-rules.ts` (keep in sync).
 
 ---
 
