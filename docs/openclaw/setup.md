@@ -8,6 +8,8 @@ OpenClaw runs as a local gateway (`openclaw gateway`) on `ws://127.0.0.1:18789`.
 
 ## 2. First-time setup inside the devcontainer
 
+**Host prerequisites (before opening the project):** Docker Desktop (or a compatible runtime), VS Code with the Dev Containers extension, and — only if you plan to use the local model — Ollama installed natively on the host. Then: clone the repo, copy `.env.example` to `.env` (never commit real credentials; `OLLAMA_HOST=http://host.docker.internal:11434` is pre-set so the container can reach native Ollama), open the folder in VS Code, and choose **Reopen in Container**. The devcontainer requests the OpenAI Codex/ChatGPT extension inside the container, which provides the `gpt-5.5` model option (see [§6](#6-models)).
+
 Run once per devcontainer / OpenClaw volume:
 
 ```bash
