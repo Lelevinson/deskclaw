@@ -245,6 +245,38 @@ export interface ActionLog {
   metadata?: Record<string, unknown>;
 }
 
+// What triggered an owner notification: a sentiment-router handoff, or a mock
+// checkout placing an order. Used as the dedupe namespace alongside the source id.
+export type NotificationKind = "handoff" | "order_placed";
+
+// "sent" — Resend accepted it in live mode. "recorded" — dry mode (or no key): the
+// composed email was persisted + audited but no network call was made. "failed" —
+// live send attempted and Resend rejected it. "skipped" — a dedupe/rate-limit no-op.
+export type NotificationStatus = "sent" | "recorded" | "failed" | "skipped";
+
+// A durable record of an OWNER-ONLY outbound notification. The recipient is always
+// OWNER_EMAIL (never a customer) — there is no per-record "to", it is a structural
+// constant of the channel. The model-composed subject + body are persisted verbatim
+// so the demo can prove the body was LLM-written, not templated.
+export interface NotificationRecord {
+  id: string;
+  kind: NotificationKind;
+  // The model-composed subject + body (the proof these are not server templates).
+  subject: string;
+  body: string;
+  // Always the configured owner address; recorded for auditability, never variable.
+  to: string;
+  status: NotificationStatus;
+  // Source object this notification is about; the (kind, dedupeKey) pair is the
+  // idempotency key — e.g. a handoff id or an order id — so one event sends once.
+  dedupeKey?: string;
+  // Resend message id when a live send succeeds; absent in dry/failed/skipped.
+  providerId?: string;
+  // Short reason when status is "failed" or "skipped" (e.g. the rate-limit hit).
+  detail?: string;
+  createdAt: string;
+}
+
 export interface ShopDatabase {
   version: number;
   products: Product[];
@@ -257,6 +289,7 @@ export interface ShopDatabase {
   handoffs: HandoffRecord[];
   pendingActions: PendingAction[];
   actionLogs: ActionLog[];
+  notifications: NotificationRecord[];
 }
 
 export interface CartLine {

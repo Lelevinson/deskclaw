@@ -26,7 +26,7 @@ jobs:
       - run: npm ci
       - name: Typecheck
         run: npm run check
-      # shop:eval builds (tsc) then runs the 56 deterministic safety assertions
+      # shop:eval builds (tsc) then runs the 80 deterministic safety assertions
       # over the src/shop service functions (identity gating, ownership, preview→
       # confirm, audit logging). No model, no gateway.
       - name: Tool-level eval

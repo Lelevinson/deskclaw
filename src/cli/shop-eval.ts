@@ -49,6 +49,8 @@ import {
   searchProducts,
   verifyWebCredential
 } from "../shop/service.js";
+import { notifyOwner } from "../shop/notify.js";
+import type { EmailMessage, EmailTransport } from "../shop/notify.js";
 import { getShopDbPath, readShopDb, resetShopDb, writeShopDb } from "../shop/store.js";
 import type { ShopDatabase } from "../shop/types.js";
 
@@ -193,6 +195,23 @@ async function handoffCount(customerId?: string): Promise<number> {
   const list = await listHandoffs(customerId, 100);
   assert(list.ok && list.data, "handoff list read should succeed");
   return list.data.length;
+}
+
+/** Count the owner-notification records currently in the DB. */
+async function notificationCount(): Promise<number> {
+  const db = await readShopDb();
+  return db.notifications.length;
+}
+
+/** A network-free email transport that records what it was asked to send, so the
+ *  notify tests can assert the recipient + content without hitting Resend. */
+function captureTransport(): { sent: EmailMessage[]; transport: EmailTransport } {
+  const sent: EmailMessage[] = [];
+  const transport: EmailTransport = async (msg) => {
+    sent.push(msg);
+    return { ok: true, providerId: "test_provider_id" };
+  };
+  return { sent, transport };
 }
 
 /** Add + confirm an item so a later remove/update has something to act on. */
@@ -1176,6 +1195,100 @@ async function main(): Promise<void> {
     );
     assert(caution && /alternate/i.test(caution.text), "the toner+oil alternate-nights caution must exist");
     assert(caution!.whenAll.length === 2, "the alternate-nights caution must require BOTH products to be selected");
+  });
+
+  group("Owner notifications (outbound email — OWNER-ONLY)");
+
+  // The notify config is read from the environment on every call. Set it here so
+  // these tests are deterministic regardless of the developer's / CI's real .env,
+  // and drive a captured transport so nothing ever hits the network.
+  const NOTIFY_OWNER = "owner@example.com";
+  process.env.OWNER_EMAIL = NOTIFY_OWNER;
+  process.env.NOTIFY_FROM = "DeskClaw <onboarding@resend.dev>";
+  // A dummy key so live-mode sends reach the (captured, network-free) transport;
+  // it is never used to make a real request in these tests.
+  process.env.RESEND_API_KEY = "re_test_dummy_key";
+
+  await test("a handoff notification emails the OWNER (never the customer) and records the composed body", async () => {
+    process.env.DESKCLAW_NOTIFY_MODE = "live";
+    const { sent, transport } = captureTransport();
+    // The skill files the handoff first, then composes + sends from its fields.
+    const handoff = await createHandoff(CH, LIN, "urgent_handoff", "safety_reaction", "Reports a skin reaction.", "Lin reports a burning reaction after using the toner and wants help urgently.");
+    assert(handoff.ok && handoff.data, handoff.error ?? "the handoff must record first");
+    const subject = "Urgent: Lin reports a skin reaction";
+    const body = "Classification: urgent_handoff. Lin says the toner caused burning and wants help fast. Reach her on simulated-chat (demo-lin).";
+    const result = await notifyOwner({ kind: "handoff", subject, body, dedupeKey: handoff.data.id }, transport);
+    assert(result.ok && result.data, result.error ?? "the owner notification should send");
+    assert(result.data.status === "sent", "in live mode an accepted send is recorded as 'sent'");
+    // OWNER-ONLY: the recipient is the configured owner, and that is the ONLY
+    // address the transport was ever asked to send to. There is no customer path.
+    assert(result.data.to === NOTIFY_OWNER, "the notification must be addressed to the owner");
+    assert(sent.length === 1 && sent[0]?.to === NOTIFY_OWNER, "the transport must be asked to send to the owner and no one else");
+    // The model-composed subject + body are persisted verbatim (the demo proof).
+    assert(result.data.subject === subject && result.data.body === body, "the composed subject + body must be stored verbatim");
+    assert((await notificationCount()) === 1, "exactly one notification must be recorded");
+    // Audit trail.
+    const logs = await listActionLogs(undefined, 20);
+    assert(
+      logs.data?.some((log) => log.type === "notify.owner" && log.status === "success"),
+      "a sent owner notification must write a success audit log"
+    );
+  });
+
+  await test("no email is sent for a 'continue' sentiment (nothing to notify on)", async () => {
+    process.env.DESKCLAW_NOTIFY_MODE = "live";
+    // 'continue' records no handoff, so the skill never reaches the notify step —
+    // there is no handoff id to notify on. Assert the guard at the service seam.
+    const calm = await createHandoff(CH, LIN, "continue", "calm", "Just a shipping question.", "Lin asked when her order ships.");
+    assert(!calm.ok, "'continue' must not produce a handoff record");
+    assert((await notificationCount()) === 0, "a calm conversation must send/record no owner notification");
+  });
+
+  await test("the same handoff is emailed only ONCE (dedupe rate-limit)", async () => {
+    process.env.DESKCLAW_NOTIFY_MODE = "live";
+    const { sent, transport } = captureTransport();
+    const handoff = await createHandoff(CH, LIN, "handoff_recommended", "refund_dispute", "Chasing a refund.", "Lin is chasing a delayed refund and asked for a human.");
+    assert(handoff.ok && handoff.data, "the handoff must record");
+    const args = { kind: "handoff" as const, subject: "Handoff: refund chase", body: "Lin is chasing a refund; please follow up.", dedupeKey: handoff.data.id };
+    const first = await notifyOwner(args, transport);
+    const second = await notifyOwner(args, transport);
+    assert(first.ok && second.ok, "both calls should succeed");
+    assert(first.data?.id === second.data?.id, "a repeat for the same handoff must return the SAME record, not a new one");
+    assert(sent.length === 1, "the email must be sent to the owner only once for one handoff");
+    assert((await notificationCount()) === 1, "a deduped repeat must not create a second notification row");
+  });
+
+  await test("dry mode records + audits the composed email but sends nothing", async () => {
+    process.env.DESKCLAW_NOTIFY_MODE = "dry";
+    const { sent, transport } = captureTransport();
+    const result = await notifyOwner(
+      { kind: "order_placed", subject: "New order placed", body: "Order order_123 placed by Lin: 2 x Cloud Cleanser, NT$840.", dedupeKey: "order_123" },
+      transport
+    );
+    assert(result.ok && result.data?.status === "recorded", "dry mode must record (not send) the notification");
+    assert(sent.length === 0, "dry mode must NOT call the transport — no network, no real email");
+    assert(result.data?.to === NOTIFY_OWNER, "a dry-recorded notification is still addressed to the owner only");
+    assert((await notificationCount()) === 1, "the composed email is still persisted for audit/demo");
+    process.env.DESKCLAW_NOTIFY_MODE = "live";
+  });
+
+  await test("an order_placed notification also goes to the owner", async () => {
+    process.env.DESKCLAW_NOTIFY_MODE = "live";
+    const { sent, transport } = captureTransport();
+    const result = await notifyOwner(
+      { kind: "order_placed", subject: "Order placed: NT$840", body: "Lin placed order order_456 — 2 x Cloud Cleanser, NT$840.", dedupeKey: "order_456" },
+      transport
+    );
+    assert(result.ok && result.data?.kind === "order_placed", result.error ?? "an order notification should send");
+    assert(sent.length === 1 && sent[0]?.to === NOTIFY_OWNER, "the order notification must reach the owner only");
+  });
+
+  await test("a subject or body that is empty is refused (no blank emails)", async () => {
+    process.env.DESKCLAW_NOTIFY_MODE = "live";
+    const { sent, transport } = captureTransport();
+    const blank = await notifyOwner({ kind: "handoff", subject: "   ", body: "", dedupeKey: "x" }, transport);
+    assert(!blank.ok, "an empty subject/body must be refused");
+    assert(sent.length === 0 && (await notificationCount()) === 0, "a refused notification sends and records nothing");
   });
 
   // Remove the temp sandbox DB; the real .local/shop-db.json was never touched.

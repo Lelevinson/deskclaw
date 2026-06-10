@@ -8,7 +8,7 @@
     "build": "npm run clean && tsc -p tsconfig.json",
     "check": "tsc --noEmit -p tsconfig.json",
     "shop:reset": "node dist/cli/reset-shop-db.js",
-    "shop:mcp": "node dist/mcp/shop-server.js",
+    "shop:mcp": "node --env-file-if-exists=.env dist/mcp/shop-server.js",
     "shop:eval": "npm run build && node dist/cli/shop-eval.js",
     "shop:test": "npm run shop:eval",
     "agent:eval": "npm run build && node dist/cli/agent-eval.js"
