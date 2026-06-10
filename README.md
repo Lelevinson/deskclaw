@@ -197,6 +197,6 @@ This is a prototype that takes its *boundaries* seriously, not a production syst
 
 ## Credits
 
-Built by [Lelevinson](https://github.com/Lelevinson) as a hands-on study of AI-agent design — developed with [Claude Code](https://claude.com/claude-code), run on [OpenClaw](https://openclaw.ai). Product photography and the DeskClaw mascot are AI-generated for this demo; **Amelya's** is a fictional brand.
+Built by [@Lelevinson](https://github.com/Lelevinson), [@carleneamelya](https://github.com/carleneamelya), and [@fkilr50](https://github.com/fkilr50) as a hands-on study of AI-agent design. Developed with [Claude Code](https://claude.com/claude-code) and run on [OpenClaw](https://openclaw.ai). Product photography and the DeskClaw mascot are AI-generated for this demo; **Amelya's** is a fictional brand.
 
 Licensed under the [MIT License](LICENSE).
