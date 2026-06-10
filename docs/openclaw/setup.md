@@ -72,6 +72,40 @@ npm run shop:mcp
 
 Rebuild with `npm run build` after TypeScript changes. Reset with `npm run shop:reset` when scenarios need a clean cart.
 
+### Proactive ops digest (scheduled, owner-facing)
+
+DeskClaw can **proactively** email the owner a morning ops digest — open handoffs,
+orders stuck in `processing`, and low-stock products — with no human in the
+conversation. The trigger fires one real agent turn against the running gateway; the
+agent inspects the store read-only (`shop_handoff_list`, `shop_orders_list_ops`,
+`shop_low_stock_list`) and sends a model-composed summary via the owner-only
+`shop_owner_notify` (`kind: "ops_digest"`, deduped by date → one digest/day). See
+the `ops-digest` skill and [ARCHITECTURE.md](../../ARCHITECTURE.md) §5.
+
+Run it manually (the demo trigger), with the gateway up:
+
+```bash
+npm run ops:digest
+```
+
+It **skips gracefully** (exit 0) if the gateway is unreachable. Whether the email is
+actually sent vs only recorded follows the **MCP server's** env — `DESKCLAW_NOTIFY_MODE`
+in `.env` (see §4): `live` sends via Resend, the default records-only. Setting the var
+on the `ops:digest` command itself has no effect; it must be in `.env` and the gateway
+restarted, because the gateway spawns the MCP process that does the send.
+
+To make it **scheduled**, point OS cron at it (OpenClaw has no built-in scheduler), e.g.
+a daily 08:00 run:
+
+```cron
+0 8 * * *  cd /workspaces/deskclaw && npm run ops:digest >> /tmp/deskclaw-ops-digest.log 2>&1
+```
+
+**Honest local-first caveat:** this is not an always-on server. The cron job only fires
+while the machine is awake **and** `openclaw gateway` is running — if either is down at
+08:00, that day's digest is silently missed (the next run sends the next day's). For a
+live demo, just run `npm run ops:digest` on stage, or set a short cron interval during it.
+
 ## 5. Updating OpenClaw
 
 ```bash

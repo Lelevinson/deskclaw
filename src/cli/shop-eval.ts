@@ -35,7 +35,9 @@ import {
   getRoutineGuide,
   listActionLogs,
   listHandoffs,
+  listLowStockProducts,
   listOrdersForChannel,
+  listOrdersOps,
   linkExistingAccountForChannel,
   listReturnsForChannel,
   lookupCustomerByChannel,
@@ -1197,6 +1199,64 @@ async function main(): Promise<void> {
     assert(caution!.whenAll.length === 2, "the alternate-nights caution must require BOTH products to be selected");
   });
 
+  group("Ops digest reads (ops-wide, read-only)");
+
+  await test("listOrdersOps with status+aging surfaces only orders stuck in that status", async () => {
+    // Seed a FRESH processing order (updated just now) alongside the baseline's
+    // stale processing order (order-2026-0003, updated weeks ago).
+    await patchDb((db) => {
+      db.orders.push({
+        id: "order-eval-fresh-0001",
+        customerId: LIN_CUSTOMER,
+        status: "processing",
+        placedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        items: [{ productId: "cloud-cleanser", quantity: 1, unitPriceNtd: 420 }],
+        totalNtd: 420
+      });
+    });
+    const stuck = await listOrdersOps({ status: "processing", stalerThanDays: 2 });
+    assert(stuck.ok && stuck.data, stuck.error ?? "ops order read should succeed");
+    const ids = stuck.data!.map((o) => o.id);
+    assert(ids.includes("order-2026-0003"), "the long-stuck processing order must be surfaced");
+    assert(!ids.includes("order-eval-fresh-0001"), "a freshly-updated processing order must NOT be flagged as stuck");
+    assert(
+      stuck.data!.every((o) => o.status === "processing"),
+      "a status filter must return only orders in that status"
+    );
+    // Without the aging filter, the fresh processing order IS included (proving the
+    // filter, not a missing order, excluded it above).
+    const allProcessing = await listOrdersOps({ status: "processing" });
+    assert(
+      allProcessing.ok && allProcessing.data!.some((o) => o.id === "order-eval-fresh-0001"),
+      "without an aging filter the fresh processing order is returned"
+    );
+  });
+
+  await test("listLowStockProducts returns only at/under-threshold products, scarcest first", async () => {
+    await patchDb((db) => {
+      const find = (id: string) => db.products.find((p) => p.id === id)!;
+      find("cloud-cleanser").stockQuantity = 3; // low
+      find("cloud-cleanser").stockStatus = "low_stock";
+      find("clear-day-gel").stockQuantity = 0; // out of stock
+      find("clear-day-gel").stockStatus = "out_of_stock";
+      find("calm-barrier-cream").stockQuantity = 50; // healthy -> must be excluded
+      find("calm-barrier-cream").stockStatus = "in_stock";
+    });
+    const low = await listLowStockProducts();
+    assert(low.ok && low.data, low.error ?? "low-stock read should succeed");
+    const ids = low.data!.map((p) => p.id);
+    assert(ids.includes("cloud-cleanser") && ids.includes("clear-day-gel"), "both low/out-of-stock products must be listed");
+    assert(!ids.includes("calm-barrier-cream"), "a healthy-stock product must NOT be listed");
+    assert(
+      low.data!.every((p) => p.stockQuantity <= 5),
+      "every listed product must be at or under the low-stock threshold"
+    );
+    const gel = ids.indexOf("clear-day-gel");
+    const cleanser = ids.indexOf("cloud-cleanser");
+    assert(gel < cleanser, "results must be scarcest-first (0 before 3)");
+  });
+
   group("Owner notifications (outbound email — OWNER-ONLY)");
 
   // The notify config is read from the environment on every call. Set it here so
@@ -1281,6 +1341,26 @@ async function main(): Promise<void> {
     );
     assert(result.ok && result.data?.kind === "order_placed", result.error ?? "an order notification should send");
     assert(sent.length === 1 && sent[0]?.to === NOTIFY_OWNER, "the order notification must reach the owner only");
+  });
+
+  await test("an ops_digest notification goes to the owner and is deduped to one per day", async () => {
+    process.env.DESKCLAW_NOTIFY_MODE = "live";
+    const { sent, transport } = captureTransport();
+    const today = "2026-06-10"; // the digest's once-per-day dedupeKey is the date
+    const before = await notificationCount();
+    const args = {
+      kind: "ops_digest" as const,
+      subject: "Morning ops digest — 1 handoff, 1 stuck order, 2 low on stock",
+      body: "Good morning. One open handoff to work, order-2026-0003 stuck in processing 11 days, and Clear Day Gel (0) + Cloud Cleanser (3) are low.",
+      dedupeKey: today
+    };
+    const first = await notifyOwner(args, transport);
+    const second = await notifyOwner(args, transport);
+    assert(first.ok && first.data?.kind === "ops_digest", first.error ?? "an ops_digest notification should send");
+    assert(first.data?.to === NOTIFY_OWNER, "the digest must be addressed to the owner only");
+    assert(second.ok && second.data?.id === first.data?.id, "a second digest the same day must return the SAME record (deduped)");
+    assert(sent.length === 1, "the digest must be emailed to the owner only once per day");
+    assert((await notificationCount()) === before + 1, "a same-day re-run must not create a second digest row");
   });
 
   await test("a subject or body that is empty is refused (no blank emails)", async () => {

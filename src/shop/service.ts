@@ -22,6 +22,7 @@ import type {
   LinkedCustomer,
   Order,
   OrderLine,
+  OrderStatus,
   OrderSummary,
   OrderView,
   PendingAction,
@@ -651,6 +652,7 @@ export async function getCartForChannel(
 
 // --- checkout (mock: cart -> order; NO payment, ARCHITECTURE §5) ---
 const LOW_STOCK_THRESHOLD = 5;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface CheckoutPreview {
   lines: CartLine[];
@@ -1890,6 +1892,42 @@ export async function createHandoff(
 // handoffs are a STAFF/OPS-ONLY domain (ARCHITECTURE §6), so this mirrors
 // listActionLogs (optional customerId filter, not an identity-gated own-only
 // read) rather than the customer-facing list reads.
+// Staff/ops-only, read-only order listing for the proactive ops digest. Unlike
+// listOrdersForChannel (identity-gated, own-orders-only), this is an ops-wide read
+// like listHandoffs — never wired to a customer surface. Optionally filter by status
+// (e.g. "processing") and by aging (orders not updated within `stalerThanDays`), so
+// the digest can surface orders stuck in processing. Newest-updated first.
+export async function listOrdersOps(options?: {
+  status?: OrderStatus;
+  stalerThanDays?: number;
+}): Promise<ServiceResult<OrderSummary[]>> {
+  const db = await readShopDb();
+  const staleBefore =
+    options?.stalerThanDays !== undefined
+      ? Date.parse(nowIso()) - Math.max(0, options.stalerThanDays) * DAY_MS
+      : undefined;
+
+  const summaries = (db.orders ?? [])
+    .filter((order) => !options?.status || order.status === options.status)
+    .filter((order) => staleBefore === undefined || Date.parse(order.updatedAt) <= staleBefore)
+    .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
+    .map(buildOrderSummary);
+
+  return { ok: true, data: summaries };
+}
+
+// Staff/ops-only, read-only low-stock listing for the proactive ops digest. Returns
+// every product at or under the same LOW_STOCK_THRESHOLD the checkout/cart logic uses
+// (so "low_stock" and "out_of_stock" both qualify), scarcest first. Ops-wide, like
+// listOrdersOps/listHandoffs — never wired to a customer surface.
+export async function listLowStockProducts(): Promise<ServiceResult<Product[]>> {
+  const db = await readShopDb();
+  const products = (db.products ?? [])
+    .filter((product) => product.stockQuantity <= LOW_STOCK_THRESHOLD)
+    .sort((a, b) => a.stockQuantity - b.stockQuantity);
+  return { ok: true, data: products };
+}
+
 export async function listHandoffs(
   customerId?: string,
   limit = 20
