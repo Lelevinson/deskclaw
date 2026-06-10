@@ -10,6 +10,7 @@ import {
 } from "./routine-rules.js";
 import type {
   AccountLink,
+  AccountRole,
   ActionLog,
   Cart,
   CartLine,
@@ -19,9 +20,11 @@ import type {
   Customer,
   HandoffClassification,
   HandoffRecord,
+  HandoffStatus,
   LinkedCustomer,
   Order,
   OrderLine,
+  OrderShipping,
   OrderStatus,
   OrderSummary,
   OrderView,
@@ -513,6 +516,18 @@ export async function verifyWebCredential(
   await writeShopDb(db);
 
   return { ok: true, data: linked.data.publicView };
+}
+
+// Read the role for a web-login username (staff gating for the /admin area). Returns
+// "customer" when the credential has no role, and refuses an unknown username — never
+// leaks whether the username exists beyond the auth path that already validated it.
+export async function getWebAccountRole(username: string): Promise<ServiceResult<{ role: AccountRole }>> {
+  const db = await readShopDb();
+  const credential = findCredentialByUsername(db, normalize(username));
+  if (!credential) {
+    return { ok: false, error: "No such account." };
+  }
+  return { ok: true, data: { role: credential.role ?? "customer" } };
 }
 
 // Read the resolved customer's own profile (display name + their accountCode) for
@@ -1926,6 +1941,143 @@ export async function listLowStockProducts(): Promise<ServiceResult<Product[]>> 
     .filter((product) => product.stockQuantity <= LOW_STOCK_THRESHOLD)
     .sort((a, b) => a.stockQuantity - b.stockQuantity);
   return { ok: true, data: products };
+}
+
+// ── Staff/admin reads + mutations (the /admin panel) ─────────────────────────
+// These are OPS-WIDE (no per-customer ownership gating, like listHandoffs / the ops
+// reads above) — the caller is gated by an admin role at the web layer, not here.
+// The mutations are DIRECT staff writes (the admin is the human authority), so there
+// is no preview/confirm pending-action — but each writes an audit log via addLog,
+// mirroring createHandoff. None of them move money (no refund/charge/cancel-as-money).
+
+// Read one handoff by id for the admin detail view (ops-wide).
+export async function getHandoffOps(handoffId: string): Promise<ServiceResult<HandoffRecord>> {
+  const db = await readShopDb();
+  const handoff = (db.handoffs ?? []).find((entry) => entry.id === handoffId);
+  if (!handoff) {
+    return { ok: false, error: "No handoff with that id was found." };
+  }
+  return { ok: true, data: handoff };
+}
+
+// Read one order by id for the admin detail view (ops-wide — any order, not own-only).
+export async function getOrderOps(orderId: string): Promise<ServiceResult<OrderView>> {
+  const db = await readShopDb();
+  const order = (db.orders ?? []).find((entry) => entry.id === orderId);
+  if (!order) {
+    return { ok: false, error: "No order with that id was found." };
+  }
+  return { ok: true, data: buildOrderView(db, order) };
+}
+
+// Advance a handoff's status (and optionally attach a resolution note). The agent
+// only ever creates a handoff in "open"; working the queue is a human/admin action.
+export async function resolveHandoffStatus(
+  handoffId: string,
+  newStatus: HandoffStatus,
+  note?: string
+): Promise<ServiceResult<HandoffRecord>> {
+  const db = await readShopDb();
+  const handoff = (db.handoffs ?? []).find((entry) => entry.id === handoffId);
+  if (!handoff) {
+    return { ok: false, error: "No handoff with that id was found." };
+  }
+
+  const previousStatus = handoff.status;
+  const trimmedNote = note?.trim();
+  handoff.status = newStatus;
+  handoff.updatedAt = nowIso();
+  if (trimmedNote) {
+    handoff.statusDetail = trimmedNote;
+  }
+
+  addLog(db, {
+    type: "handoff.update",
+    status: "success",
+    ...(handoff.customerId ? { customerId: handoff.customerId } : {}),
+    summary: `Handoff ${handoff.id}: ${previousStatus} → ${newStatus}${trimmedNote ? " (note added)" : ""}.`,
+    metadata: { handoffId: handoff.id, previousStatus, newStatus, noteAdded: Boolean(trimmedNote) }
+  });
+  await writeShopDb(db);
+
+  return { ok: true, data: handoff };
+}
+
+// Advance an order's status and optionally merge shipping/tracking detail. Stamps
+// shippedAt / deliveredAt when the order first reaches those states. A human/admin
+// action (the agent never works the fulfilment queue); never moves money.
+export async function advanceOrderStatus(
+  orderId: string,
+  newStatus: OrderStatus,
+  shipping?: Partial<OrderShipping>
+): Promise<ServiceResult<OrderView>> {
+  const db = await readShopDb();
+  const order = (db.orders ?? []).find((entry) => entry.id === orderId);
+  if (!order) {
+    return { ok: false, error: "No order with that id was found." };
+  }
+
+  const previousStatus = order.status;
+  const now = nowIso();
+  order.status = newStatus;
+  order.updatedAt = now;
+
+  const carrier = shipping?.carrier?.trim();
+  const trackingNumber = shipping?.trackingNumber?.trim();
+  const estimatedDelivery = shipping?.estimatedDelivery?.trim();
+  if (carrier || trackingNumber || estimatedDelivery || newStatus === "shipped" || newStatus === "delivered") {
+    const merged: OrderShipping = { ...order.shipping };
+    if (carrier) merged.carrier = carrier;
+    if (trackingNumber) merged.trackingNumber = trackingNumber;
+    if (estimatedDelivery) merged.estimatedDelivery = estimatedDelivery;
+    if (newStatus === "shipped" && !merged.shippedAt) merged.shippedAt = now;
+    if (newStatus === "delivered" && !merged.deliveredAt) merged.deliveredAt = now;
+    order.shipping = merged;
+  }
+
+  addLog(db, {
+    type: "order.update",
+    status: "success",
+    customerId: order.customerId,
+    summary: `Order ${order.id}: ${previousStatus} → ${newStatus}${trackingNumber ? ` (tracking ${trackingNumber})` : ""}.`,
+    metadata: { orderId: order.id, previousStatus, newStatus, carrier: carrier ?? null, trackingNumber: trackingNumber ?? null }
+  });
+  await writeShopDb(db);
+
+  return { ok: true, data: buildOrderView(db, order) };
+}
+
+// Set a product's absolute stock quantity and recompute its derived stock status.
+// A human/admin restock/correction action (the agent only ever decrements stock at
+// checkout). Rejects a negative or non-integer quantity.
+export async function adjustProductStock(
+  productId: string,
+  newQuantity: number,
+  reason?: string
+): Promise<ServiceResult<Product>> {
+  if (!Number.isInteger(newQuantity) || newQuantity < 0) {
+    return { ok: false, error: "Stock quantity must be a whole number of 0 or more." };
+  }
+  const db = await readShopDb();
+  const product = (db.products ?? []).find((entry) => entry.id === productId);
+  if (!product) {
+    return { ok: false, error: "No product with that id was found." };
+  }
+
+  const previousQuantity = product.stockQuantity;
+  product.stockQuantity = newQuantity;
+  product.stockStatus = stockStatusFor(newQuantity);
+
+  const trimmedReason = reason?.trim();
+  addLog(db, {
+    type: "product.stock_adjust",
+    status: "success",
+    summary: `Stock for ${product.name}: ${previousQuantity} → ${newQuantity}${trimmedReason ? ` (${trimmedReason})` : ""}.`,
+    metadata: { productId: product.id, previousQuantity, newQuantity, reason: trimmedReason ?? null }
+  });
+  await writeShopDb(db);
+
+  return { ok: true, data: product };
 }
 
 export async function listHandoffs(

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { User } from "lucide-react";
+import { ShieldCheck, User } from "lucide-react";
 
 import { Logo } from "./Logo";
 import { MobileNav } from "./MobileNav";
@@ -31,12 +31,29 @@ function AccountControl({ customerName }: { customerName: string | null }) {
   );
 }
 
+// Staff-only entry to the /admin panel. Shown in the header solely for an admin
+// session; ordinary shoppers never see it (and requireAdmin() guards the routes
+// regardless). Set off in gold to read as an operator affordance, not a surface.
+function AdminLink() {
+  return (
+    <Link
+      href="/admin"
+      className="flex items-center gap-1.5 rounded-sm font-sans text-sm tracking-wide text-gold-deep transition-colors hover:text-ink focus-visible:text-ink focus-ring focus-visible:ring-offset-4 focus-visible:ring-offset-cream-soft"
+    >
+      <ShieldCheck className="size-4" aria-hidden />
+      Admin
+    </Link>
+  );
+}
+
 function Header({
   customerName,
   cartCount,
+  isAdmin,
 }: {
   customerName: string | null;
   cartCount: number;
+  isAdmin: boolean;
 }) {
   return (
     <header className="sticky top-0 z-20 border-b border-line bg-cream-soft/95 backdrop-blur">
@@ -76,10 +93,11 @@ function Header({
 
           {/* Account control sits after the surfaces, set off by a hairline. */}
           <span aria-hidden className="h-4 w-px bg-line" />
+          {isAdmin && <AdminLink />}
           <AccountControl customerName={customerName} />
         </nav>
 
-        <MobileNav items={NAV} cartCount={cartCount} customerName={customerName} />
+        <MobileNav items={NAV} cartCount={cartCount} customerName={customerName} isAdmin={isAdmin} />
       </div>
     </header>
   );
@@ -108,15 +126,17 @@ function Footer() {
 export function AppShell({
   customerName,
   cartCount,
+  isAdmin = false,
   children,
 }: {
   customerName: string | null;
   cartCount: number;
+  isAdmin?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div className="flex min-h-screen flex-col">
-      <Header customerName={customerName} cartCount={cartCount} />
+      <Header customerName={customerName} cartCount={cartCount} isAdmin={isAdmin} />
       <main className="mx-auto w-full max-w-content flex-1 px-7">{children}</main>
       <Footer />
     </div>

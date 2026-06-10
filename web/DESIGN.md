@@ -172,6 +172,7 @@ mutations are cart edits.
 | 7 | **Login / Register** | `credentials` (+ `accountLinks`) | write · sign in / sign up | public |
 | 8 | **Account** (profile + accountCode + sign out) | `customers` / `accountLinks` | read · sign out | **own profile only** |
 | 9 | **Routines** (build-your-routine) | `catalog/products.json` + `catalog/compatibility.md` (via `getRoutineGuide`) | read · pick products → AM/PM plan | public |
+| 10 | **Admin / staff panel** (`/admin` — dashboard + handoffs / orders / stock) | `handoffs` · `orders` · `products` (ops-wide reads + staff-mutation fns) | read · **staff-mutate** (resolve handoff / advance order / restock) | **admin role only** |
 
 **Auth shipped 2026-06-09** (was out of scope): real per-user login + signup
 (scrypt-hashed `credentials`, an HMAC session cookie, a `web`-channel account-link).
@@ -181,7 +182,21 @@ Browsing (surfaces 2–3) is public; the account surfaces (4–6, 8) require a s
 **Mock checkout shipped 2026-06-09** (surface 4 now also WRITES `orders`): the cart
 Checkout button creates an unpaid `placed` order, decrements stock, clears the cart.
 **Still out of scope here:** real payment/charging, password reset / email / OAuth,
-address mutation, a `handoffs`/staff view (staff-only domain, roadmap §2).
+address mutation.
+
+**Admin / staff panel shipped 2026-06-10** (surface 10, was out of scope): an
+**admin-role** login + an `/admin` area that works the queues the agent surfaces but
+never acts on — resolve handoffs (status + note), advance orders (status + tracking),
+restock products. Built on the existing auth: an optional `Credential.role` (`"admin"`),
+a `requireAdmin()` gate run once in `web/app/admin/layout.tsx` (+ `/admin` in the
+middleware matcher), and the header "Admin" link shown only for an admin session.
+Reads are **ops-wide** (every customer's records, not own-only — the staff counterpart
+of the customer reads); the writes are **direct, audited staff mutations**
+(`resolveHandoffStatus` / `advanceOrderStatus` / `adjustProductStock` in `src/shop`),
+**not** the customer `preview→confirm` path — the admin is the human authority. **No
+money moves**: no refund/charge, and order *cancellation* is not an admin action here.
+Seeded admin login: **`admin` / `amelya-admin`** (demo-grade). Mirrors the proactive
+ops-digest email — the digest tells the owner what to fix, the panel is where they fix it.
 **Routines builder shipped 2026-06-09** (surface 9, promoted from "optional polish"):
 an interactive but **deterministic, faithful** page — the customer picks the products
 they have, and it arranges them into the brand's stated AM/PM order and surfaces only

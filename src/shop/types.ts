@@ -78,12 +78,19 @@ export interface AccountLink extends ChannelIdentity {
 // with a credential also has an AccountLink on the "web" channel whose
 // externalUserId is this `username`, so a logged-in session resolves through the
 // same resolveLinkedCustomer path as any other channel.
+// Optional account role. Absent (or "customer") = an ordinary shopper. "admin" =
+// a staff/ops account that may reach the /admin panel and perform audited staff
+// mutations (resolve handoffs, advance orders, restock). The role lives on the
+// credential, not the customer, so it is checked at login/session time.
+export type AccountRole = "customer" | "admin";
+
 export interface Credential {
   customerId: string;
   username: string;
   salt: string;
   hash: string;
   createdAt: string;
+  role?: AccountRole;
 }
 
 export interface LinkedCustomer {

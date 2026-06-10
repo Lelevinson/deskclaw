@@ -60,6 +60,13 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
+  /* Text selection in brand colours (DESIGN §3.1) instead of the browser's default
+     blue: a soft gold wash with ink text — legible on both the cream surfaces and
+     the sage footer. */
+  ::selection {
+    background-color: theme("colors.gold.light");
+    color: theme("colors.ink.DEFAULT");
+  }
   /* Shared focus-visible ring core (gold ring, no outline). Call sites add the
      shape (rounded-*) and either a ring-offset color (cream/panel/cream-soft) or
      ring-inset — those vary by surface, the core does not. Centralizes the token

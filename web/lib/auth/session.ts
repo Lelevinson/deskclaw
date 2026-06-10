@@ -11,7 +11,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { lookupCustomerByChannel } from "@shop/service.js";
+import { getWebAccountRole, lookupCustomerByChannel } from "@shop/service.js";
+import type { AccountRole } from "@shop/types.js";
 
 const COOKIE_NAME = "deskclaw_session";
 const CHANNEL = "web" as const;
@@ -69,6 +70,26 @@ export async function requireIdentity(): Promise<WebIdentity> {
   // (bounce to /login) stay consistent instead of rendering empty pages.
   const resolved = await lookupCustomerByChannel(id.channel, id.externalUserId);
   if (!resolved.ok) redirect("/login");
+  return id;
+}
+
+// Nullable role read — safe in render (e.g. the header deciding whether to show the
+// Admin link). Returns null when logged out or unresolvable; never redirects.
+export async function getSessionRole(): Promise<AccountRole | null> {
+  const id = await getIdentity();
+  if (!id) return null;
+  const result = await getWebAccountRole(id.externalUserId);
+  return result.ok && result.data ? result.data.role : null;
+}
+
+// Gate the /admin area: requires a valid session AND the admin role. A logged-out or
+// unresolvable session bounces to /login (via requireIdentity); a logged-in NON-admin
+// is sent to the storefront home (no admin surface for ordinary shoppers). Call once
+// in the admin layout so the whole subtree is protected server-side.
+export async function requireAdmin(): Promise<WebIdentity> {
+  const id = await requireIdentity();
+  const result = await getWebAccountRole(id.externalUserId);
+  if (!result.ok || result.data?.role !== "admin") redirect("/");
   return id;
 }
 

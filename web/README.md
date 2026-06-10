@@ -200,6 +200,29 @@ catalog (`category` → step/order) with a curated rules module
 public `/routines` server component, which hands the guide to the client
 `RoutineBuilder`. Read-only brand content — **no new data domain, no mutation, public**.
 
+## Admin / staff panel — `/admin` (2026-06-10)
+
+The human side of the handoff loop: an **admin-role** login works the queues the agent
+surfaces but never acts on. `/admin` has a dashboard (open handoffs · stuck orders · low
+stock — mirroring the proactive ops-digest email) and three worklists: **handoffs**
+(advance status + resolution note), **orders** (advance status + carrier/tracking), and
+**stock** (set quantity → recomputed stock status).
+
+- **Auth:** an optional `Credential.role` (`"admin"`). `requireAdmin()`
+  ([`lib/auth/session.ts`](lib/auth/session.ts)) runs once in
+  [`app/admin/layout.tsx`](app/admin/layout.tsx) — a non-admin is sent home, logged-out
+  to `/login`; the middleware `/admin` matcher is only a cookie prepass. The header
+  "Admin" link shows for an admin session only. Seeded login: **`admin` / `amelya-admin`**
+  (demo-grade, in `data/customers/`).
+- **Reads are ops-wide** (every customer's records — the staff counterpart of the own-only
+  customer reads), in [`lib/shop/admin.ts`](lib/shop/admin.ts) over the same `src/shop`
+  ops functions the ops-digest agent uses.
+- **Writes are direct, audited staff mutations** (`resolveHandoffStatus` /
+  `advanceOrderStatus` / `adjustProductStock` in `src/shop`, via
+  [`lib/shop/admin-actions.ts`](lib/shop/admin-actions.ts)) — **not** the customer
+  `preview→confirm` path (the admin is the human authority), but each writes an audit log.
+  **No money moves**: no refund/charge, and order *cancellation* is not an admin action.
+
 ## Scalability rule
 
 A new customer-visible data domain = **one route + one typed data-access function
