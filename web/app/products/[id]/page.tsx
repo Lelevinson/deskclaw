@@ -38,7 +38,7 @@ export default async function ProductPage({
       </nav>
 
       <div className="grid grid-cols-1 gap-12 md:grid-cols-2">
-        <ProductTile className="rounded-lg border border-line" aspect="aspect-[4/5]" />
+        <ProductTile productId={product.id} alt={product.name} className="rounded-lg border border-line" aspect="aspect-[4/5]" sizes="(min-width: 768px) 560px, 90vw" />
 
         <div className="flex flex-col">
           <p className="font-sans text-xs uppercase tracking-eyebrow text-gold-deep">

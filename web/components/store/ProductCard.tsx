@@ -18,7 +18,7 @@ export function ProductCard({ product }: { product: Product }) {
         className="block focus-ring"
       >
         <div className="relative">
-          <ProductTile />
+          <ProductTile productId={product.id} alt={product.name} />
           {product.stockStatus !== "in_stock" && (
             <StockBadge status={product.stockStatus} className="absolute right-3 top-3" />
           )}
