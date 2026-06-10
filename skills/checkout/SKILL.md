@@ -27,6 +27,10 @@ After `shop_checkout_confirm` succeeds, email the shop owner that a new order wa
 - **Compose the `subject` and `body` yourself, in your own words — do not paste a template.** A short note: the order id, the items and total, and which customer placed it. Keep it brief.
 - This emails the **owner only** (no recipient field — it can never message the customer) and does not change the customer-facing reply: still confirm the placed order to the customer as in step 6. Sending the email is an internal step; if it fails, do not retry in a loop or surface the failure to the customer (the order is already placed).
 
+## Suggesting a relevant next step (optional)
+
+After an order is placed successfully, you may offer **one** relevant next step the same way `cart-actions` does: suggest completing the routine from the real stated pairings in `data/catalog/compatibility.md`, prefer an in-stock product, suggest at most one item, and **never auto-add** it. **Skip it entirely** if the interaction involved a complaint, a problem, or a handoff. To assemble a full AM/PM routine, hand to `routine-concierge`. Keep it light — the order is already done; this is a friendly add-on, not a second sell.
+
 ## Rules
 
 - Never use raw database access. Never place an order without an explicit confirmation.

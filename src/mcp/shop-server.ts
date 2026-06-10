@@ -53,6 +53,31 @@ server.server.onerror = (error) => {
   console.error("DeskClaw shop MCP protocol error:", error);
 };
 
+// Serialize tool executions in this process. The shop DB is a single JSON file
+// read-modified-written per mutation (see src/shop/store.ts); when the model
+// fires several mutating tool calls in parallel — e.g. previewing or confirming
+// a whole routine bundle at once (routine-concierge) — the unsynchronized
+// read→mutate→write of each would race and all but the last write would be lost.
+// Funnel every tool handler through one promise chain so each runs to completion
+// before the next begins. Reads serialize too (cheap, and keeps it simple); a
+// thrown handler doesn't break the chain. This is the in-process guard for the
+// whole-file JSON store flagged as an operational limit in ARCHITECTURE §6.
+let toolChain: Promise<unknown> = Promise.resolve();
+const registerToolRaw = server.registerTool.bind(server) as (...args: unknown[]) => unknown;
+server.registerTool = ((...registerArgs: unknown[]) => {
+  const handler = registerArgs[registerArgs.length - 1] as (...handlerArgs: unknown[]) => unknown;
+  const serializedHandler = (...handlerArgs: unknown[]) => {
+    const run = toolChain.then(() => handler(...handlerArgs));
+    toolChain = run.then(
+      () => undefined,
+      () => undefined
+    );
+    return run;
+  };
+  registerArgs[registerArgs.length - 1] = serializedHandler;
+  return registerToolRaw(...registerArgs);
+}) as typeof server.registerTool;
+
 server.registerTool(
   "shop_customer_lookup",
   {

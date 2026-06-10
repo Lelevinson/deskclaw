@@ -155,9 +155,18 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
+  // Optional case filter: any CLI args are treated as substrings matched against
+  // the case id, so `npm run agent:eval -- routine-concierge` runs just those.
+  const filters = process.argv.slice(2);
+  const cases = filters.length > 0 ? CASES.filter((c) => filters.some((f) => c.id.includes(f))) : CASES;
+  if (cases.length === 0) {
+    console.log(`No cases match filter(s): ${filters.join(", ")}`);
+    process.exit(1);
+  }
+
   let passed = 0;
   const failedCases: string[] = [];
-  for (const c of CASES) {
+  for (const c of cases) {
     process.stdout.write(`• ${c.id} (${c.skill}) … `);
     const fails = evaluateCase(c);
     if (fails.length === 0) {
@@ -173,7 +182,7 @@ async function main(): Promise<void> {
   // Leave a clean demo store behind.
   resetStore();
 
-  console.log(`\n${passed}/${CASES.length} cases passed.`);
+  console.log(`\n${passed}/${cases.length} cases passed.`);
   if (failedCases.length > 0) {
     console.log(`Failed: ${failedCases.join(", ")}`);
     process.exit(1);

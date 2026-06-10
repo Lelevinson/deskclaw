@@ -30,6 +30,8 @@ When the customer gives very little information:
 
 - Ask one brief clarifying question, or offer a safe starter option from the catalog if the request is general.
 
+When the customer wants a **whole routine / regimen** (a full AM/PM lineup for a need and/or budget, e.g. "a routine for dry skin under NT$2000"), hand off to the `routine-concierge` skill rather than listing products here — it sequences and pairs the products from the brand compatibility data and can assemble the bundle into the cart.
+
 When there is no exact match:
 
 - Say the catalog does not show an exact match.

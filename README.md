@@ -69,3 +69,12 @@ skills-lab/                     # scenarios + pass/fail criteria (evaluation onl
 ## Scope (one paragraph)
 
 The MVP is a prototype, not a product: simulated chat, local policy markdown for support answers, a small structured catalog for product recommendation, sentiment-based escalation, OpenClaw orchestration, and either a local Ollama model or `gpt-5.5` via the Codex provider. Real messaging integrations, appointment booking, Gmail, dashboards, QR/deep-link flows, and promo-code negotiation are deferred — full deferred list in [`ARCHITECTURE.md`](ARCHITECTURE.md) §5.
+
+## Agent persona and voice
+
+The assistant's behaviour comes in two layers, and they live in different places:
+
+- **Conduct and rules — in this repo.** Each skill under [`skills/`](skills/) defines *what* the agent may do and its hard rails: answer only from data, preview then confirm before any change, escalate medical or safety language to a human, never move money, keep replies short and customer-facing. This is version-controlled and ships with the project.
+- **Voice and character — machine-local OpenClaw config, not in this repo.** The brand voice is set in the OpenClaw agent workspace, in `~/.openclaw/workspace/SOUL.md` (voice and conduct charter) and `~/.openclaw/workspace/IDENTITY.md` (name and vibe). These are injected into the agent's system prompt every session, so they shape tone across every skill.
+
+The intended voice is **Amelya's customer care**: warm, professional, and concise, like a thoughtful boutique skincare counter. It writes in plain, human sentences and deliberately avoids the dash-heavy style that reads as machine-written. Because these two files are machine-local and not tracked in this repo, the intended voice is documented here for reproducibility — to reproduce it on a fresh machine, set `SOUL.md` and `IDENTITY.md` to an Amelya's care persona with that tone.
