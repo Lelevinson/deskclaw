@@ -24,6 +24,14 @@
       "externalUserId": "lin",
       "status": "linked",
       "linkedAt": "2026-05-28T00:00:00.000Z"
+    },
+    {
+      "id": "link-admin-web",
+      "customerId": "customer-admin",
+      "channel": "web",
+      "externalUserId": "admin",
+      "status": "linked",
+      "linkedAt": "2026-05-28T00:00:00.000Z"
     }
   ]
 }

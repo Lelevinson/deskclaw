@@ -4,6 +4,7 @@ import { Cinzel, Cormorant_Garamond, Jost } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/shell/AppShell";
 import { getCartCount, getCurrentCustomerName } from "@/lib/shop";
+import { getSessionRole } from "@/lib/auth/session";
 
 // DESIGN.md §3.2 — Cinzel (display/logo), Cormorant (editorial), Jost (UI).
 const cinzel = Cinzel({
@@ -36,14 +37,15 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [customerName, cartCount] = await Promise.all([
+  const [customerName, cartCount, role] = await Promise.all([
     getCurrentCustomerName(),
     getCartCount(),
+    getSessionRole(),
   ]);
   return (
     <html lang="en" className={`${cinzel.variable} ${cormorant.variable} ${jost.variable}`}>
       <body>
-        <AppShell customerName={customerName} cartCount={cartCount}>
+        <AppShell customerName={customerName} cartCount={cartCount} isAdmin={role === "admin"}>
           {children}
         </AppShell>
       </body>

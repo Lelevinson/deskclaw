@@ -5,6 +5,11 @@
       "id": "customer-demo-lin",
       "displayName": "Lin Demo",
       "accountCode": "LIN-7421"
+    },
+    {
+      "id": "customer-admin",
+      "displayName": "Amelya's Admin",
+      "accountCode": "ADMIN-0001"
     }
   ]
 }

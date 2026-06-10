@@ -16,10 +16,12 @@ export function MobileNav({
   items,
   cartCount,
   customerName,
+  isAdmin = false,
 }: {
   items: NavItem[];
   cartCount: number;
   customerName: string | null;
+  isAdmin?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -102,6 +104,20 @@ export function MobileNav({
                   </span>
                 </li>
               ),
+            )}
+
+            {/* Staff-only admin entry, mirroring the desktop header (admin sessions
+                only; the routes are guarded by requireAdmin regardless). */}
+            {isAdmin && (
+              <li>
+                <Link
+                  href="/admin"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center border-b border-line/60 py-3.5 font-sans text-sm tracking-wide text-gold-deep transition-colors hover:text-ink focus-visible:text-ink focus-visible:outline-none"
+                >
+                  Admin
+                </Link>
+              </li>
             )}
 
             {/* Account control mirrors the desktop header: the profile link when

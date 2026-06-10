@@ -28,16 +28,22 @@ import {
   confirmLatestUpdateQuantityForChannel,
   confirmRemoveItemForChannel,
   confirmUpdateQuantityForChannel,
+  adjustProductStock,
+  advanceOrderStatus,
   createHandoff,
   getCartForChannel,
+  getHandoffOps,
   getOrderForChannel,
+  getOrderOps,
   getReturnForChannel,
   getRoutineGuide,
+  getWebAccountRole,
   listActionLogs,
   listHandoffs,
   listLowStockProducts,
   listOrdersForChannel,
   listOrdersOps,
+  resolveHandoffStatus,
   linkExistingAccountForChannel,
   listReturnsForChannel,
   lookupCustomerByChannel,
@@ -938,7 +944,8 @@ async function main(): Promise<void> {
   });
 
   await test("shop_handoff_list returns recorded handoffs and filters by customerId", async () => {
-    // The baseline seeds one resolved handoff for the demo customer.
+    // The baseline seeds two handoffs for the demo customer: one resolved, one open
+    // (the open one is the admin-panel demo's worklist item).
     const seeded = await listHandoffs(undefined, 100);
     assert(seeded.ok && seeded.data?.some((h) => h.id === LIN_SEEDED_HANDOFF), "the seeded handoff should be listed");
 
@@ -946,7 +953,7 @@ async function main(): Promise<void> {
     await createHandoff(CH, "unknown-user", "urgent_handoff", "safety_reaction", "Skin reaction.", "Unlinked sender reports a reaction.");
 
     const all = await listHandoffs(undefined, 100);
-    assert(all.ok && all.data && all.data.length === 3, "all three records (1 seeded + 2 created) should be listed");
+    assert(all.ok && all.data && all.data.length === 4, "all four records (2 seeded + 2 created) should be listed");
 
     const mineOnly = await listHandoffs(LIN_CUSTOMER, 100);
     assert(
@@ -954,8 +961,8 @@ async function main(): Promise<void> {
       "a customerId filter must return only that customer's handoffs"
     );
     assert(
-      mineOnly.data?.length === 2,
-      "the demo customer should have the seeded handoff plus the one created for the linked sender"
+      mineOnly.data?.length === 3,
+      "the demo customer should have the two seeded handoffs plus the one created for the linked sender"
     );
     // The unlinked escalation has no customerId, so it is never attributed to a customer.
     assert(
@@ -1255,6 +1262,64 @@ async function main(): Promise<void> {
     const gel = ids.indexOf("clear-day-gel");
     const cleanser = ids.indexOf("cloud-cleanser");
     assert(gel < cleanser, "results must be scarcest-first (0 before 3)");
+  });
+
+  group("Staff/admin panel (role + audited mutations)");
+
+  await test("getWebAccountRole reports admin for the seed, customer otherwise, and refuses unknowns", async () => {
+    const admin = await getWebAccountRole("admin");
+    assert(admin.ok && admin.data?.role === "admin", "the seeded admin account must report the admin role");
+    const lin = await getWebAccountRole("lin");
+    assert(lin.ok && lin.data?.role === "customer", "an ordinary login must report the customer role");
+    const unknown = await getWebAccountRole("nobody");
+    assert(!unknown.ok, "an unknown username must be refused");
+  });
+
+  await test("resolveHandoffStatus advances status + records a note + audits", async () => {
+    const created = await createHandoff(CH, LIN, "handoff_recommended", "refund_dispute", "Chasing refund.", "Lin is chasing a delayed refund.");
+    assert(created.ok && created.data, "a handoff must be created to work");
+    const handoffId = created.data!.id;
+    const updated = await resolveHandoffStatus(handoffId, "in_progress", "Called Lin; refund approved.");
+    assert(updated.ok && updated.data?.status === "in_progress", updated.error ?? "status must advance to in_progress");
+    assert(updated.data?.statusDetail === "Called Lin; refund approved.", "the resolution note must be stored");
+    const reread = await getHandoffOps(handoffId);
+    assert(reread.ok && reread.data?.status === "in_progress", "the advanced status must persist");
+    const logs = await listActionLogs(undefined, 20);
+    assert(
+      logs.data?.some((log) => log.type === "handoff.update" && log.status === "success"),
+      "a handoff update must write a success audit log"
+    );
+  });
+
+  await test("advanceOrderStatus moves processing → shipped, stamps tracking + shippedAt, audits", async () => {
+    const before = await getOrderOps("order-2026-0003");
+    assert(before.ok && before.data?.status === "processing", "order-2026-0003 must start in processing");
+    const shipped = await advanceOrderStatus("order-2026-0003", "shipped", { carrier: "Black Cat Express", trackingNumber: "BC123456789TW" });
+    assert(shipped.ok && shipped.data?.status === "shipped", shipped.error ?? "the order must advance to shipped");
+    assert(shipped.data?.shipping?.trackingNumber === "BC123456789TW", "tracking must be attached");
+    assert(Boolean(shipped.data?.shipping?.shippedAt), "shippedAt must be stamped on the shipped transition");
+    const logs = await listActionLogs(undefined, 20);
+    assert(
+      logs.data?.some((log) => log.type === "order.update" && log.status === "success"),
+      "an order update must write a success audit log"
+    );
+  });
+
+  await test("adjustProductStock sets quantity, recomputes status, audits, and refuses bad input", async () => {
+    const out = await adjustProductStock("cloud-cleanser", 0, "demo");
+    assert(out.ok && out.data?.stockQuantity === 0, "stock must be set to 0");
+    assert(out.data?.stockStatus === "out_of_stock", "zero stock must recompute to out_of_stock");
+    const restocked = await adjustProductStock("cloud-cleanser", 40);
+    assert(restocked.ok && restocked.data?.stockStatus === "in_stock", "a healthy restock must recompute to in_stock");
+    const negative = await adjustProductStock("cloud-cleanser", -1);
+    assert(!negative.ok, "a negative quantity must be refused");
+    const unknown = await adjustProductStock("no-such-product", 5);
+    assert(!unknown.ok, "an unknown product id must be refused");
+    const logs = await listActionLogs(undefined, 20);
+    assert(
+      logs.data?.some((log) => log.type === "product.stock_adjust" && log.status === "success"),
+      "a stock adjustment must write a success audit log"
+    );
   });
 
   group("Owner notifications (outbound email — OWNER-ONLY)");
