@@ -45,6 +45,7 @@ import {
   listOrdersOps,
   resolveHandoffStatus,
   linkExistingAccountForChannel,
+  linkWebCredentialToExistingCustomer,
   listReturnsForChannel,
   lookupCustomerByChannel,
   previewAddItemForChannel,
@@ -1188,6 +1189,57 @@ async function main(): Promise<void> {
     assert(!shortPw.ok && shortPw.error?.includes("at least"), "a too-short password must be refused");
     const badName = await registerWebAccount("bad name!", "longenough1", "Some One");
     assert(!badName.ok, "a username with spaces/symbols must be refused");
+  });
+
+  group("Cross-channel bridge: web login for a chat-registered account");
+
+  await test("a chat-registered account claims a web login via its code → SAME customer", async () => {
+    // The martin case: register over a chat channel, get an accountCode, then set up
+    // a web login with it. The web login must land on the SAME customer (cart/orders).
+    const reg = await registerNewCustomerForChannel(CH, "eval-wa-user", "Wanda");
+    assert(reg.ok && reg.data?.accountCode, reg.error ?? "chat registration should return an accountCode");
+    const code = reg.data!.accountCode;
+    const chatCustomer = reg.data!.customerId;
+
+    const link = await linkWebCredentialToExistingCustomer("wanda", "webpass123", code);
+    assert(
+      link.ok && link.data?.customerId === chatCustomer,
+      link.error ?? "the web login must attach to the SAME existing customer, not a new one"
+    );
+    assert(link.data?.channel === "web" && link.data?.externalUserId === "wanda", "a web account-link must be created");
+
+    // The web login verifies and resolves to the same customer.
+    const login = await verifyWebCredential("wanda", "webpass123");
+    assert(login.ok && login.data?.customerId === chatCustomer, "the web login must resolve to the chat-registered customer");
+
+    const db = await readShopDb();
+    assert(db.customers.filter((c) => c.id === chatCustomer).length === 1, "no duplicate customer may be created");
+    assert(!JSON.stringify(db.credentials).includes("webpass123"), "the plaintext password must NEVER be stored");
+    const logs = await listActionLogs(chatCustomer, 20);
+    assert(
+      logs.data?.some((log) => log.type === "account.web_link_existing" && log.status === "success"),
+      "claiming a web login must write a success audit log"
+    );
+  });
+
+  await test("claiming a web login with a wrong code is refused and creates nothing", async () => {
+    const before = (await readShopDb()).credentials.length;
+    const link = await linkWebCredentialToExistingCustomer("nobody", "webpass123", "NOPE-0000");
+    assert(!link.ok && link.error?.includes("not recognized"), "an unrecognized code must be refused generically");
+    assert((await readShopDb()).credentials.length === before, "a refused claim must create no credential");
+  });
+
+  await test("an account that already has a web login cannot claim a second", async () => {
+    // Lin already has the seeded `lin` web login; her code must not mint another.
+    const link = await linkWebCredentialToExistingCustomer("lin-again", "webpass123", LIN_ACCOUNT_CODE);
+    assert(!link.ok && link.error?.includes("already has a web login"), "an account with a web login must be refused");
+  });
+
+  await test("claiming a web login with a taken username is refused", async () => {
+    const reg = await registerNewCustomerForChannel(CH, "eval-wa-user2", "Wendy");
+    assert(reg.ok && reg.data?.accountCode, reg.error ?? "registration should succeed");
+    const link = await linkWebCredentialToExistingCustomer("lin", "webpass123", reg.data!.accountCode);
+    assert(!link.ok && link.error?.includes("already taken"), "a taken username must be refused even with a valid code");
   });
 
   group("Checkout (mock — cart → order, no payment)");

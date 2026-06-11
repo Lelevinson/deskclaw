@@ -319,7 +319,7 @@ export async function registerNewCustomerForChannel(
   channel: string,
   externalUserId: string,
   displayName: string
-): Promise<ServiceResult<LinkedCustomer>> {
+): Promise<ServiceResult<LinkedCustomer & { accountCode: string }>> {
   const db = await readShopDb();
 
   const existing = resolveLinkedCustomer(db, channel, externalUserId);
@@ -335,10 +335,11 @@ export async function registerNewCustomerForChannel(
     return { ok: false, error: "Please share the name to register the account under." };
   }
 
+  const accountCode = generateAccountCode(db);
   const customer: Customer = {
     id: `customer_${randomUUID()}`,
     displayName: trimmedName,
-    accountCode: generateAccountCode(db)
+    accountCode
   };
   const accountLink: AccountLink = {
     id: `link_${randomUUID()}`,
@@ -361,7 +362,10 @@ export async function registerNewCustomerForChannel(
   });
 
   await writeShopDb(db);
-  return { ok: true, data: buildLinkedCustomer(customer, accountLink) };
+  // Surface the accountCode here (the shared LinkedCustomer view omits it) so the
+  // agent can read it back to the customer — they need it to set up a web login
+  // for this account later (see linkWebCredentialToExistingCustomer).
+  return { ok: true, data: { ...buildLinkedCustomer(customer, accountLink), accountCode } };
 }
 
 // Link the caller's channel identity to an EXISTING customer account, gated by
@@ -475,6 +479,82 @@ export async function registerWebAccount(
     status: "success",
     customerId: customer.id,
     summary: `Register web account ${customer.displayName} (@${normalizedUsername}).`,
+    metadata: { accountLinkId: accountLink.id, channel: accountLink.channel }
+  });
+
+  await writeShopDb(db);
+  return { ok: true, data: buildLinkedCustomer(customer, accountLink) };
+}
+
+// Attach a storefront web login to an EXISTING customer (e.g. one who registered
+// over a chat channel and so has a customer + account-link but no web credential),
+// gated by their accountCode. This is the web-side symmetric twin of
+// linkExistingAccountForChannel: it verifies the code, then creates a Credential +
+// a "web" AccountLink bound to the EXISTING customerId, so the web session resolves
+// to the same customer (same cart/orders). The accountCode is a DEMO-GRADE stand-in
+// for an out-of-band one-time code (see ARCHITECTURE §5) — not stronger identity
+// proof. Refuses an unrecognized code, a customer that already has a web login (one
+// credential per account), and a taken username. Web-only; not an MCP tool.
+export async function linkWebCredentialToExistingCustomer(
+  username: string,
+  password: string,
+  accountCode: string
+): Promise<ServiceResult<LinkedCustomer>> {
+  const db = await readShopDb();
+
+  const normalizedUsername = normalize(username);
+  if (!normalizedUsername) {
+    return { ok: false, error: "Please choose a username." };
+  }
+  if (!/^[a-z0-9._-]+$/.test(normalizedUsername)) {
+    return { ok: false, error: "Username can use only letters, numbers, dots, underscores, and hyphens." };
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return { ok: false, error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` };
+  }
+  const trimmedCode = accountCode.trim();
+  if (!trimmedCode) {
+    return { ok: false, error: "Please share your account verification code." };
+  }
+  if (findCredentialByUsername(db, normalizedUsername)) {
+    return { ok: false, error: "That username is already taken." };
+  }
+
+  const customer = findCustomerByAccountCode(db, trimmedCode);
+  if (!customer) {
+    return { ok: false, error: "That verification code was not recognized." };
+  }
+  // One web login per account. If this customer already has a web credential, this is
+  // the wrong flow (and re-binding a new password would be a takeover vector). Refuse.
+  if (db.credentials.some((credential) => credential.customerId === customer.id)) {
+    return { ok: false, error: "This account already has a web login. Try signing in instead." };
+  }
+
+  const accountLink: AccountLink = {
+    id: `link_${randomUUID()}`,
+    customerId: customer.id,
+    channel: "web",
+    externalUserId: normalizedUsername,
+    status: "linked",
+    linkedAt: nowIso()
+  };
+  const salt = randomBytes(16).toString("hex");
+  const credential: Credential = {
+    customerId: customer.id,
+    username: normalizedUsername,
+    salt,
+    hash: hashPassword(password, salt),
+    createdAt: nowIso()
+  };
+
+  db.accountLinks.push(accountLink);
+  db.credentials.push(credential);
+
+  addLog(db, {
+    type: "account.web_link_existing",
+    status: "success",
+    customerId: customer.id,
+    summary: `Set up web login @${normalizedUsername} for existing customer ${customer.displayName}.`,
     metadata: { accountLinkId: accountLink.id, channel: accountLink.channel }
   });
 
