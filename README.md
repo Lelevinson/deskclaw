@@ -10,8 +10,8 @@
   [![CI](https://github.com/Lelevinson/deskclaw/actions/workflows/ci.yml/badge.svg)](https://github.com/Lelevinson/deskclaw/actions/workflows/ci.yml)
   ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
   ![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
-  ![MCP](https://img.shields.io/badge/MCP-28_typed_tools-6e56cf)
-  ![Evals](https://img.shields.io/badge/evals-90_deterministic_+_14_model--in--the--loop-2da44e)
+  ![MCP](https://img.shields.io/badge/MCP-29_typed_tools-6e56cf)
+  ![Evals](https://img.shields.io/badge/evals-97_deterministic_+_14_model--in--the--loop-2da44e)
 
 </div>
 
@@ -64,7 +64,7 @@ Every line of that is grounded: the prices come from the catalog, the AM/PM orde
 
 ## What the agent can do
 
-**10 skills** drive the behavior, each a markdown contract over **28 typed MCP tools**:
+**10 skills** drive the behavior, each a markdown contract over **29 typed MCP tools**:
 
 | | Skill | What it does |
 |---|---|---|
@@ -119,7 +119,7 @@ flowchart LR
     CRON[cron / manual trigger] -->|no human prompt| GW
 
     GW[OpenClaw Gateway] --> AG["LLM agent<br/>10 skills (markdown contracts)"]
-    AG -->|28 typed MCP tools| SVC["src/shop service layer<br/>(identity · preview/confirm · audit)"]
+    AG -->|29 typed MCP tools| SVC["src/shop service layer<br/>(identity · preview/confirm · audit)"]
     SVC --> DB[("shared JSON store<br/>catalog · carts · orders · returns<br/>handoffs · notifications · audit logs")]
     SVC -->|owner-only| MAIL[Resend → owner's inbox]
 
@@ -133,7 +133,7 @@ Three layers keep new capabilities cheap: a **skill** (what to do, in markdown) 
 
 Two eval layers, because an agent has two failure modes — wrong code and wrong judgment:
 
-- **`npm run shop:eval` — 90 deterministic assertions** over the service layer: identity gating, ownership isolation (no existence leaks), preview/confirm contracts, double-confirm and expiry refusals, stock re-validation, audit-log writes, bundle-add invariants, owner-only email with dedupe. Runs in CI on every push.
+- **`npm run shop:eval` — 97 deterministic assertions** over the service layer: identity gating, ownership isolation (no existence leaks), preview/confirm contracts, double-confirm and expiry refusals, stock re-validation, audit-log writes, bundle-add invariants, cross-channel account linking, owner-only email with dedupe. Runs in CI on every push.
 - **`npm run agent:eval` — 14 model-in-the-loop cases** driving the *real* LLM through the gateway: does it route to the right skill, answer only from data, refuse to invent carriers, create the handoff record on a pregnancy question, preview-then-confirm a bundle, and stay quiet about upsells when the customer is angry? Rule-based assertions (tool calls made, store deltas, reply regexes) — no LLM judge.
 
 This split caught real bugs: a race where parallel bundle previews clobbered each other in the JSON store (fixed by serializing tool execution in the MCP server), and a persona tweak that made the agent *verbally* promise escalation without filing the record.
@@ -164,7 +164,7 @@ ARCHITECTURE.md           # scope, stack, status, resolved decisions — the sou
 AGENTS.md                 # contributor rules + topic→file map
 skills/                   # the 10 agent skills (markdown contracts) — canonical
 src/shop/                 # service layer: identity, preview/confirm, audit, notify
-src/mcp/shop-server.ts    # the 28 typed MCP tools (serialized execution)
+src/mcp/shop-server.ts    # the 29 typed MCP tools (serialized execution)
 src/cli/                  # shop-eval, agent-eval, ops-digest trigger
 data/                     # catalog, policies, compatibility, customers, shop state
 web/                      # Next.js storefront + /admin (server-side reuse of src/shop)
