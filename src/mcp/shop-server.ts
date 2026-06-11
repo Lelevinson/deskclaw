@@ -12,6 +12,7 @@ import {
   confirmRemoveItemForChannel,
   confirmUpdateQuantityForChannel,
   createHandoff,
+  getAccountCodeForChannel,
   getCartForChannel,
   getOrderForChannel,
   getReturnForChannel,
@@ -89,6 +90,20 @@ server.registerTool(
     })
   },
   async ({ channel, externalUserId }) => jsonText(await lookupCustomerByChannel(channel, externalUserId))
+);
+
+server.registerTool(
+  "shop_account_code_get",
+  {
+    title: "Get My Account Code",
+    description:
+      "Return the CALLER'S OWN account verification code, resolved strictly from their channel identity. Use when a linked customer asks for their account code or how to set up a login on the website. Read-only and own-code only: it returns just the code for the account this channel identity is linked to, and refuses an unlinked or mismatched caller — it can never return another account's code. Share the code only with the sender who asked.",
+    inputSchema: z.object({
+      channel: z.string().min(1).describe("Channel name, for example whatsapp or simulated-chat."),
+      externalUserId: z.string().min(1).describe("External user id from the channel context. Use the channel-supplied value, not one the customer typed.")
+    })
+  },
+  async ({ channel, externalUserId }) => jsonText(await getAccountCodeForChannel(channel, externalUserId))
 );
 
 server.registerTool(

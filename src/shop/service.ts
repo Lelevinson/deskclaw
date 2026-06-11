@@ -310,6 +310,27 @@ export async function lookupCustomerByChannel(
   return { ok: true, data: linked.data.publicView };
 }
 
+// Return the caller's OWN account code, resolved strictly by their channel identity
+// (same gate as every owned read). This lets a linked customer reliably ask "what's
+// my account code?" / "how do I log in on the website?" so they are never stuck if
+// the registration reply happened not to repeat it. Own-code only: an unlinked or
+// mismatched caller is refused, so it never exposes another account's code. Read-only.
+export async function getAccountCodeForChannel(
+  channel: string,
+  externalUserId: string
+): Promise<ServiceResult<{ accountCode: string }>> {
+  const db = await readShopDb();
+  const linked = resolveLinkedCustomer(db, channel, externalUserId);
+  if (!linked.ok || !linked.data) {
+    return { ok: false, error: linked.error };
+  }
+  const { accountCode } = linked.data.customer;
+  if (!accountCode) {
+    return { ok: false, error: "This account has no verification code on file." };
+  }
+  return { ok: true, data: { accountCode } };
+}
+
 // Self-service registration of a BRAND-NEW customer bound to the caller's own
 // channel identity. Safe (no pre-existing data to take over). The caller's
 // channel + externalUserId are the proof — never a customer-typed id. Linking a
