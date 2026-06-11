@@ -44,6 +44,7 @@ import {
   listOrdersForChannel,
   listOrdersOps,
   resolveHandoffStatus,
+  getAccountCodeForChannel,
   linkExistingAccountForChannel,
   linkWebCredentialToExistingCustomer,
   listReturnsForChannel,
@@ -1139,6 +1140,28 @@ async function main(): Promise<void> {
   await test("link-existing is refused for an already-linked identity", async () => {
     const link = await linkExistingAccountForChannel(CH, LIN, LIN_ACCOUNT_CODE);
     assert(!link.ok, "an already-linked identity must not link again");
+  });
+
+  await test("a linked customer can read back their OWN account code", async () => {
+    const code = await getAccountCodeForChannel(CH, LIN);
+    assert(code.ok && code.data?.accountCode === LIN_ACCOUNT_CODE, code.error ?? "the owner must get their own code");
+  });
+
+  await test("an unlinked sender cannot get an account code (no leak)", async () => {
+    const code = await getAccountCodeForChannel(CH, "unknown-user");
+    assert(!code.ok, "an unlinked channel identity must not receive any account code");
+    assert(!code.data, "no code data may be returned to an unlinked caller");
+  });
+
+  await test("the account-code read is own-only: a different linked customer gets THEIR code, never Lin's", async () => {
+    await injectSecondCustomer(); // Mallory, linked on CH/MALLORY_EXTERNAL
+    await patchDb((db) => {
+      const m = db.customers.find((c) => c.id === MALLORY_CUSTOMER);
+      if (m) m.accountCode = "MAL-9999";
+    });
+    const mine = await getAccountCodeForChannel(CH, MALLORY_EXTERNAL);
+    // Getting Mallory's own MAL-9999 (not Lin's LIN-7421) proves the code is scoped to the caller.
+    assert(mine.ok && mine.data?.accountCode === "MAL-9999", mine.error ?? "the caller must get their OWN code, never another customer's");
   });
 
   group("Web login credentials");

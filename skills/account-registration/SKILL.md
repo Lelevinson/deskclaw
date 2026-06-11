@@ -1,6 +1,6 @@
 ---
 name: account-registration
-description: Help an unlinked DeskClaw sender create a new customer account, or link their channel identity to an existing account with a verification code, so identity-gated skills (cart, orders, returns) can serve them.
+description: Help an unlinked DeskClaw sender create a new customer account, or link their channel identity to an existing account with a verification code, so identity-gated skills (cart, orders, returns) can serve them. Also tells a linked customer their own account code and how to set up a website login.
 ---
 
 # account-registration
@@ -17,6 +17,10 @@ Customers speak naturally: "sign me up", "I want to make an account", "register 
    - **New account:** ask the name they want on the account, read it back to confirm, then call `shop_account_register` with the channel identity and that name. The result includes an **`accountCode`**. On success, welcome them, and **your confirmation message MUST state that account code clearly** — for example: "You're all set, Martin! Your account code is **VERZ-FUET**. Keep it handy: you can use it on our website under 'Set up web login' to sign in there with the same cart and orders." **Never finish a registration without telling the customer their code in that same reply** — they have no other way to get it, and they need it to set up web login. Read it back verbatim from the tool result; never invent, guess, or alter it, and share it only with the sender who just registered. Then continue with whatever they originally wanted.
    - **Existing account:** ask for their **account verification code**, then call `shop_account_link_existing` with the channel identity and the code. On success, welcome them back. If the code is not recognized, say so plainly and let them try again or offer a human teammate — never reveal, guess, or invent a code.
 4. Use `shop_action_log_list` only if you need to verify what was recorded.
+
+## Helping a linked customer get their account code / set up web login
+
+If a sender who **is** linked asks for their **account code**, how to **log in on the website**, or how to use the same account on the web, call `shop_account_code_get` with their channel identity and read the code back to them, with the web-login guidance: they can enter it on the website under "Set up web login" (with a username and password) to sign in there with the same cart and orders. This is the reliable way to recover the code if it was not captured at registration. Share it only with the sender who asked, resolved from their own channel identity — never from a number or id they type, and never reveal, guess, or invent a code.
 
 ## Rules
 
