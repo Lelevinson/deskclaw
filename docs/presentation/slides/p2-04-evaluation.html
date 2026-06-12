@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<!--
+  P2-04 · EVALUATION — how we know it works  (full-page mock)
+  Tokens — cream #F3EDD5 · ink #26241F · red #C62D2C · bright #FF4B45 · teal #16D2C4 · plum #7A1E1A
+  NOTE: shop:eval = 97 deterministic (verified by running it 2026-06-11) + agent:eval = 14 model-in-the-loop.
+        README badges synced to these numbers in PR #40. Re-run `npm run shop:eval` the night before as a final check.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=Inter:wght@400;600;700&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#F3EDD5;--ink:#26241F;--red:#C62D2C;--bright:#FF4B45;--teal:#16D2C4;--plum:#7A1E1A}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;font-family:'Inter',sans-serif;color:var(--ink);
+       background:radial-gradient(120% 120% at 85% 110%, #FBF6E2 0%, #F3EDD5 52%, #E8E1C3 100%);overflow-x:hidden}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.05;z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .wrap{position:relative;z-index:1;min-height:100vh;padding:58px 80px;display:flex;flex-direction:column}
+  .label{font-family:'Archivo';font-weight:800;font-size:20px;letter-spacing:.06em}
+  .rule{height:3px;background:var(--ink);margin:12px 0 0}
+  .display{font-family:'Playfair Display';font-style:italic;font-weight:700;color:var(--red);
+           font-size:clamp(46px,5.6vw,78px);margin:14px 0 0}
+  .sub{font-size:clamp(18px,2vw,24px);font-weight:600;margin-top:6px}.sub b{color:var(--red)}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:32px}
+  .card{background:#fff;border:2px solid var(--ink);border-radius:18px;padding:24px 26px;
+        box-shadow:6px 7px 0 rgba(38,36,31,.12);position:relative;overflow:hidden;animation:rise .5s ease both}
+  .card:nth-child(2){animation-delay:.1s}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:7px;background:var(--teal)}
+  .tier{font-family:'Archivo';font-weight:800;font-size:15px;letter-spacing:.05em;color:var(--red);text-transform:uppercase}
+  .ttl{font-size:clamp(22px,2.3vw,28px);font-weight:700;margin-top:4px}
+  .li{display:flex;gap:10px;font-size:17px;line-height:1.34;margin-top:12px}
+  .li .c{flex:none;color:var(--teal);font-weight:800}
+  .stat{position:absolute;right:22px;top:20px;text-align:right}
+  .stat .big{font-family:'Archivo';font-weight:900;font-size:48px;color:var(--red);line-height:.9}
+  .stat .sm{font-size:13px;font-weight:700;color:var(--plum);letter-spacing:.04em}
+
+  .foot{margin-top:auto;display:flex;gap:20px;padding-top:30px}
+  .band{flex:1;display:flex;gap:14px;align-items:center;background:var(--ink);color:var(--cream);border-radius:16px;
+        padding:18px 24px;box-shadow:6px 7px 0 rgba(122,30,26,.26)}
+  .band .ic{flex:none;width:42px;height:42px;border-radius:12px;background:var(--bright);display:flex;align-items:center;
+            justify-content:center;font-size:22px}
+  .band .tx{font-size:17px;font-weight:600;line-height:1.3}.band .tx b{color:var(--teal)}
+  @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="label">HOW IT'S BUILT · EVALUATION</div>
+    <div class="rule"></div>
+    <h1 class="display">How We Know It Works</h1>
+    <div class="sub">Not “trust us” — a <b>test suite</b>. We check it on two levels.</div>
+
+    <div class="cols">
+      <div class="card">
+        <div class="stat"><div class="big">97/97</div><div class="sm">PASSING</div></div>
+        <div class="tier">Tool level · deterministic</div>
+        <div class="ttl">No model, no flakiness</div>
+        <div class="li"><span class="c">✓</span>Unlinked identity is refused</div>
+        <div class="li"><span class="c">✓</span>You can't confirm someone else's action</div>
+        <div class="li"><span class="c">✓</span>Every mutation writes an audit log</div>
+      </div>
+      <div class="card">
+        <div class="stat"><div class="big">14</div><div class="sm">SCENARIOS</div></div>
+        <div class="tier">Agent level · model-in-the-loop</div>
+        <div class="ttl">The real model, real scenarios</div>
+        <div class="li"><span class="c">✓</span>Routes to the right skill</div>
+        <div class="li"><span class="c">✓</span>Answers only from data</div>
+        <div class="li"><span class="c">✓</span>Asks before it mutates</div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <div class="band"><span class="ic">⚙️</span><div class="tx">Both run automatically in <b>CI</b> (GitHub Actions) on every change.</div></div>
+      <div class="band"><span class="ic">🟢</span><div class="tx">The whole loop verified <b>live, end-to-end</b> — chat → handoff → real email.</div></div>
+    </div>
+  </div>
+</body>
+</html>

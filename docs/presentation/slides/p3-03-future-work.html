@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<!--
+  P3-03 · HONEST CLOSE — limits & where it goes  (full-page mock)
+  Tokens — cream #F3EDD5 · ink #26241F · red #C62D2C · bright #FF4B45 · teal #16D2C4 · plum #7A1E1A
+  Three honesty levels: fenced on purpose ≠ honest limits ≠ future work. Keep them visually distinct.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=Inter:wght@400;600;700&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#F3EDD5;--ink:#26241F;--red:#C62D2C;--bright:#FF4B45;--teal:#16D2C4;--plum:#7A1E1A}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;font-family:'Inter',sans-serif;color:var(--ink);
+       background:radial-gradient(120% 120% at 15% -10%, #FBF6E2 0%, #F3EDD5 52%, #EAE3C6 100%);overflow-x:hidden}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.05;z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .wrap{position:relative;z-index:1;min-height:100vh;padding:56px 78px;display:flex;flex-direction:column}
+  .label{font-family:'Archivo';font-weight:800;font-size:19px;letter-spacing:.06em}
+  .rule{height:3px;background:var(--ink);margin:11px 0 0}
+  .display{font-family:'Playfair Display';font-style:italic;font-weight:700;color:var(--red);
+           font-size:clamp(44px,5.4vw,74px);margin:16px 0 0}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:22px;margin-top:34px}
+  .col{border-radius:18px;padding:22px 24px;border:2px solid var(--ink);animation:rise .5s ease both}
+  .col:nth-child(2){animation-delay:.08s}.col:nth-child(3){animation-delay:.16s}
+  .col h3{font-family:'Archivo';font-weight:800;font-size:16px;letter-spacing:.05em;text-transform:uppercase;margin:0 0 6px}
+  .col .why{font-size:13.5px;font-weight:600;opacity:.75;margin-bottom:14px;line-height:1.3}
+  .it{display:flex;gap:10px;align-items:flex-start;font-size:16.5px;line-height:1.32;margin-bottom:11px;font-weight:600}
+  .it .m{flex:none;font-weight:800;margin-top:1px}
+
+  .col.fenced{background:#FBEAE8;border-color:var(--red);box-shadow:6px 7px 0 rgba(198,45,44,.18)}
+  .col.fenced h3{color:var(--red)}
+  .col.fenced .m{color:var(--red)}
+
+  .col.limits{background:#fff;box-shadow:6px 7px 0 rgba(38,36,31,.12)}
+  .col.limits .m{color:var(--plum)}
+
+  .col.next{background:var(--ink);color:var(--cream);box-shadow:6px 7px 0 rgba(122,30,26,.3)}
+  .col.next h3{color:var(--teal)}
+  .col.next .why{color:#cbc4b3}
+  .col.next .m{color:var(--teal)}
+
+  .punch{margin-top:auto;padding-top:26px;text-align:center;font-family:'Playfair Display';font-style:italic;
+         font-weight:700;font-size:clamp(24px,2.8vw,34px);color:var(--red)}
+  .punch .hl{background:linear-gradient(transparent 60%, rgba(22,210,196,.35) 60%)}
+  @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="label">WHERE IT STANDS · WHERE IT GOES</div>
+    <div class="rule"></div>
+    <h1 class="display">The Honest Close</h1>
+
+    <div class="cols">
+      <div class="col fenced">
+        <h3>🚫 Fenced on purpose</h3>
+        <div class="why">Research calls, not gaps — the agent is built to never cross these.</div>
+        <div class="it"><span class="m">✕</span><div>Moving money — refunds &amp; cancellations go to a human</div></div>
+        <div class="it"><span class="m">✕</span><div>Address changes — the #1 account-takeover signal</div></div>
+        <div class="it"><span class="m">✕</span><div>Messaging customers unprompted — consent first</div></div>
+      </div>
+
+      <div class="col limits">
+        <h3>⚠️ Honest limits</h3>
+        <div class="why">Real constraints of a local-first prototype.</div>
+        <div class="it"><span class="m">·</span><div>"Proactive" runs only while our machine + gateway are up</div></div>
+        <div class="it"><span class="m">·</span><div>Account code is a stand-in for real out-of-band OTP delivery</div></div>
+        <div class="it"><span class="m">·</span><div>Checkout is mock — no payment rails at all</div></div>
+      </div>
+
+      <div class="col next">
+        <h3>→ Cheap by design</h3>
+        <div class="why">The architecture makes these adapters, not rewrites.</div>
+        <div class="it"><span class="m">＋</span><div>New channels: Instagram, LINE, Telegram — gateway adapters</div></div>
+        <div class="it"><span class="m">＋</span><div>Real OTP delivery over the existing email channel</div></div>
+        <div class="it"><span class="m">＋</span><div>Consented customer notifications; an always-on host</div></div>
+      </div>
+    </div>
+
+    <div class="punch">Still the same rule that built it: <span class="hl">evidence over ambition.</span></div>
+  </div>
+</body>
+</html>

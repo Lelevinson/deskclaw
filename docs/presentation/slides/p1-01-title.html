@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<!--
+  P1-01 · TITLE  (full-page mock — theme, not a fixed slide box)
+  Tokens — cream #F3EDD5 · ink #26241F · red #C62D2C · red-bright #FF4B45 · teal #16D2C4 · plum #7A1E1A
+  Fonts — wordmark/labels: Archivo · display: Playfair Display italic · body: Inter
+  Mascot SVG is a placeholder — swap your real DeskClaw artwork in Canva.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=Inter:wght@400;600&family=Playfair+Display:ital,wght@0,700;1,500;1,700&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#F3EDD5;--ink:#26241F;--red:#C62D2C;--bright:#FF4B45;--teal:#16D2C4;--plum:#7A1E1A}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;font-family:'Inter',sans-serif;color:var(--ink);
+       background:radial-gradient(120% 120% at 80% -10%, #FBF6E2 0%, #F3EDD5 45%, #EDE6C9 100%);overflow-x:hidden}
+  /* paper grain */
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.05;z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .wrap{position:relative;z-index:1;min-height:100vh;padding:70px 80px;display:flex;flex-direction:column;justify-content:space-between}
+  .pill{align-self:flex-start;display:inline-flex;gap:12px;align-items:center;background:var(--ink);color:var(--cream);
+        font-family:'Archivo';font-weight:800;font-size:16px;letter-spacing:.08em;padding:13px 26px;border-radius:999px;
+        animation:rise .7s ease both}
+  .pill .dot{width:9px;height:9px;border-radius:50%;background:var(--teal)}
+
+  .hero{position:relative;margin-top:-10px}
+  .kicker{font-family:'Playfair Display';font-style:italic;font-weight:500;font-size:34px;color:var(--plum);
+          margin:0 0 6px;animation:rise .7s ease .05s both}
+  .wordmark{font-family:'Archivo';font-weight:900;font-size:clamp(120px,18vw,250px);letter-spacing:-.025em;
+            line-height:.86;color:var(--red);margin:0;position:relative;animation:rise .8s ease .1s both}
+  .wordmark::after{content:"DESKCLAW";position:absolute;left:6px;top:6px;color:var(--ink);opacity:.08;z-index:-1}
+  .tagline{font-family:'Archivo';font-weight:800;font-size:clamp(18px,2vw,26px);letter-spacing:.02em;margin-top:18px;
+           max-width:760px;animation:rise .8s ease .2s both}
+  .tagline .bar{display:inline-block;width:64px;height:5px;background:var(--bright);border-radius:3px;
+                vertical-align:middle;margin-right:16px}
+
+  .foot{display:flex;justify-content:space-between;align-items:flex-end;gap:30px;animation:rise .8s ease .3s both}
+  .date{font-family:'Archivo';font-weight:800;font-size:26px}
+  .team{display:flex;gap:12px;flex-wrap:wrap}
+  .chip{background:#fff;border:2px solid var(--ink);border-radius:999px;padding:10px 20px;font-weight:600;font-size:18px}
+  .chip b{color:var(--red)}
+
+  /* mascot — large, bleeding off the right edge */
+  .mascot{position:absolute;right:-60px;top:50%;transform:translateY(-50%);width:560px;max-width:46vw;z-index:0;opacity:.95;
+          filter:drop-shadow(0 30px 40px rgba(122,30,26,.25));animation:floaty 6s ease-in-out infinite}
+  @keyframes floaty{0%,100%{transform:translateY(-50%)}50%{transform:translateY(-54%)}}
+  @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+  <svg class="mascot" viewBox="0 0 200 215">
+    <path d="M70 60 Q58 14 98 34" stroke="#FF4B45" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M130 60 Q142 14 102 34" stroke="#FF4B45" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <circle cx="98" cy="32" r="6" fill="#FF4B45"/><circle cx="102" cy="32" r="6" fill="#FF4B45"/>
+    <ellipse cx="24" cy="150" rx="24" ry="33" fill="#9F1D15"/>
+    <ellipse cx="176" cy="150" rx="24" ry="33" fill="#9F1D15"/>
+    <circle cx="100" cy="122" r="86" fill="url(#g)"/>
+    <ellipse cx="100" cy="150" rx="54" ry="40" fill="#B5241B" opacity=".35"/>
+    <circle cx="72" cy="112" r="21" fill="#0c0c0c"/><circle cx="128" cy="112" r="21" fill="#0c0c0c"/>
+    <circle cx="72" cy="112" r="9" fill="#16D2C4"/><circle cx="128" cy="112" r="9" fill="#16D2C4"/>
+    <circle cx="66" cy="106" r="3.5" fill="#fff" opacity=".9"/><circle cx="122" cy="106" r="3.5" fill="#fff" opacity=".9"/>
+    <defs><radialGradient id="g" cx="38%" cy="32%" r="75%">
+      <stop offset="0" stop-color="#EE4636"/><stop offset="1" stop-color="#B5241B"/></radialGradient></defs>
+  </svg>
+
+  <div class="wrap">
+    <div class="pill"><span class="dot"></span>FINAL PRESENTATION · JUNE 2026</div>
+
+    <div class="hero">
+      <p class="kicker">The shop that chats back —</p>
+      <h1 class="wordmark">DESKCLAW</h1>
+      <div class="tagline"><span class="bar"></span>Full-lifecycle conversational commerce agent for local D2C brands</div>
+    </div>
+
+    <div class="foot">
+      <div class="date">June 2026</div>
+      <div class="team">
+        <span class="chip"><b>1123522</b> Carlene</span>
+        <span class="chip"><b>1123542</b> Levinson</span>
+        <span class="chip"><b>1123543</b> Marvel</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
