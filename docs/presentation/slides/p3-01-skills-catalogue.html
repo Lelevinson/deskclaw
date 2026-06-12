@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<!--
+  P3-01 · TEN SKILLS, TWO SIDES  (full-page mock) — the living catalogue
+  Tokens — cream #F3EDD5 · ink #26241F · red #C62D2C · bright #FF4B45 · teal #16D2C4 · plum #7A1E1A
+  This is the slide to keep current if a skill ever lands late: one card per skill.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=Inter:wght@400;600;700&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#F3EDD5;--ink:#26241F;--red:#C62D2C;--bright:#FF4B45;--teal:#16D2C4;--plum:#7A1E1A}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;font-family:'Inter',sans-serif;color:var(--ink);
+       background:radial-gradient(120% 120% at 50% -15%, #FBF6E2 0%, #F3EDD5 52%, #EAE3C6 100%);overflow-x:hidden}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.05;z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .wrap{position:relative;z-index:1;min-height:100vh;padding:54px 76px;display:flex;flex-direction:column}
+  .label{font-family:'Archivo';font-weight:800;font-size:19px;letter-spacing:.06em}
+  .rule{height:3px;background:var(--ink);margin:11px 0 0}
+  .display{font-family:'Playfair Display';font-style:italic;font-weight:700;color:var(--red);
+           font-size:clamp(42px,5.2vw,68px);margin:14px 0 0}
+
+  .sectionlbl{font-family:'Archivo';font-weight:800;font-size:14px;letter-spacing:.07em;color:var(--plum);
+              text-transform:uppercase;margin:24px 0 10px;display:flex;align-items:center;gap:12px}
+  .sectionlbl .ln{flex:1;border-top:2px solid rgba(122,30,26,.25)}
+
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+  .sk{background:#fff;border:2px solid var(--ink);border-radius:13px;padding:12px 16px;
+      box-shadow:4px 5px 0 rgba(38,36,31,.10);animation:rise .45s ease both}
+  .sk:nth-child(2){animation-delay:.04s}.sk:nth-child(3){animation-delay:.08s}
+  .sk:nth-child(4){animation-delay:.12s}.sk:nth-child(5){animation-delay:.16s}.sk:nth-child(6){animation-delay:.2s}
+  .sk:nth-child(7){animation-delay:.24s}.sk:nth-child(8){animation-delay:.28s}.sk:nth-child(9){animation-delay:.32s}
+  .sk .nm{font-family:'Archivo';font-weight:800;font-size:15.5px;color:var(--red)}
+  .sk .ds{font-size:13.5px;color:#5f574a;font-weight:600;margin-top:3px;line-height:1.25}
+
+  .owner{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+  .ow{background:var(--ink);color:var(--cream);border:2px solid var(--ink);border-radius:13px;padding:12px 16px;
+      box-shadow:4px 5px 0 rgba(122,30,26,.28)}
+  .ow .nm{font-family:'Archivo';font-weight:800;font-size:15.5px;color:var(--teal)}
+  .ow .ds{font-size:13.5px;color:#d8d1bf;font-weight:600;margin-top:3px;line-height:1.25}
+
+  .foot{margin-top:auto;padding-top:20px;display:flex;justify-content:space-between;align-items:center;gap:20px}
+  .stats{display:flex;gap:12px;flex-wrap:wrap}
+  .stat{background:#fff;border:2px solid var(--ink);border-radius:999px;padding:8px 18px;font-weight:700;font-size:15px}
+  .stat b{color:var(--red)}
+  .cue{font-family:'Playfair Display';font-style:italic;font-weight:700;font-size:clamp(17px,1.7vw,22px);color:var(--red)}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="label">WHAT IT DOES · ALL SKILLS</div>
+    <div class="rule"></div>
+    <h1 class="display">Ten Skills, Two Sides of the Counter</h1>
+
+    <div class="sectionlbl">For the customer — 9 skills <span class="ln"></span></div>
+    <div class="grid">
+      <div class="sk"><div class="nm">search-products</div><div class="ds">recommendations by need, skin type, budget, gift</div></div>
+      <div class="sk"><div class="nm">routine-concierge</div><div class="ds">one ask → AM/PM regimen → bundle, confirmed per item</div></div>
+      <div class="sk"><div class="nm">policy-oracle</div><div class="ds">policy + ingredient-compatibility answers, only from brand data</div></div>
+      <div class="sk"><div class="nm">cart-actions</div><div class="ds">add · remove · change quantity, preview → confirm → audit</div></div>
+      <div class="sk"><div class="nm">checkout</div><div class="ds">cart → placed order (no payment, by design)</div></div>
+      <div class="sk"><div class="nm">order-status</div><div class="ds">"where's my order?" — own orders only</div></div>
+      <div class="sk"><div class="nm">returns-actions</div><div class="ds">return/exchange <i>request</i> + refund status; money goes to a human</div></div>
+      <div class="sk"><div class="nm">account-registration</div><div class="ds">new account or code-gated link, bound to the channel identity</div></div>
+      <div class="sk"><div class="nm">sentiment-router</div><div class="ds">frustration/safety → durable handoff + owner email</div></div>
+    </div>
+
+    <div class="sectionlbl">For the owner — the loop <span class="ln"></span></div>
+    <div class="owner">
+      <div class="ow"><div class="nm">ops-digest 🤖</div><div class="ds">wakes on schedule, no prompt — morning digest, in its own words</div></div>
+      <div class="ow"><div class="nm">owner email ✉️</div><div class="ds">Resend channel, owner-only by construction, rate-limited</div></div>
+      <div class="ow"><div class="nm">/admin panel 🛠️</div><div class="ds">human resolves handoffs, ships orders, restocks</div></div>
+    </div>
+
+    <div class="foot">
+      <div class="stats">
+        <span class="stat"><b>29</b> typed tools</span>
+        <span class="stat"><b>97 + 14</b> evals, CI green</span>
+        <span class="stat"><b>WhatsApp · web · terminal</b></span>
+      </div>
+      <div class="cue">Faster to show you — let's run it →</div>
+    </div>
+  </div>
+</body>
+</html>

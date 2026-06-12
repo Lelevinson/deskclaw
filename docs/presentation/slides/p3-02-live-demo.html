@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<!--
+  P3-02 · LIVE DEMO  (full-page mock) — stays on screen while the demo runs
+  Tokens — cream #F3EDD5 · ink #26241F · red #C62D2C · bright #FF4B45 · teal #16D2C4 · plum #7A1E1A
+  The 5 beats are a visible path so the audience always knows where we are.
+  In Canva: consider printing this as a side panel / lower third next to the live windows.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=Inter:wght@400;600;700&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#F3EDD5;--ink:#26241F;--red:#C62D2C;--bright:#FF4B45;--teal:#16D2C4;--plum:#7A1E1A}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;font-family:'Inter',sans-serif;color:var(--ink);
+       background:radial-gradient(130% 120% at 50% 115%, #FBF6E2 0%, #F3EDD5 55%, #E8E1C3 100%);overflow-x:hidden}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.05;z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .wrap{position:relative;z-index:1;min-height:100vh;padding:54px 76px;display:flex;flex-direction:column}
+  .label{font-family:'Archivo';font-weight:800;font-size:19px;letter-spacing:.06em;display:flex;justify-content:space-between;align-items:center}
+  .live{background:var(--red);color:#fff;font-size:14px;letter-spacing:.04em;padding:7px 16px;border-radius:999px;
+        display:inline-flex;gap:8px;align-items:center;font-family:'Archivo';font-weight:800}
+  .live .dot{width:9px;height:9px;border-radius:50%;background:#fff;animation:blink 1.2s infinite}
+  .rule{height:3px;background:var(--ink);margin:11px 0 0}
+  .display{font-family:'Playfair Display';font-style:italic;font-weight:700;color:var(--red);
+           font-size:clamp(48px,6vw,84px);margin:16px 0 0}
+  .sub{font-size:clamp(18px,2vw,24px);font-weight:600;margin-top:6px}
+  .sub b{color:var(--red)}
+
+  .beats{display:flex;flex-direction:column;gap:14px;margin-top:34px;max-width:1080px}
+  .beat{display:flex;align-items:center;gap:18px;background:#fff;border:2px solid var(--ink);border-radius:16px;
+        padding:14px 22px;box-shadow:5px 6px 0 rgba(38,36,31,.10);animation:rise .45s ease both}
+  .beat:nth-child(2){animation-delay:.07s}.beat:nth-child(3){animation-delay:.14s}
+  .beat:nth-child(4){animation-delay:.21s}.beat:nth-child(5){animation-delay:.28s}
+  .num{flex:none;width:44px;height:44px;border-radius:50%;background:var(--ink);color:var(--cream);
+       font-family:'Archivo';font-weight:900;font-size:21px;display:flex;align-items:center;justify-content:center}
+  .beat.hero .num{background:var(--red)}
+  .bt{font-size:clamp(17px,1.8vw,23px);font-weight:700}
+  .bd{font-size:clamp(13px,1.3vw,16px);color:#5f574a;font-weight:600;margin-top:2px}
+  .bd b{color:var(--plum)}
+  .ico{margin-left:auto;font-size:28px;flex:none}
+  .beat.hero{background:#FBEAE8;border-color:var(--red)}
+
+  .foot{margin-top:auto;display:flex;justify-content:space-between;align-items:center;padding-top:22px}
+  .persona{font-size:16px;font-weight:600;color:var(--plum)}
+  .backup{display:inline-flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--ink);
+          border-radius:999px;padding:9px 18px;font-weight:700;font-size:14px}
+  .backup .ok{color:var(--teal);font-weight:800}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="label"><span>SEE IT WORK</span><span class="live"><span class="dot"></span>LIVE DEMO</span></div>
+    <div class="rule"></div>
+    <h1 class="display">One Customer, One Owner, One Brain</h1>
+    <div class="sub">Follow the numbers — <b>real WhatsApp, real storefront, real email.</b></div>
+
+    <div class="beats">
+      <div class="beat"><span class="num">1</span><div><div class="bt">Register in chat</div>
+        <div class="bd">new customer over WhatsApp — the <b>number is the identity</b>; agent issues an account code</div></div><span class="ico">📱</span></div>
+      <div class="beat"><span class="num">2</span><div><div class="bt">Routine concierge</div>
+        <div class="bd">one ask → AM/PM regimen → bundle to cart, <b>confirmed item by item</b></div></div><span class="ico">🌿</span></div>
+      <div class="beat"><span class="num">3</span><div><div class="bt">Checkout</div>
+        <div class="bd">preview → confirm → order placed — <b>no payment, by design</b></div></div><span class="ico">🧾</span></div>
+      <div class="beat"><span class="num">4</span><div><div class="bt">Same account, web door</div>
+        <div class="bd">storefront login with the code — <b>the chat order is right there</b></div></div><span class="ico">🔗</span></div>
+      <div class="beat hero"><span class="num">5</span><div><div class="bt">The agent wakes alone</div>
+        <div class="bd">scheduled run, no prompt → <b>real email to the owner</b> → resolved in /admin</div></div><span class="ico">⏰</span></div>
+    </div>
+
+    <div class="foot">
+      <div class="persona">On screen, the agent answers as <b>Amelya's Concierge 🌿</b> — DeskClaw is the platform behind it.</div>
+      <div class="backup"><span class="ok">●</span> backup recording ready</div>
+    </div>
+  </div>
+</body>
+</html>

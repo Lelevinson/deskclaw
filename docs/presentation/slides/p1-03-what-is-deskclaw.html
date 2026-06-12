@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<!--
+  P1-03 · WHAT DESKCLAW IS  (full-page mock) · NEW
+  Tokens — cream #F3EDD5 · ink #26241F · red #C62D2C · bright #FF4B45 · teal #16D2C4 · plum #7A1E1A
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=Inter:wght@400;600;700&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#F3EDD5;--ink:#26241F;--red:#C62D2C;--bright:#FF4B45;--teal:#16D2C4;--plum:#7A1E1A}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;font-family:'Inter',sans-serif;color:var(--ink);
+       background:radial-gradient(120% 120% at 85% 110%, #FBF6E2 0%, #F3EDD5 50%, #EDE6C9 100%);overflow-x:hidden}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.05;z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .wrap{position:relative;z-index:1;min-height:100vh;padding:64px 80px;display:flex;flex-direction:column}
+  .label{font-family:'Archivo';font-weight:800;font-size:20px;letter-spacing:.06em}
+  .rule{height:3px;background:var(--ink);margin:12px 0 0}
+  .display{font-family:'Playfair Display';font-style:italic;font-weight:700;color:var(--red);
+           font-size:clamp(64px,8vw,104px);margin:26px 0 0}
+  .lede{font-size:clamp(24px,2.6vw,34px);line-height:1.4;max-width:1020px;margin-top:14px;font-weight:400}
+  .lede b{font-weight:700}.lede .amelya{color:var(--red);font-weight:700}
+
+  .journey{display:flex;align-items:center;gap:16px;margin-top:54px;flex-wrap:wrap}
+  .chip{position:relative;background:#fff;border:2px solid var(--ink);border-radius:16px;padding:18px 28px;
+        font-weight:700;font-size:clamp(20px,2vw,26px);box-shadow:5px 6px 0 rgba(38,36,31,.12);
+        animation:pop .5s ease both}
+  .chip:nth-child(3){animation-delay:.1s}.chip:nth-child(5){animation-delay:.2s}.chip:nth-child(7){animation-delay:.3s}
+  .chip .d{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--teal);margin-right:12px;vertical-align:middle}
+  .arrow{font-size:32px;color:var(--red);font-weight:700}
+  .handoff{margin-left:8px;background:var(--ink);color:var(--cream);border-radius:16px;padding:18px 26px;
+           font-weight:700;font-size:clamp(18px,1.8vw,23px);box-shadow:5px 6px 0 rgba(38,36,31,.22)}
+
+  .dual{margin-top:auto;padding-top:28px}
+  .surfaces{display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+            font-size:clamp(20px,2vw,26px);font-weight:600}
+  .card{background:linear-gradient(180deg,#fff,#FBF6E6);border:2px solid var(--ink);border-radius:14px;
+        padding:14px 24px;font-weight:700}
+  .card b{color:var(--red)}
+  .plus{color:var(--teal);font-weight:800;font-size:30px}
+  .muted{opacity:.75}
+  .ownerline{margin-top:14px;font-size:clamp(17px,1.6vw,21px);font-weight:600}
+  .ownerline b{color:var(--red)}
+  .ownerline .od{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--teal);margin-right:10px;vertical-align:middle}
+  @keyframes pop{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="label">WHAT IS DESKCLAW</div>
+    <div class="rule"></div>
+    <h1 class="display">Meet DeskClaw</h1>
+
+    <p class="lede">A <b>local-first conversational commerce agent</b> for a small D2C skincare brand —
+      we built a fictional one, <span class="amelya">Amelya's</span>, to make it real.</p>
+
+    <div class="journey">
+      <div class="chip"><span class="d"></span>Discover</div><div class="arrow">→</div>
+      <div class="chip"><span class="d"></span>Buy</div><div class="arrow">→</div>
+      <div class="chip"><span class="d"></span>Track</div><div class="arrow">→</div>
+      <div class="chip"><span class="d"></span>Return</div>
+      <div class="handoff">+ knows when to hand off to a human</div>
+    </div>
+
+    <div class="dual">
+      <div class="surfaces">
+        <span class="muted">Two front doors, one brain&nbsp;—</span>
+        <span class="card"><b>Chat agent</b></span>
+        <span class="plus">+</span>
+        <span class="card"><b>Web storefront</b></span>
+        <span class="muted">· same data, same rules.</span>
+      </div>
+      <div class="ownerline"><span class="od"></span>And it doesn’t only <em>react</em> — DeskClaw also works <b>proactively for the owner</b>.</div>
+    </div>
+  </div>
+</body>
+</html>

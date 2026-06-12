@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<!--
+  P1-05 · WHAT WE BUILT / SCOPE  (full-page mock) · ADAPTED from proposal Objectives
+  Tokens — cream #F3EDD5 · ink #26241F · red #C62D2C · bright #FF4B45 · teal #16D2C4 · plum #7A1E1A
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=Inter:wght@400;600;700&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#F3EDD5;--ink:#26241F;--red:#C62D2C;--bright:#FF4B45;--teal:#16D2C4;--plum:#7A1E1A}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;font-family:'Inter',sans-serif;color:var(--ink);
+       background:radial-gradient(120% 120% at 10% 110%, #FBF6E2 0%, #F3EDD5 55%, #EAE3C6 100%);overflow-x:hidden}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.05;z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .wrap{position:relative;z-index:1;min-height:100vh;padding:60px 80px;display:flex;flex-direction:column}
+  .label{font-family:'Archivo';font-weight:800;font-size:20px;letter-spacing:.06em}
+  .rule{height:3px;background:var(--ink);margin:12px 0 0}
+  .display{font-family:'Playfair Display';font-style:italic;font-weight:700;color:var(--red);
+           font-size:clamp(52px,6.5vw,86px);margin:18px 0 0}
+
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:32px}
+  .cap{position:relative;background:#fff;border:2px solid var(--ink);border-radius:18px;padding:22px 24px;
+       box-shadow:6px 7px 0 rgba(38,36,31,.12);animation:rise .5s ease both;overflow:hidden}
+  .cap::before{content:"";position:absolute;left:0;top:0;bottom:0;width:7px;background:var(--teal)}
+  .cap:nth-child(2){animation-delay:.06s}.cap:nth-child(3){animation-delay:.12s}
+  .cap:nth-child(4){animation-delay:.18s}.cap:nth-child(5){animation-delay:.24s}.cap:nth-child(6){animation-delay:.30s}
+  .stage{font-family:'Archivo';font-weight:800;font-size:15px;letter-spacing:.06em;color:var(--red);text-transform:uppercase}
+  .what{font-size:clamp(20px,2vw,25px);font-weight:700;margin-top:8px}
+  .skill{font-size:14px;color:var(--plum);font-weight:600;margin-top:8px;opacity:.85}
+  .cap.safety{background:var(--ink);color:var(--cream);box-shadow:6px 7px 0 rgba(122,30,26,.3)}
+  .cap.safety::before{background:var(--bright)}
+  .cap.safety .stage{color:var(--teal)}.cap.safety .skill{color:#cbc4b3}
+
+  .foot{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:30px;padding-top:30px}
+  .note{font-size:clamp(17px,1.7vw,21px);font-weight:600;max-width:740px;line-height:1.4}
+  .note b{color:var(--red)}.note .mark{background:linear-gradient(transparent 60%, rgba(255,75,69,.28) 60%)}
+  .next{display:inline-flex;align-items:center;gap:12px;background:var(--red);color:#fff;border-radius:999px;
+        padding:14px 26px;font-family:'Playfair Display';font-style:italic;font-weight:700;font-size:clamp(18px,1.8vw,24px);
+        white-space:nowrap;box-shadow:4px 5px 0 rgba(122,30,26,.3)}
+  @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="label">WHAT WE BUILT</div>
+    <div class="rule"></div>
+    <h1 class="display">Scope, From Research</h1>
+
+    <div class="grid">
+      <div class="cap"><div class="stage">Discover</div><div class="what">Search, recommend &amp; build routines</div><div class="skill">search-products · routine-concierge</div></div>
+      <div class="cap"><div class="stage">Ask</div><div class="what">Policy &amp; product answers</div><div class="skill">policy-oracle</div></div>
+      <div class="cap"><div class="stage">Buy</div><div class="what">Add, edit &amp; check out</div><div class="skill">cart-actions · checkout</div></div>
+      <div class="cap"><div class="stage">Track</div><div class="what">Order &amp; delivery status</div><div class="skill">order-status</div></div>
+      <div class="cap"><div class="stage">Return</div><div class="what">Return / exchange request</div><div class="skill">returns-actions</div></div>
+      <div class="cap safety"><div class="stage">Escalate</div><div class="what">Human handoff</div><div class="skill">sentiment-router</div></div>
+    </div>
+
+    <div class="foot">
+      <div class="note">Every capability — and every one we <span class="mark"><b>deliberately left out</b></span> — was chosen from research, not guesswork.</div>
+      <div class="next">Now — how we built it safely&nbsp;→</div>
+    </div>
+  </div>
+</body>
+</html>

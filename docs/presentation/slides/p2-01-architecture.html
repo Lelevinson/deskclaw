@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<!--
+  P2-01 · ARCHITECTURE — three layers + MCP boundary  (full-page mock)
+  Tokens — cream #F3EDD5 · ink #26241F · red #C62D2C · bright #FF4B45 · teal #16D2C4 · plum #7A1E1A
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=Inter:wght@400;600;700&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#F3EDD5;--ink:#26241F;--red:#C62D2C;--bright:#FF4B45;--teal:#16D2C4;--plum:#7A1E1A}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;font-family:'Inter',sans-serif;color:var(--ink);
+       background:radial-gradient(120% 120% at 85% -10%, #FBF6E2 0%, #F3EDD5 52%, #EAE3C6 100%);overflow-x:hidden}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.05;z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .wrap{position:relative;z-index:1;min-height:100vh;padding:58px 80px;display:flex;flex-direction:column}
+  .label{font-family:'Archivo';font-weight:800;font-size:20px;letter-spacing:.06em}
+  .rule{height:3px;background:var(--ink);margin:12px 0 0}
+  .display{font-family:'Playfair Display';font-style:italic;font-weight:700;color:var(--red);
+           font-size:clamp(48px,6vw,80px);margin:16px 0 0}
+
+  .body{display:grid;grid-template-columns:1.35fr 1fr;gap:46px;margin-top:30px;align-items:center}
+
+  .stack{display:flex;flex-direction:column;gap:0}
+  .top{display:flex;gap:14px;justify-content:center;margin-bottom:8px}
+  .src{background:#fff;border:2px solid var(--ink);border-radius:12px;padding:9px 18px;font-weight:700;font-size:17px}
+  .feed{text-align:center;color:var(--plum);font-weight:700;font-size:15px;margin:2px 0}
+  .agent{background:var(--ink);color:var(--cream);border-radius:14px;padding:14px 22px;text-align:center;font-weight:700;
+         font-size:19px;margin-bottom:16px}
+  .agent small{display:block;font-weight:600;font-size:13px;opacity:.75;margin-top:2px}
+
+  .lyr{position:relative;background:#fff;border:2px solid var(--ink);border-radius:16px;padding:18px 22px;
+       box-shadow:6px 7px 0 rgba(38,36,31,.12);animation:rise .5s ease both}
+  .lyr:nth-child(5){animation-delay:.08s}.lyr:nth-child(7){animation-delay:.16s}
+  .lyr .t{font-family:'Archivo';font-weight:800;font-size:17px;letter-spacing:.04em;text-transform:uppercase}
+  .lyr .d{font-size:16px;color:#5f574a;font-weight:600;margin-top:3px}
+  .lyr .where{position:absolute;right:18px;top:18px;font-size:13px;color:var(--plum);font-weight:700;opacity:.8}
+
+  .boundary{display:flex;align-items:center;gap:14px;margin:12px 4px;color:var(--red)}
+  .boundary .ln{flex:1;border-top:3px dashed var(--red)}
+  .boundary .seal{display:inline-flex;align-items:center;gap:8px;border:2px solid var(--red);border-radius:999px;
+                  padding:7px 16px;font-family:'Archivo';font-weight:800;font-size:13px;letter-spacing:.03em;background:#FBEAE8}
+
+  .aside h3{font-family:'Playfair Display';font-style:italic;font-weight:700;font-size:30px;color:var(--ink);margin:0 0 16px}
+  .pt{display:flex;gap:12px;align-items:flex-start;margin-bottom:16px;font-size:19px;line-height:1.35}
+  .pt .b{flex:none;width:26px;height:26px;border-radius:50%;background:var(--teal);color:#063b37;display:flex;
+         align-items:center;justify-content:center;font-weight:800;margin-top:1px}
+  .pt b{color:var(--red)}
+  @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="label">HOW IT'S BUILT · ARCHITECTURE</div>
+    <div class="rule"></div>
+    <h1 class="display">Three Layers, One Boundary</h1>
+
+    <div class="body">
+      <div class="stack">
+        <div class="top">
+          <span class="src">💬 Chat</span><span class="src">🛍️ Storefront</span>
+        </div>
+        <div class="feed">▼ customer message</div>
+        <div class="agent">Agent + Model <small>gpt-5.5 (cloud) or Gemma (local)</small></div>
+
+        <div class="lyr"><div class="t">Skill</div><div class="d">the agent's playbook — instructions only</div><div class="where">skills/</div></div>
+
+        <div class="boundary">
+          <span class="ln"></span>
+          <span class="seal">🔒 TYPED TOOLS ONLY · NO RAW DB</span>
+          <span class="ln"></span>
+        </div>
+
+        <div class="lyr"><div class="t">Inner Tools</div><div class="d">small, validated operations</div><div class="where">src/shop · MCP</div></div>
+        <div style="text-align:center;color:var(--plum);font-weight:700;font-size:15px;margin:8px 0">▼ reads / writes</div>
+        <div class="lyr"><div class="t">Shared Data</div><div class="d">one resettable JSON store</div><div class="where">data/</div></div>
+      </div>
+
+      <div class="aside">
+        <h3>Why this is the point</h3>
+        <div class="pt"><span class="b">1</span><div>The model <b>never touches the database</b> — it can only act through tools we defined and validated.</div></div>
+        <div class="pt"><span class="b">2</span><div>Every action is therefore <b>shaped and logged</b> by us — no surprise behaviour.</div></div>
+        <div class="pt"><span class="b">3</span><div>Adding a skill is <b>cheap</b>: new instructions + maybe one tool. That's how we reached <b>10 skills</b>.</div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

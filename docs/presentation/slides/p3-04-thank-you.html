@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<!--
+  P3-04 · THANK YOU  (full-page mock) — echoes the proposal's closing mascot slide
+  Tokens — cream #F3EDD5 · ink #26241F · red #C62D2C · bright #FF4B45 · teal #16D2C4 · plum #7A1E1A
+  Swap the SVG mascot for the real logo art (docs/assets/deskclaw-logo.png) in Canva.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=Inter:wght@400;600;700&family=Playfair+Display:ital,wght@1,600;1,800&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#F3EDD5;--ink:#26241F;--red:#C62D2C;--bright:#FF4B45;--teal:#16D2C4;--plum:#7A1E1A}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;font-family:'Inter',sans-serif;color:var(--ink);
+       background:radial-gradient(120% 120% at 50% -20%, #FBF6E2 0%, #F3EDD5 55%, #EAE3C6 100%);overflow:hidden}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.05;z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .wrap{position:relative;z-index:1;min-height:100vh;padding:70px 80px;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;text-align:center}
+  .thanks{font-family:'Playfair Display';font-style:italic;font-weight:800;color:var(--red);
+          font-size:clamp(90px,12vw,150px);line-height:.95;margin:0;animation:rise .7s ease both}
+  .one{font-size:clamp(19px,2vw,25px);font-weight:600;max-width:880px;margin-top:26px;line-height:1.45;
+       animation:rise .7s ease .1s both}
+  .one b{color:var(--red)}
+  .stats{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:30px;animation:rise .7s ease .2s both}
+  .stat{background:#fff;border:2px solid var(--ink);border-radius:999px;padding:9px 20px;font-weight:700;font-size:15.5px}
+  .stat b{color:var(--red)}
+  .repo{margin-top:26px;display:inline-flex;align-items:center;gap:10px;background:var(--ink);color:var(--cream);
+        border-radius:999px;padding:13px 26px;font-family:'Archivo';font-weight:800;font-size:17px;letter-spacing:.02em;
+        animation:rise .7s ease .3s both}
+  .repo .tealdot{width:9px;height:9px;border-radius:50%;background:var(--teal)}
+
+  .mascot{position:fixed;right:-40px;bottom:-60px;width:360px;opacity:.97;animation:peek 1s ease .35s both;
+          filter:drop-shadow(0 24px 30px rgba(122,30,26,.25))}
+  @keyframes rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+  @keyframes peek{from{transform:translateY(120px)}to{transform:none}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 class="thanks">Thank&nbsp;You</h1>
+    <div class="one">A full-lifecycle commerce agent that can <b>sell, support, escalate — even run the morning ops</b> —
+      and can't spend a single dollar without a human. <b>Evidence over ambition.</b></div>
+    <div class="stats">
+      <span class="stat"><b>10</b> skills</span>
+      <span class="stat"><b>29</b> typed tools</span>
+      <span class="stat"><b>97 + 14</b> evals · CI green</span>
+      <span class="stat"><b>WhatsApp · web · terminal</b></span>
+    </div>
+    <div class="repo"><span class="tealdot"></span> github.com/Lelevinson/deskclaw</div>
+  </div>
+
+  <!-- mascot peeking from the corner, like the proposal's closing slide -->
+  <svg class="mascot" viewBox="0 0 200 215">
+    <path d="M70 60 Q58 14 98 34" stroke="#FF4B45" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M130 60 Q142 14 102 34" stroke="#FF4B45" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <circle cx="98" cy="32" r="6" fill="#FF4B45"/><circle cx="102" cy="32" r="6" fill="#FF4B45"/>
+    <ellipse cx="24" cy="150" rx="24" ry="33" fill="#9F1D15"/>
+    <ellipse cx="176" cy="150" rx="24" ry="33" fill="#9F1D15"/>
+    <circle cx="100" cy="122" r="86" fill="url(#g)"/>
+    <circle cx="72" cy="112" r="21" fill="#0c0c0c"/><circle cx="128" cy="112" r="21" fill="#0c0c0c"/>
+    <circle cx="72" cy="112" r="9" fill="#16D2C4"/><circle cx="128" cy="112" r="9" fill="#16D2C4"/>
+    <circle cx="66" cy="106" r="3.5" fill="#fff" opacity=".9"/><circle cx="122" cy="106" r="3.5" fill="#fff" opacity=".9"/>
+    <defs><radialGradient id="g" cx="38%" cy="32%" r="75%">
+      <stop offset="0" stop-color="#EE4636"/><stop offset="1" stop-color="#B5241B"/></radialGradient></defs>
+  </svg>
+</body>
+</html>

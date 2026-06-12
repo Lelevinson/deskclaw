@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<!--
+  P1-04 · FROM PROPOSAL TO DELIVERY  (full-page mock) · NEW — the evolution beat
+  Tokens — cream #F3EDD5 · ink #26241F · red #C62D2C · bright #FF4B45 · teal #16D2C4 · plum #7A1E1A
+  Note: the negotiation cut IS grounded — proposal slide 3 ("margin-aware negotiation")
+        and slide 4 ("Dynamic Negotiator"). Traceable, evidence-driven change.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=Inter:wght@400;600;700&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#F3EDD5;--ink:#26241F;--red:#C62D2C;--bright:#FF4B45;--teal:#16D2C4;--plum:#7A1E1A}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;font-family:'Inter',sans-serif;color:var(--ink);
+       background:radial-gradient(130% 120% at 50% -20%, #FBF6E2 0%, #F3EDD5 55%, #EAE3C6 100%);overflow-x:hidden}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.05;z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .wrap{position:relative;z-index:1;min-height:100vh;padding:60px 80px;display:flex;flex-direction:column}
+  .label{font-family:'Archivo';font-weight:800;font-size:20px;letter-spacing:.06em}
+  .rule{height:3px;background:var(--ink);margin:12px 0 0}
+  .display{font-family:'Playfair Display';font-style:italic;font-weight:700;color:var(--red);
+           font-size:clamp(52px,6.5vw,86px);margin:20px 0 0}
+
+  .cols{display:grid;grid-template-columns:1fr 64px 1fr;align-items:center;gap:0;margin-top:30px}
+  .col{border-radius:22px;padding:26px 30px}
+  .col.prop{background:#fff;border:2px solid var(--ink);box-shadow:7px 8px 0 rgba(38,36,31,.12)}
+  .col.ship{background:var(--ink);color:var(--cream);box-shadow:7px 8px 0 rgba(122,30,26,.30)}
+  .col h3{font-family:'Archivo';font-weight:800;font-size:18px;letter-spacing:.05em;text-transform:uppercase;margin:0 0 18px;opacity:.85}
+  .row{display:flex;align-items:flex-start;gap:14px;font-size:clamp(17px,1.7vw,22px);line-height:1.3;margin-bottom:15px}
+  .mark{flex:none;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+        font-weight:800;font-size:16px;margin-top:1px}
+  .keep{background:var(--teal);color:#063b37}.cut{background:var(--bright);color:#fff}.add{background:var(--teal);color:#063b37}
+  .row.cut-row{text-decoration:line-through;text-decoration-color:var(--bright);text-decoration-thickness:2px;opacity:.7}
+  .mid{display:flex;justify-content:center;align-items:center}
+  .mid svg{width:54px;height:54px}
+  .legend{display:flex;gap:26px;margin-top:14px;font-size:15px;font-weight:600;opacity:.8}
+  .legend span{display:inline-flex;align-items:center;gap:8px}
+  .legend i{width:14px;height:14px;border-radius:50%}
+
+  .takeaway{margin-top:auto;padding-top:26px;text-align:center}
+  .takeaway p{font-family:'Playfair Display';font-style:italic;font-weight:700;font-size:clamp(26px,3vw,38px);
+              color:var(--red);margin:0}
+  .takeaway .hl{background:linear-gradient(transparent 60%, rgba(22,210,196,.35) 60%)}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="label">FROM PROPOSAL TO DELIVERY</div>
+    <div class="rule"></div>
+    <h1 class="display">What Changed, and Why</h1>
+
+    <div class="cols">
+      <div class="col prop">
+        <h3>We proposed · April</h3>
+        <div class="row"><span class="mark keep">✓</span><div>Automated support — policy-grounded answers</div></div>
+        <div class="row"><span class="mark keep">✓</span><div>Active sales — product matchmaking</div></div>
+        <div class="row cut-row"><span class="mark cut">✕</span><div><b>Margin-aware negotiation</b> &nbsp;(“Dynamic Negotiator”)</div></div>
+        <div class="row"><span class="mark keep">✓</span><div>Brand safety — frustration → human handoff</div></div>
+      </div>
+
+      <div class="mid">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 12h15M13 6l7 6-7 6" stroke="#C62D2C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+
+      <div class="col ship">
+        <h3>We shipped · June</h3>
+        <div class="row"><span class="mark keep">✓</span><div>Policy &amp; product answers, grounded in brand docs</div></div>
+        <div class="row"><span class="mark keep">✓</span><div>Search &amp; recommendations</div></div>
+        <div class="row"><span class="mark add">＋</span><div><b>Full post-purchase lifecycle</b> — cart, checkout, orders, returns</div></div>
+        <div class="row"><span class="mark add">＋</span><div>Hardened handoff &amp; a real <b>evaluation harness</b></div></div>
+        <div class="row"><span class="mark add">＋</span><div><b>A proactive ops agent</b> — emails the owner, staff panel resolves it</div></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span><i style="background:#16D2C4"></i>kept / went further</span>
+      <span><i style="background:#FF4B45"></i>deliberately cut</span>
+    </div>
+
+    <div class="takeaway">
+      <p>Evidence over ambition — the <span class="hl">“full-lifecycle”</span> title got <em>truer</em>.</p>
+    </div>
+  </div>
+</body>
+</html>
